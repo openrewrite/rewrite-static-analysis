@@ -29,9 +29,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Set;
 
-import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
@@ -44,9 +42,6 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
             "Transforms `!(a && b)` to `!a || !b` and `!(a || b)` to `!a && !b`. " +
             "Distributing negations inward eliminates the outer `!` and makes each individual " +
             "condition's polarity immediately visible, which aids comprehension.";
-
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1125");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

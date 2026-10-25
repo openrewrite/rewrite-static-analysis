@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -45,6 +46,9 @@ public class RemoveUnneededBlock extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1199");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

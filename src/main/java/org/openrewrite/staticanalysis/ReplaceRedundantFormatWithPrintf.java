@@ -31,6 +31,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceRedundantFormatWithPrintf extends Recipe {
 
@@ -50,6 +53,9 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
 
     @Getter
     final String description = "Replaces `PrintStream.print(String.format(format, ...args))` with `PrintStream.printf(format, ...args)` (and for `println`, appends a newline to the format string).";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S9413");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

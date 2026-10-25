@@ -23,7 +23,7 @@ preconditions:
   - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.staticanalysis.AbstractClassPublicConstructor
-#  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
+#  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable # slow on large code bases, and see #1055 and #1060
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
   - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
@@ -43,14 +43,14 @@ recipeList:
   - org.openrewrite.staticanalysis.FinalClass
   - org.openrewrite.staticanalysis.FixStringFormatExpressions
   - org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
-#  - org.openrewrite.staticanalysis.HideUtilityClassConstructor
+#  - org.openrewrite.staticanalysis.HideUtilityClassConstructor # breaks subclasses and callers that instantiate the class, see A2 in #1116
   - org.openrewrite.staticanalysis.IndexOfChecksShouldUseAStartPosition
   - org.openrewrite.staticanalysis.IndexOfReplaceableByContains
   - org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero
   - org.openrewrite.staticanalysis.InlineVariable
   - org.openrewrite.staticanalysis.IsEmptyCallOnCollections
   - org.openrewrite.staticanalysis.LambdaBlockToExpression
-#  - org.openrewrite.staticanalysis.LowercasePackage
+#  - org.openrewrite.staticanalysis.LowercasePackage # renames packages, which moves files and changes the public API
   - org.openrewrite.staticanalysis.MethodNameCasing
   - org.openrewrite.staticanalysis.MinimumSwitchCases
   - org.openrewrite.staticanalysis.ModifierOrder
@@ -74,13 +74,13 @@ recipeList:
   - org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
-#  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
-#  - org.openrewrite.java.RemoveUnusedImports
-#  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
-#  - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
-#  - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
+#  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast # still `@Incubating`
+#  - org.openrewrite.java.RemoveUnusedImports # can remove imports that are still needed where type attribution is incomplete
+#  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables # drops side effects such as `i++`, see B6 in #1116
+#  - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods # private methods can still be called reflectively or by frameworks
+#  - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase # renames constants, see #123
   - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
-#  - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
+#  - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase # see #186, #189 and #254
   - org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
   - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
@@ -88,8 +88,8 @@ recipeList:
   - org.openrewrite.staticanalysis.SimplifyArraysAsList
   - org.openrewrite.staticanalysis.SimplifyBooleanExpression
   - org.openrewrite.staticanalysis.SimplifyBooleanReturn
-#  - org.openrewrite.staticanalysis.SimplifyElseBranch # TODO Add once we've tried this out at scale
-#  - org.openrewrite.staticanalysis.SimplifyTernaryRecipes
+#  - org.openrewrite.staticanalysis.SimplifyElseBranch # TODO Add once we've tried this out at scale, and see #878
+#  - org.openrewrite.staticanalysis.SimplifyTernaryRecipes # too slow on large code bases
   - org.openrewrite.staticanalysis.StaticMethodNotFinal
   - org.openrewrite.staticanalysis.StringLiteralEquality
   - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
@@ -97,16 +97,15 @@ recipeList:
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
   - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
-#  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
+#  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn # declarations in the `else` block can collide, see #979
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
-#  - org.openrewrite.staticanalysis.UnnecessaryThrows
-#  - org.openrewrite.staticanalysis.UseCollectionInterfaces
+#  - org.openrewrite.staticanalysis.UnnecessaryThrows # changes method signatures that callers and overrides depend on
+#  - org.openrewrite.staticanalysis.UseCollectionInterfaces # may change public return types that other repositories use
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
   - org.openrewrite.staticanalysis.UsePortableNewlines
-# https://github.com/openrewrite/rewrite-static-analysis/issues/10
-#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
-#  - org.openrewrite.staticanalysis.UseStringReplace
+#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface # slow on large code bases, and see #980
+#  - org.openrewrite.staticanalysis.UseStringReplace # re-escapes the replacement string, see D12 in #1116
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
   - org.openrewrite.kotlin.cleanup.EqualsMethodUsage

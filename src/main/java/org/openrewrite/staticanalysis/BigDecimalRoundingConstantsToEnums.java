@@ -29,6 +29,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -48,7 +49,10 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
             "rounding behavior self-documenting and prevents invalid values.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S2111");
+    final Set<String> tags = singleton("RSPEC-S1874");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

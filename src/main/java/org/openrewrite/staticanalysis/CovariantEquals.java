@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Set;
 
@@ -52,7 +53,10 @@ public class CovariantEquals extends Recipe {
             "incorrect behavior.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S2162");
+    final Set<String> tags = singleton("RSPEC-S1201");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

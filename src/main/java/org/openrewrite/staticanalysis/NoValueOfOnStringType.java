@@ -25,7 +25,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
@@ -112,8 +111,15 @@ public class NoValueOfOnStringType extends Recipe {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {
                         J.Binary b = (J.Binary) parent;
-                        JavaType otherType = b.getRight() == getCursor().getValue() ? b.getLeft().getType() : b.getRight().getType();
-                        return TypeUtils.isString(otherType) && b.getOperator() == J.Binary.Type.Addition;
+                        if (b.getRight() == getCursor().getValue()) {
+                            return TypeUtils.isString(b.getLeft().getType()) && b.getOperator() == J.Binary.Type.Addition;
+                        }
+                        // Keep this call when the right operand is a `String.valueOf(primitive)` that loses its own call,
+                        // as otherwise `String.valueOf(a) + String.valueOf(b)` would turn into a numeric `a + b`
+                        Expression right = b.getRight();
+                        boolean rightLosesValueOf = VALUE_OF.matches(right) &&
+                                TypeUtils.asPrimitive(((J.MethodInvocation) right).getArguments().get(0).getType()) != null;
+                        return TypeUtils.isString(right.getType()) && !rightLosesValueOf && b.getOperator() == J.Binary.Type.Addition;
                     }
                 }
                 return false;

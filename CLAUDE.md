@@ -153,7 +153,7 @@ void testName() {
 ### 1. Recipe Structure
 - Use `@EqualsAndHashCode(callSuper = false)` and `@Value` from Lombok for immutable recipe classes
 - Implement `getEstimatedEffortPerOccurrence()` - use the same time estimate from SonarQube when implementing RSPEC rules
-- Always include RSPEC tags in `getTags()` when implementing SonarQube rules (e.g., `"RSPEC-S1697"`)
+- Always include RSPEC tags in `getTags()` when implementing SonarQube rules (e.g., `"RSPEC-S4201"`)
 - Use `Preconditions.check()` to exclude specific file types (e.g., Kotlin files) when a recipe is language-specific
 
 ### 2. Visitor Choice

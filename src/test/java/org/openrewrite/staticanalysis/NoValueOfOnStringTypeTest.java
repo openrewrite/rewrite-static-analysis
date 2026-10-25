@@ -127,6 +127,34 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("UnnecessaryCallToStringValueOf")
+    @Test
+    void keepOneValueOfWhenBothOperandsAreValueOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String method(int a, int b, String s) {
+                      String ab = String.valueOf(a) + String.valueOf(b);
+                      String as = String.valueOf(a) + String.valueOf(s);
+                      return String.valueOf(a) + String.valueOf(b) + String.valueOf(a);
+                  }
+              }
+              """,
+              """
+              class Test {
+                  String method(int a, int b, String s) {
+                      String ab = String.valueOf(a) + b;
+                      String as = a + s;
+                      return String.valueOf(a) + b + a;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void valueOfOnNonStringPrimitiveWithinBinaryNotAString() {
         rewriteRun(
