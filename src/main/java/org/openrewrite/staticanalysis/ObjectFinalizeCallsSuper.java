@@ -74,37 +74,20 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     return md;
                 }
                 JavaType.Method superFinalize = TypeUtils.findOverriddenMethod(methodType).orElse(null);
-                if (superFinalize == null) {
+                if (superFinalize == null || superFinalize.getThrownExceptions().stream().anyMatch(t -> TypeUtils.asFullyQualified(t) == null)) {
                     return md;
                 }
 
                 // `Throwable` is checked in Java but not in Groovy
-                List<NameTree> throwz = md.getThrows();
-                if (getCursor().firstEnclosing(J.CompilationUnit.class) != null &&
-                        (throwz == null || throwz.stream().noneMatch(t -> TypeUtils.isOfClassType(t.getType(), "java.lang.Throwable")))) {
+                if (getCursor().firstEnclosing(J.CompilationUnit.class) != null) {
+                    List<NameTree> throwz = md.getThrows();
                     List<JavaType> superThrown = superFinalize.getThrownExceptions();
-                    // An override may only declare what it overrides declares, so a narrower throws clause has no
-                    // legal way to take the added call
-                    if (throwz != null) {
-                        if (superThrown.stream().anyMatch(thrown ->
-                                throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
-                            return md;
-                        }
-                    } else if (!superThrown.isEmpty()) {
-                        // Built by hand, as a template could not attribute exception types declared in the project
-                        List<JRightPadded<NameTree>> declared = new ArrayList<>(superThrown.size());
-                        for (JavaType thrown : superThrown) {
-                            JavaType.FullyQualified exception = TypeUtils.asFullyQualified(thrown);
-                            if (exception == null) {
-                                return md;
-                            }
-                            String className = exception.getClassName();
-                            declared.add(JRightPadded.build(new J.Identifier(randomId(), Space.SINGLE_SPACE, Markers.EMPTY,
-                                    emptyList(), className.substring(className.lastIndexOf('.') + 1), exception, null)));
-                            maybeAddImport(exception);
-                        }
-                        md = md.getPadding().withThrows(JContainer.build(Space.SINGLE_SPACE, declared, Markers.EMPTY))
-                                .withMethodType(methodType.withThrownExceptions(superThrown));
+                    if (throwz == null) {
+                        md = declareThrows(md, methodType, superThrown);
+                    } else if (superThrown.stream().anyMatch(thrown -> throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
+                        // An override may only declare what it overrides declares, so a narrower throws clause has no
+                        // legal way to take the added call
+                        return md;
                     }
                 }
 
@@ -119,6 +102,23 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                             .withName(call.getName().withType(superFinalize))
                             .withSelect(((J.Identifier) requireNonNull(call.getSelect())).withType(methodType.getDeclaringType().getSupertype()));
                 })));
+            }
+
+            // Built by hand, as a template could not attribute exception types declared in the project
+            private J.MethodDeclaration declareThrows(J.MethodDeclaration md, JavaType.Method methodType, List<JavaType> exceptions) {
+                if (exceptions.isEmpty()) {
+                    return md;
+                }
+                List<JRightPadded<NameTree>> declared = new ArrayList<>(exceptions.size());
+                for (JavaType thrown : exceptions) {
+                    JavaType.FullyQualified exception = (JavaType.FullyQualified) thrown;
+                    String className = exception.getClassName();
+                    declared.add(JRightPadded.build(new J.Identifier(randomId(), Space.SINGLE_SPACE, Markers.EMPTY,
+                            emptyList(), className.substring(className.lastIndexOf('.') + 1), exception, null)));
+                    maybeAddImport(exception);
+                }
+                return md.getPadding().withThrows(JContainer.build(Space.SINGLE_SPACE, declared, Markers.EMPTY))
+                        .withMethodType(methodType.withThrownExceptions(exceptions));
             }
 
             private boolean hasSuperFinalizeMethodInvocation(J.MethodDeclaration md) {
