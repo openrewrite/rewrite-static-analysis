@@ -121,6 +121,33 @@ class EmptyBlockTest implements RewriteTest {
     }
 
     @Test
+    void emptySynchronizedAndSwitchKeepSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(java.util.function.Supplier<Object> lock, java.util.function.IntSupplier sel) {
+                      synchronized (lock.get()) {
+                      }
+                      switch (sel.getAsInt()) {
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(java.util.function.Supplier<Object> lock, java.util.function.IntSupplier sel) {
+                      lock.get();
+                      sel.getAsInt();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void emptyTry() {
         rewriteRun(
           //language=java
@@ -141,6 +168,68 @@ class EmptyBlockTest implements RewriteTest {
               public class A {
                   {
                       final String fileName = "fileName";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Runnable r) {
+                      // release
+                      try {
+                      } finally {
+                          r.run();
+                          r.run();
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Runnable r) {
+                      // release
+                      r.run();
+                      r.run();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyDeclarationsInBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Runnable r) {
+                      try {
+                      } finally {
+                          Runnable s = r;
+                          s.run();
+                      }
+                      Runnable s = r;
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Runnable r) {
+                      {
+                          Runnable s = r;
+                          s.run();
+                      }
+                      Runnable s = r;
                   }
               }
               """
@@ -320,6 +409,82 @@ class EmptyBlockTest implements RewriteTest {
                       n /= sideEffect();
                       new A();
                       boolSideEffect();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotExtractConditionallyEvaluatedSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.regex.Matcher;
+
+              class A {
+                  void foo(Matcher m, boolean b, int[] arr, java.util.function.IntSupplier i) {
+                      if (m.find() && m.group(1) != null) {
+                      }
+                      if (b || m.find()) {
+                      }
+                      if (b ? m.find() : m.hitEnd()) {
+                      }
+                      if (arr[i.getAsInt()] == 0) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void extractSideEffectsFromShortCircuitLeftOperand() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.regex.Matcher;
+
+              class A {
+                  void foo(Matcher m, boolean b) {
+                      if (m.find() && b) {
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.regex.Matcher;
+
+              class A {
+                  void foo(Matcher m, boolean b) {
+                      m.find();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInvertFloatingPointComparison() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(double d, Float f) {
+                      if (d > 0) {
+                      } else {
+                          throw new IllegalArgumentException();
+                      }
+                      if (f <= 1) {
+                      } else {
+                          throw new IllegalArgumentException();
+                      }
                   }
               }
               """
