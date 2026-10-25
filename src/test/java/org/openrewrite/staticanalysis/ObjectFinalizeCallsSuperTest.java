@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
-import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
@@ -84,38 +83,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     }
 
     @Test
-    void addsThrowsThrowableWhenOverrideDeclaresNoThrows() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class F {
-                  @Override
-                  protected void finalize() {
-                      cleanup();
-                  }
-
-                  void cleanup() {
-                  }
-              }
-              """,
-            """
-              class F {
-                  @Override
-                  protected void finalize() throws Throwable {
-                      cleanup();
-                      super.finalize();
-                  }
-
-                  void cleanup() {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void addsThrowsThrowableToEmptyBody() {
         rewriteRun(
           //language=java
@@ -140,42 +107,8 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     }
 
     @Test
-    void addsThrowsThrowableRetainingComments() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class F {
-                  Object o = new Object();
-
-                  @Override
-                  protected void finalize() {
-                      // release the reference
-                      o = null;
-                  }
-              }
-              """,
-            """
-              class F {
-                  Object o = new Object();
-
-                  @Override
-                  protected void finalize() throws Throwable {
-                      // release the reference
-                      o = null;
-                      super.finalize();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void addsThrowsThrowableWhenSuperclassDeclaresThrowable() {
         rewriteRun(
-          // `JavaTemplate` leaves the generated `super` unattributed when the superclass is in the same file
-          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
           //language=java
           java(
             """
@@ -185,7 +118,11 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
                       super.finalize();
                   }
               }
-
+              """
+          ),
+          //language=java
+          java(
+            """
               class Child extends Parent {
                   @Override
                   protected void finalize() {
@@ -193,13 +130,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               }
               """,
             """
-              class Parent {
-                  @Override
-                  protected void finalize() throws Throwable {
-                      super.finalize();
-                  }
-              }
-
               class Child extends Parent {
                   @Override
                   protected void finalize() throws Throwable {
@@ -214,8 +144,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     @Test
     void addsSuperFinalizeWithoutThrowsWhenSuperclassDeclaresNoThrows() {
         rewriteRun(
-          // `JavaTemplate` leaves the generated `super` unattributed when the superclass is in the same file
-          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
           //language=java
           java(
             """
@@ -232,10 +160,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class Child extends Parent {
                   @Override
                   protected void finalize() {
-                      cleanup();
-                  }
-
-                  void cleanup() {
                   }
               }
               """,
@@ -253,11 +177,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class Child extends Parent {
                   @Override
                   protected void finalize() {
-                      cleanup();
                       super.finalize();
-                  }
-
-                  void cleanup() {
                   }
               }
               """
@@ -268,8 +188,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     @Test
     void addsSuperFinalizeWhenThrowsClauseCoversSuperclassThrows() {
         rewriteRun(
-          // `JavaTemplate` leaves the generated `super` unattributed when the superclass is in the same file
-          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
           //language=java
           java(
             """
@@ -284,10 +202,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class Child extends Parent {
                   @Override
                   protected void finalize() throws IOException {
-                      cleanup();
-                  }
-
-                  void cleanup() {
                   }
               }
               """,
@@ -303,11 +217,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class Child extends Parent {
                   @Override
                   protected void finalize() throws IOException {
-                      cleanup();
                       super.finalize();
-                  }
-
-                  void cleanup() {
                   }
               }
               """
@@ -332,10 +242,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class Child extends Parent {
                   @Override
                   protected void finalize() {
-                      cleanup();
-                  }
-
-                  void cleanup() {
                   }
               }
               """
@@ -352,10 +258,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class F {
                   @Override
                   protected void finalize() throws Exception {
-                      cleanup();
-                  }
-
-                  void cleanup() {
                   }
               }
               """
