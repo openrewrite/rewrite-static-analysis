@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -402,43 +402,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Disabled("Doesn't support multiple constructors, to be enhanced")
-    @Test
-    void fieldAssignedInAllAlternateConstructors() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private String name;
-
-                  A() {
-                    name = "XYZ";
-                  }
-
-                  A(String n) {
-                    name = n;
-                  }
-              }
-              """,
-            """
-              class A {
-                  private final String name;
-
-                  A() {
-                    name = "XYZ";
-                  }
-
-                  A(String n) {
-                    name = n;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Disabled("Doesn't support if-else conditions analysis, to be enhanced.")
+    @ExpectedToFail("Assignments are counted rather than analysed for definite assignment, so one per `if`/`else` branch counts as two")
     @Test
     void fieldAssignedInIfElseStatementsInConstructor() {
         rewriteRun(
@@ -467,41 +431,6 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                       } else {
                           name = "XYZ";
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Disabled("Multi constructors ignored")
-    @Issue("https://github.com/openrewrite/rewrite/issues/2865")
-    @Test
-    void fieldAssignedIndirectlyInAllAlternateConstructors() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private String name;
-
-                  A() {
-                    this("ABC");
-                  }
-                  A(String name) {
-                    this.name = name;
-                  }
-              }
-              """,
-            """
-              class A {
-                  private final String name;
-
-                  A() {
-                    this("ABC");
-                  }
-                  A(String name) {
-                    this.name = name;
                   }
               }
               """

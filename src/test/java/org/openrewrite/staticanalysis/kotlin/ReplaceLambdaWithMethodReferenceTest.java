@@ -31,7 +31,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @DocumentExample
-    @ExpectedToFail("Kotlin visitor to be implemented")
+    @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
     @Test
     void toQualifiedMethodReference() {
         rewriteRun(
@@ -72,7 +72,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Kotlin visitor to be implemented")
+    @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
     @Test
     void toUnqualifiedMethodReference() {
         rewriteRun(

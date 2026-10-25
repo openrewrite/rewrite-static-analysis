@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -108,36 +107,6 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                       float renameThree = 2.0;
                       long renameFour = 2.0;
                       return dont_rename_one + renameTwo + renameThree + renameFour + 10;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Disabled
-    @Issue("https://github.com/openrewrite/rewrite/issues/2437")
-    @SuppressWarnings("JavadocDeclaration")
-    @Test
-    void renameJavaDocParam() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                   * @param rename_one
-                   */
-                  public void addTen(int rename_one) {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                   * @param renameOne
-                   */
-                  public void addTen(int renameOne) {
                   }
               }
               """
