@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
+import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.*;
@@ -49,6 +50,9 @@ public class MinimumSwitchCases extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1301");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

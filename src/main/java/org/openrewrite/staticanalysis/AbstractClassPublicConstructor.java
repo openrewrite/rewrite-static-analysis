@@ -23,6 +23,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -39,6 +40,9 @@ public class AbstractClassPublicConstructor extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5993");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

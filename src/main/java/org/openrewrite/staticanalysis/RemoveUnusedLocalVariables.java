@@ -31,6 +31,7 @@ import org.openrewrite.staticanalysis.go.GoFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -90,6 +91,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
             "and they may signal incomplete implementations or missed refactoring.";
 
     Set<String> tags = singleton("RSPEC-S1481");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

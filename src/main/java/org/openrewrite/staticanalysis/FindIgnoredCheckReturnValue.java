@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -70,6 +71,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             "`@SuppressWarnings(\"CheckReturnValue\")` are not marked.";
 
     Set<String> tags = singleton("RSPEC-S2201");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {

@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +56,8 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                 "Explicitly declaring this field gives you control over binary compatibility across versions.";
 
     Set<String> tags = singleton("RSPEC-S2057");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

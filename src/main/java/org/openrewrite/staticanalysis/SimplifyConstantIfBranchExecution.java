@@ -31,6 +31,7 @@ import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
@@ -47,6 +48,9 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2589");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

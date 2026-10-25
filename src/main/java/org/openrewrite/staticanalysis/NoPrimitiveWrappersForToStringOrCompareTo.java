@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -56,6 +57,9 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1158");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

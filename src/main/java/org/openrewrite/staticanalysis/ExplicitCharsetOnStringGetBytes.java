@@ -25,6 +25,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -50,6 +51,8 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
                "corruption bugs.";
 
     Set<String> tags = singleton("RSPEC-S1943");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

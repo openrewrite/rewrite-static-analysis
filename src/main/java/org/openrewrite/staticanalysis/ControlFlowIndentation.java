@@ -34,6 +34,7 @@ import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,6 +56,9 @@ public class ControlFlowIndentation extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2681");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -27,6 +27,7 @@ import org.openrewrite.java.search.FindRepeatableAnnotations;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +46,9 @@ public class UnwrapRepeatableAnnotations extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1710");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

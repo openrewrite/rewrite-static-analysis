@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,6 +47,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1604");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     transient AnonymousFunctionalInterfaceImplementations report = new AnonymousFunctionalInterfaceImplementations(this);
 

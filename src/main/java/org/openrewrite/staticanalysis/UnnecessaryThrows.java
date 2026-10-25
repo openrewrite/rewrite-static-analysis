@@ -32,6 +32,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.*;
@@ -69,6 +70,9 @@ public class UnnecessaryThrows extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1130");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

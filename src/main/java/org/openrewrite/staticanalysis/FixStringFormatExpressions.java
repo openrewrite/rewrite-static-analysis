@@ -26,6 +26,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,6 +53,9 @@ public class FixStringFormatExpressions extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3457");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

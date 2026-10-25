@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,9 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S120");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public Map<String, String> getInitialValue(ExecutionContext ctx) {
