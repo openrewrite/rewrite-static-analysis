@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -306,6 +307,26 @@ class SimplifyArraysAsListTest implements RewriteTest {
               class Test {
                   void method() {
                       List<String[]> list = Arrays.asList(new String[2][3]);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotChangePrimitiveArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<int[]> list = Arrays.asList(new int[]{1, 2});
                   }
               }
               """

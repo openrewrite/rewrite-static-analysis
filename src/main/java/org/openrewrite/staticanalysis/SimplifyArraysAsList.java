@@ -25,6 +25,8 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.List;
@@ -61,7 +63,10 @@ public class SimplifyArraysAsList extends Recipe {
                         mi.getArguments().get(0) instanceof J.NewArray) {
                     J.NewArray newArray = (J.NewArray) mi.getArguments().get(0);
                     List<Expression> elements = newArray.getInitializer();
+                    JavaType.Array arrayType = TypeUtils.asArray(newArray.getType());
                     if (newArray.getDimensions().size() == 1 && elements != null &&
+                            // A primitive array is a single element of a `List<int[]>`, not varargs
+                            arrayType != null && !(arrayType.getElemType() instanceof JavaType.Primitive) &&
                             // Skip transformation if there's exactly one null element to avoid ambiguity
                             (elements.size() != 1 || !J.Literal.isLiteralValue(elements.get(0), null))) {
                         return mi.withArguments(newArray.getInitializer());
