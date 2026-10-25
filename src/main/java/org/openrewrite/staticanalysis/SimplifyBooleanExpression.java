@@ -59,8 +59,8 @@ public class SimplifyBooleanExpression extends Recipe {
             // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                if (j instanceof J.MethodInvocation) {
-                    return !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                if (j instanceof J.MethodInvocation && j.getMarkers().findFirst(IsNullSafe.class).isPresent()) {
+                    return false;
                 }
                 return super.shouldSimplifyEqualsOn(j);
             }
