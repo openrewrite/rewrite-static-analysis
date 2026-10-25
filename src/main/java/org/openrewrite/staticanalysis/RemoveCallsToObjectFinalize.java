@@ -61,7 +61,6 @@ public class RemoveCallsToObjectFinalize extends Recipe {
 
                 if (invocation.getMethodType() != null && "finalize".equals(invocation.getMethodType().getName()) &&
                     (invocation.getMethodType().getDeclaringType().getSupertype() != null && Object.class.getName().equals(invocation.getMethodType().getDeclaringType().getSupertype().getFullyQualifiedName()))) {
-                    //noinspection DataFlowIssue
                     return null;
                 }
                 return invocation;

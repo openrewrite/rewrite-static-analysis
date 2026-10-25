@@ -81,7 +81,6 @@ public class RemoveCallsToSystemGc extends Recipe {
             public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
                 if (SYSTEM_GC.matches(invocation) || RUNTIME_GC.matches(invocation)) {
-                    //noinspection DataFlowIssue
                     return null;
                 }
                 return invocation;

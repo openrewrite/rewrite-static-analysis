@@ -62,7 +62,6 @@ public class RemoveSystemOutPrintln extends Recipe {
             @Override
             public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
                 J.Lambda l = super.visitLambda(lambda, ctx);
-                //noinspection ConstantValue
                 if (l.getBody() == null) {
                     l = l.withBody(new J.Block(randomId(), lambda.getPrefix(), Markers.EMPTY, JRightPadded.build(false), emptyList(), Space.EMPTY));
                 }

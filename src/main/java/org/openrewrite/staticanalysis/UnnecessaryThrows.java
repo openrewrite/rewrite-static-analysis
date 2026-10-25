@@ -242,7 +242,6 @@ public class UnnecessaryThrows extends Recipe {
                     return emptySet();
                 }
 
-                //noinspection ConstantConditions
                 if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
                         method.isAbstract() || method.hasModifier(Static) ||
                         method.hasModifier(Private) ||
@@ -346,7 +345,6 @@ public class UnnecessaryThrows extends Recipe {
             // the tag block, so collapse any trailing empty lines back onto the closing delimiter.
             trimTrailingBlankLines(newBody);
             if (newBody.isEmpty() || RemoveJavaDocAuthorTag.isBlank(getCursor(), newBody)) {
-                //noinspection DataFlowIssue
                 return null;
             }
             return javadoc.withBody(newBody);

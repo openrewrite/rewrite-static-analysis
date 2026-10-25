@@ -54,7 +54,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(FallThroughStyle.class, (SourceFile)tree, Checkstyle::fallThrough);
         }
