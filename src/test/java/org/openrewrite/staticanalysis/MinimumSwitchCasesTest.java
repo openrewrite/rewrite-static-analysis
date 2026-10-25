@@ -1332,7 +1332,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         // Without this check, the recipe would produce broken code like `if (x == YES)` instead of
         // `if (x == Dialog.PredefinedButton.YES)`.
         rewriteRun(
-          spec -> spec.typeValidationOptions(org.openrewrite.test.TypeValidation.none()),
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
           //language=java
           java(
             """
