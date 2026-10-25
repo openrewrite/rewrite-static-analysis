@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({
@@ -181,6 +182,68 @@ class IsEmptyCallOnMapsTest implements RewriteTest {
 
                   boolean nonEmpty() {
                       return !isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mapSubtypesAndMethodResults() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+              import java.util.SortedMap;
+              import java.util.concurrent.ConcurrentMap;
+
+              class Test {
+                  boolean test(SortedMap<String, String> sorted, ConcurrentMap<String, String> concurrent, Map raw) {
+                      return sorted.size() > 0 && concurrent.size() == 0 && raw.size() != 0 && map().size() < 1;
+                  }
+
+                  Map<String, String> map() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+              import java.util.SortedMap;
+              import java.util.concurrent.ConcurrentMap;
+
+              class Test {
+                  boolean test(SortedMap<String, String> sorted, ConcurrentMap<String, String> concurrent, Map raw) {
+                      return !sorted.isEmpty() && concurrent.isEmpty() && !raw.isEmpty() && map().isEmpty();
+                  }
+
+                  Map<String, String> map() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groovyMap() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map.size() == 0
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map.isEmpty()
                   }
               }
               """
