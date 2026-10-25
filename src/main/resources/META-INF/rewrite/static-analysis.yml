@@ -83,7 +83,7 @@ recipeList:
         - java.util.function.ToIntFunction<IN>
         - java.util.function.ToLongBiFunction<IN, IN>
         - java.util.function.ToLongFunction<IN>
-      excludeBounds:
+      excludedBounds:
         - java.lang.*
 ---
 type: specs.openrewrite.org/v1beta/recipe
