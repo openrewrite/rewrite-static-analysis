@@ -92,7 +92,8 @@ public class EqualsAvoidsNull extends Recipe {
                         // Independent of changes above, clear out unnecessary null comparisons
                         if (b.getLeft() instanceof J.Binary &&
                                 b.getOperator() == J.Binary.Type.And &&
-                                isStringComparisonMethod(b.getRight())) {
+                                isStringComparisonMethod(b.getRight()) &&
+                                !CONTENT_EQUALS.matches(b.getRight())) {
                             Expression nullCheckedLeft = nullCheckedArgument((J.Binary) b.getLeft());
                             if (nullCheckedLeft != null && areEqual(nullCheckedLeft, ((J.MethodInvocation) b.getRight()).getArguments().get(0))) {
                                 return b.getRight().withPrefix(b.getPrefix());
