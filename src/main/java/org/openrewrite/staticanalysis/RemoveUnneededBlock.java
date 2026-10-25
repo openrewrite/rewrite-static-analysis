@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
@@ -28,6 +29,7 @@ import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.singleton;
 
@@ -50,6 +52,19 @@ public class RemoveUnneededBlock extends Recipe {
     }
 
     static class RemoveUnneededBlockStatementVisitor extends JavaVisitor<ExecutionContext> {
+        /**
+         * When set, only this block is inlined, so that recipes which leave one block behind
+         * do not flatten every other block in the file.
+         */
+        private final @Nullable UUID onlyBlockId;
+
+        RemoveUnneededBlockStatementVisitor() {
+            this.onlyBlockId = null;
+        }
+
+        RemoveUnneededBlockStatementVisitor(J.Block onlyBlock) {
+            this.onlyBlockId = onlyBlock.getId();
+        }
 
         @Override
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
@@ -76,6 +91,9 @@ public class RemoveUnneededBlock extends Recipe {
             List<JRightPadded<Statement>> padded = block.getPadding().getStatements();
             J.Block flattened = block.getPadding().withStatements(ListUtils.flatMap(padded, (i, rp) -> {
                 Statement stmt = rp.getElement();
+                if (onlyBlockId != null && !onlyBlockId.equals(stmt.getId())) {
+                    return rp;
+                }
                 J.Block nested;
                 if (stmt instanceof J.Try) {
                     J.Try _try = (J.Try) stmt;
