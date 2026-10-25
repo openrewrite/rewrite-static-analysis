@@ -32,6 +32,31 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-params"));
     }
 
+    @Test
+    void removeOnlyTheImportsOfTheRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Test {
+                  private Map<String, String> unused() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void removeUnusedPrivateMethods() {
