@@ -58,26 +58,18 @@ public class ReplaceTextBlockWithString extends Recipe {
                     literal.getValue() != null &&
                     literal.getValueSource() != null &&
                     literal.getValueSource().startsWith("\"\"\"")) {
-                    // Split the literal into lines, including trailing empty lines
                     String[] lines = ((String) literal.getValue()).split("\n", -1);
-                    // Add trailing "\n" to each line but the last one
-                    // If there is only one line and it's empty, then add "\n" to it as well
                     boolean lastLineIsEmpty = lines[lines.length - 1].isEmpty();
                     int n = lastLineIsEmpty && lines.length == 1 ? 1 : lines.length - 1;
                     for (int i = 0; i < n; i++) {
                         lines[i] += "\n";
                     }
-                    // Take all lines except the last one if it's empty
-                    // If there is only one line and it's empty, take it as well
                     int linesNumber = !lastLineIsEmpty || lines.length == 1 ? lines.length : lines.length - 1;
                     Expression[] literals = new Expression[linesNumber];
-                    // Add a prefix (possibly containing a comment) of the original literal
                     literals[0] = toLiteral(lines[0]).withPrefix(literal.getPrefix());
-                    // Add newlines before rest string literals
                     for (int i = 1; i < linesNumber; i++) {
                         literals[i] = toLiteral(lines[i]).withPrefix(Space.build("\n", emptyList()));
                     }
-                    // Format the resulting expression
                     Expression j = ChainStringBuilderAppendCalls.additiveExpression(literals);
                     return j == null ? null : autoFormat(j, ctx);
                 }

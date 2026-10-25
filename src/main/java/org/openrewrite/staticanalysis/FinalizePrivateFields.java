@@ -76,7 +76,6 @@ public class FinalizePrivateFields extends Recipe {
                     return classDecl;
                 }
 
-                // skip if a class has multi constructor methods
                 if (getConstructorCount(classDecl) > 1 || isInnerClass(classDecl)) {
                     return classDecl;
                 }
@@ -144,9 +143,6 @@ public class FinalizePrivateFields extends Recipe {
                         variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
             }
 
-            /**
-             * Collect private and non-final fields from a class
-             */
             private List<J.VariableDeclarations.NamedVariable> collectPrivateFields(Cursor classCursor) {
                 J.ClassDeclaration classDecl = classCursor.getValue();
                 Cursor bodyCursor = new Cursor(classCursor, classDecl.getBody());
@@ -264,8 +260,6 @@ public class FinalizePrivateFields extends Recipe {
          * (2) any assignment in other place count for 2.
          * (3) any assignment in a loop or lambda in anywhere count for 2.
          * By giving 3 rules above, if a private field has an assigned count equal to 1, it should be finalized.
-         *
-         * @param j The subtree to search, supposed to be at Class declaration level.
          */
         static void collect(J j, Map<JavaType.Variable, Integer> assignedCountMap) {
             new CollectPrivateFieldsAssignmentCounts().visit(j, assignedCountMap);
@@ -315,13 +309,8 @@ public class FinalizePrivateFields extends Recipe {
             }
 
             if (privateField != null) {
-                // filtered so the variable is a private field here
                 int assignedCount = assignedCountMap.get(privateField);
 
-                // increment count rules are following
-                // (1) any assignment in class constructor, instance variable initializer or initializer block count for 1.
-                // (2) any assignment in other place count for 2.
-                // (3) any assignment in a loop or lambda in anywhere count for 2.
                 int increment;
                 if (isInLoop(cursor) || isInLambda(cursor)) {
                     increment = 2;
@@ -339,11 +328,6 @@ public class FinalizePrivateFields extends Recipe {
             return isInForLoop(cursor) || isInDoWhileLoopLoop(cursor) || isInWhileLoop(cursor);
         }
 
-        /**
-         * @param cursor               current assignment position
-         * @param privateFieldIsStatic true if the private field is static
-         * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
-         */
         private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
             Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic()) ||
                             p instanceof JRightPadded ||
@@ -361,18 +345,10 @@ public class FinalizePrivateFields extends Recipe {
             return parent instanceof J.ClassDeclaration;
         }
 
-        /**
-         * When searching for assignment belonging, drop cursor stop at class declaration or method declaration.
-         */
         private static boolean dropCursorEndCondition(Object parent) {
             return parent instanceof J.ClassDeclaration || parent instanceof J.MethodDeclaration;
         }
 
-        /**
-         * Drop until meet endCondition or condition
-         *
-         * @return true if meet the condition, or false if not meet the condition until the end.
-         */
         private static boolean dropUntilMeetCondition(Cursor cursor,
                                                       Predicate<Object> endCondition,
                                                       Predicate<Object> condition) {
@@ -409,12 +385,6 @@ public class FinalizePrivateFields extends Recipe {
     @Value
     private static class FindLastIdentifier extends JavaIsoVisitor<List<J.Identifier>> {
 
-        /**
-         * Find the last identifier in a J.FieldAccess. The purpose is to check whether it's a private field.
-         *
-         * @param j the subtree to search, supposed to be a J.FieldAccess
-         * @return the last Identifier if found, otherwise null.
-         */
         static J.@Nullable Identifier getLastIdentifier(J j) {
             List<J.Identifier> ids = new FindLastIdentifier().reduce(j, new ArrayList<>());
             return !ids.isEmpty() ? ids.get(ids.size() - 1) : null;

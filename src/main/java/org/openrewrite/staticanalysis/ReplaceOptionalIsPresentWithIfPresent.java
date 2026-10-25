@@ -67,17 +67,14 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            /* skip if `if-else` part is present */
             if (_if.getElsePart() != null) {
                 return _if;
             }
 
-            /* check if parent is else-if */
             if (getCursor().getParentTreeCursor().getValue() instanceof J.If.Else) {
                 return _if;
             }
 
-            /* handle J.If ancestors */
             if (!(_if.getIfCondition().getTree() instanceof J.MethodInvocation) || !OPTIONAL_IS_PRESENT.matches((J.MethodInvocation) _if.getIfCondition().getTree())) {
                 return _if;
             }
@@ -87,7 +84,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            /* replace if block with Optional#ifPresent and lambda expression */
             J.Identifier optionalVariable = (J.Identifier) select;
             String methodSelector = optionalVariable.getSimpleName();
 
@@ -109,7 +105,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                             _if.getThenPart()
                     );
 
-            /* replace Optional#get to lambda parameter */
             J.Identifier lambdaParameterIdentifier =
                     ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
                             .getParameters().getParameters().get(0)).getVariables().get(0).getName();
@@ -239,7 +234,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
         @Override
         public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-            /* Only replace method invocations that has same method selector as present in if condition */
             if (OPTIONAL_GET.matches(mi) && mi.getSelect() instanceof J.Identifier) {
                 J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();
                 if (methodSelector.getSimpleName().equals(selectToBeReplaced.getSimpleName()) &&

@@ -70,18 +70,15 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Verify the call target is "super"
                 Expression select = superCall.getSelect();
                 if (!(select instanceof J.Identifier) || !"super".equals(((J.Identifier) select).getSimpleName())) {
                     return md;
                 }
 
-                // Method name must match
                 if (!superCall.getSimpleName().equals(md.getSimpleName())) {
                     return md;
                 }
 
-                // Arguments must match parameters in same order
                 if (!argumentsMatchParameters(md.getParameters(), superCall.getArguments())) {
                     return md;
                 }
@@ -90,14 +87,13 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method has Javadoc comments
                 for (Comment comment : md.getPrefix().getComments()) {
                     if (comment instanceof Javadoc) {
                         return md;
                     }
                 }
 
-                // Skip if method is final (prevents further overriding)
+                // a `final` override stops subclasses from overriding the method further
                 if (methodType.hasFlags(Flag.Final)) {
                     return md;
                 }
@@ -166,7 +162,6 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     }
                     String paramName = varDecls.getVariables().get(0).getSimpleName();
 
-                    // Find next non-empty argument
                     while (argIndex < arguments.size() && arguments.get(argIndex) instanceof J.Empty) {
                         argIndex++;
                     }
@@ -181,7 +176,6 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     argIndex++;
                 }
 
-                // Verify no extra non-empty arguments remain
                 while (argIndex < arguments.size()) {
                     if (!(arguments.get(argIndex) instanceof J.Empty)) {
                         return false;
@@ -195,7 +189,6 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                 int childVisibility = visibilityRank(methodType);
                 JavaType.FullyQualified declaringType = methodType.getDeclaringType();
 
-                // Check supertype methods
                 JavaType.FullyQualified supertype = declaringType.getSupertype();
                 if (supertype != null) {
                     for (JavaType.Method parentMethod : supertype.getMethods()) {
@@ -205,7 +198,6 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     }
                 }
 
-                // Check interface default methods
                 for (JavaType.FullyQualified iface : declaringType.getInterfaces()) {
                     for (JavaType.Method ifaceMethod : iface.getMethods()) {
                         if (isMatchingMethod(methodType, ifaceMethod) && childVisibility > visibilityRank(ifaceMethod)) {

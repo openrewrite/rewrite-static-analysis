@@ -56,7 +56,6 @@ public class UseDiamondOperator extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        // don't try to do this for Groovy or Kotlin sources
         return Preconditions.check(new JavaFileChecker<>(), new UseDiamondOperatorVisitor());
     }
 
@@ -194,7 +193,6 @@ public class UseDiamondOperator extends Recipe {
             J.Return return_ = super.visitReturn(_return, ctx);
             J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
-                // Check if there could be constructor ambiguity
                 if (hasAmbiguousConstructors(nc)) {
                     return return_;
                 }
@@ -341,7 +339,6 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private boolean hasAmbiguousConstructors(J.NewClass newClass) {
-            // If there are no arguments or no type info, no ambiguity
             if (newClass.getArguments().isEmpty() || newClass.getConstructorType() == null) {
                 return false;
             }
@@ -351,7 +348,6 @@ public class UseDiamondOperator extends Recipe {
                 return false;
             }
 
-            // Check if any argument contains a lambda or method reference
             boolean hasLambdaOrMethodRef = false;
             for (Expression arg : newClass.getArguments()) {
                 if (arg instanceof J.Lambda || arg instanceof J.MemberReference) {
@@ -360,12 +356,10 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
 
-            // If no lambdas/method references, no ambiguity
             if (!hasLambdaOrMethodRef) {
                 return false;
             }
 
-            // Check if there are multiple constructors with the same number of parameters
             int argCount = newClass.getArguments().size();
             int constructorsWithSameArgCount = 0;
 
@@ -373,7 +367,6 @@ public class UseDiamondOperator extends Recipe {
                 if (method.isConstructor() && method.getParameterTypes().size() == argCount) {
                     constructorsWithSameArgCount++;
                     if (constructorsWithSameArgCount > 1) {
-                        // Multiple constructors with same arg count + lambda/method ref = potential ambiguity
                         return true;
                     }
                 }
