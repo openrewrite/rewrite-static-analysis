@@ -29,8 +29,8 @@ import org.openrewrite.java.tree.*;
 import java.time.Duration;
 import java.util.*;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
@@ -54,7 +54,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                "The generated name will append a numeric value to the variable name if a name already exists in the compilation unit. " +
                "Centralizing repeated string values into constants makes refactoring safer and reduces the risk of inconsistent updates.";
 
-    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1192", "RSPEC-S1889"));
+    Set<String> tags = singleton("RSPEC-S1192");
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 

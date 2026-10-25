@@ -29,7 +29,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -42,7 +41,6 @@ public class StaticAccessViaInstance extends Recipe {
     String description = "Accessing static fields or calling static methods on an instance reference is misleading. " +
             "Static members should be accessed using the declaring class name instead.";
     Set<String> tags = singleton("RSPEC-S2209");
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
