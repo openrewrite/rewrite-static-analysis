@@ -17,18 +17,17 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.*;
-import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
-import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -38,7 +37,7 @@ public class CovariantEquals extends Recipe {
 
     private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("* equals(..)");
     private static final MethodMatcher EQUALS_OBJECT_MATCHER = new MethodMatcher("* equals(java.lang.Object)");
-    private static final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
+    private static final MethodMatcher HASH_CODE_MATCHER = new MethodMatcher("* hashCode()");
 
     @Getter
     final String displayName = "Covariant equals";
@@ -50,7 +49,9 @@ public class CovariantEquals extends Recipe {
             "covariant parameter type (any subtype of `Object`). Without a proper " +
             "`equals(Object)` override, collections and other framework code that rely " +
             "on the standard signature will silently use `Object.equals`, leading to " +
-            "incorrect behavior.";
+            "incorrect behavior. Adds an `equals(Object)` that delegates to the covariant " +
+            "`equals()`, so overrides and callers of the covariant method keep compiling. " +
+            "Classes that do not also declare `hashCode()` are left unchanged.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1201");
@@ -63,77 +64,47 @@ public class CovariantEquals extends Recipe {
         TreeVisitor<?, ExecutionContext> conditions = Preconditions.and(
                 new DeclaresMethod<>(EQUALS_MATCHER),
                 Preconditions.not(new DeclaresMethod<>(EQUALS_OBJECT_MATCHER)),
-                Preconditions.not(new CSharpFileChecker<>())
+                Preconditions.not(new CSharpFileChecker<>()),
+                Preconditions.not(new KotlinFileChecker<>())
         );
-        return Preconditions.check(conditions, Repeat.repeatUntilStable(new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(conditions, new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-
-                Cursor parent;
-                try {
-                    parent = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration);
-                } catch (IllegalStateException __) {
-                    return m;
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+                JavaType.FullyQualified type = cd.getType();
+                if (type == null || cd.getKind() == J.ClassDeclaration.Kind.Type.Interface) {
+                    return cd;
                 }
 
-                J.ClassDeclaration enclosingClass = parent.getValue();
-
-                /*
-                 * Looking for "public boolean equals(EnclosingClassType)" as the method signature match.
-                 * We'll replace it with "public boolean equals(Object)"
-                 */
-                JavaType.FullyQualified type = enclosingClass.getType();
-                if (type == null || type instanceof JavaType.Unknown) {
-                    return m;
-                }
-
-                String ecfqn = type.getFullyQualifiedName();
-                if (m.hasModifier(J.Modifier.Type.Public) && m.getReturnTypeExpression() != null &&
-                        JavaType.Primitive.Boolean == m.getReturnTypeExpression().getType() &&
-                        new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass)) {
-
-                    if (!service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION)) {
-                        m = JavaTemplate.apply("@Override", updateCursor(m), m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                // Value-based equality without a matching `hashCode()` would break hash-based collections
+                MethodMatcher covariantEquals = new MethodMatcher(type.getFullyQualifiedName() + " equals(" + type.getFullyQualifiedName() + ")");
+                J.MethodDeclaration covariant = null;
+                boolean declaresHashCode = false;
+                for (Statement statement : cd.getBody().getStatements()) {
+                    if (statement instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration md = (J.MethodDeclaration) statement;
+                        if (EQUALS_OBJECT_MATCHER.matches(md.getMethodType())) {
+                            return cd;
+                        }
+                        if (HASH_CODE_MATCHER.matches(md.getMethodType())) {
+                            declaresHashCode = true;
+                        } else if (covariantEquals.matches(md.getMethodType()) && md.hasModifier(J.Modifier.Type.Public) &&
+                                !md.hasModifier(J.Modifier.Type.Static) && md.getMethodType().getReturnType() == JavaType.Primitive.Boolean) {
+                            covariant = md;
+                        }
                     }
-
-                    /*
-                     * Change parameter type to Object, and maybe change input parameter name representing the other object.
-                     * This is because we prepend these type-checking replacement statements to the existing "equals(..)" body.
-                     * Therefore we don't want to collide with any existing variable names.
-                     */
-                    J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().get(0)).getVariables().get(0);
-                    String paramName = "obj".equals(oldParamName.getSimpleName()) ? "other" : "obj";
-                    m = JavaTemplate.apply("Object #{}", updateCursor(m), m.getCoordinates().replaceParameters(), paramName);
-
-                    /*
-                     * We'll prepend this type-check and type-cast to the beginning of the existing
-                     * equals(..) method body statements, and let the existing equals(..) method definition continue
-                     * with the logic doing what it was doing.
-                     */
-                    String equalsBodyPrefixTemplate = "if (#{} == this) return true;\n" +
-                            "if (#{} == null || getClass() != #{}.getClass()) return false;\n" +
-                            "#{} #{} = (#{}) #{};\n";
-                    JavaTemplate equalsBodySnippet = JavaTemplate.builder(equalsBodyPrefixTemplate).contextSensitive().build();
-
-                    assert m.getBody() != null;
-                    Object[] params = new Object[]{
-                            paramName,
-                            paramName,
-                            paramName,
-                            enclosingClass.getSimpleName(),
-                            oldParamName.getSimpleName(),
-                            enclosingClass.getSimpleName(),
-                            paramName
-                    };
-
-                    m = equalsBodySnippet.apply(new Cursor(getCursor().getParent(), m),
-                            m.getBody().getStatements().get(0).getCoordinates().before(),
-                            params);
+                }
+                if (covariant == null || !declaresHashCode) {
+                    return cd;
                 }
 
-                return m;
+                return JavaTemplate.builder("@Override\npublic boolean equals(Object obj) {\n" +
+                                "    return obj instanceof #{} && equals((#{}) obj);\n" +
+                                "}")
+                        .contextSensitive()
+                        .build()
+                        .apply(updateCursor(cd), covariant.getCoordinates().after(), cd.getSimpleName(), cd.getSimpleName());
             }
-        }));
+        });
     }
 }
