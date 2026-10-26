@@ -76,7 +76,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                     if (NUMBER_TO_STRING_MATCHER.matches(mi) || BOOLEAN_TO_STRING_MATCHER.matches(mi)) {
                         Expression arg = null;
                         if (mi.getSelect() instanceof J.NewClass) {
-                            arg = getConstructorArg((J.NewClass) mi.getSelect());
+                            arg = getConstructorArg((J.NewClass) mi.getSelect(), clazz);
                         } else if (mi.getSelect() instanceof J.MethodInvocation) {
                             J.MethodInvocation selectMethod = (J.MethodInvocation) mi.getSelect();
                             if (VALUE_OF_NUMBER_MATCHER.matches(selectMethod) || VALUE_OF_BOOLEAN_MATCHER.matches(selectMethod)) {
@@ -92,7 +92,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                     } else if (NUMBER_COMPARE_TO_MATCHER.matches(mi) || BOOLEAN_COMPARE_TO_MATCHER.matches(mi)) {
                         Expression arg = null;
                         if (mi.getSelect() instanceof J.NewClass) {
-                            arg = getConstructorArg((J.NewClass) mi.getSelect());
+                            arg = getConstructorArg((J.NewClass) mi.getSelect(), clazz);
                         } else if (mi.getSelect() instanceof J.MethodInvocation) {
                             J.MethodInvocation selectMethod = (J.MethodInvocation) mi.getSelect();
                             if (VALUE_OF_NUMBER_MATCHER.matches(selectMethod) || VALUE_OF_BOOLEAN_MATCHER.matches(selectMethod)) {
@@ -111,11 +111,11 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                 return mi;
             }
 
-            private @Nullable Expression getConstructorArg(J.NewClass constructor) {
+            private @Nullable Expression getConstructorArg(J.NewClass constructor, JavaType.FullyQualified wrapperType) {
                 // Float(double) narrows its argument before the instance method runs.
                 // Only the attributed float overload accepts the same input as the static methods.
                 if (constructor.getConstructorType() == null ||
-                    TypeUtils.isOfClassType(constructor.getType(), "java.lang.Float") &&
+                    TypeUtils.isOfClassType(wrapperType, "java.lang.Float") &&
                     !FLOAT_CONSTRUCTOR_MATCHER.matches(constructor)) {
                     return null;
                 }
