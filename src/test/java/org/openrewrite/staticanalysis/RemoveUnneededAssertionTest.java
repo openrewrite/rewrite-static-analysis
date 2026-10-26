@@ -372,4 +372,29 @@ class RemoveUnneededAssertionTest implements RewriteTest {
             );
         }
     }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m(boolean d) {
+                      if (d) assert true; else assert d;
+                      label: assert true;
+                  }
+              }
+              """,
+            """
+              class A {
+                  void m(boolean d) {
+                      if (d) {} else assert d;
+                      label: {}
+                  }
+              }
+              """
+          )
+        );
+    }
 }

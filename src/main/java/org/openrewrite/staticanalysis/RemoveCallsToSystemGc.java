@@ -22,7 +22,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
@@ -58,12 +58,12 @@ public class RemoveCallsToSystemGc extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.or(new UsesMethod<>(SYSTEM_GC), new UsesMethod<>(RUNTIME_GC)), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.or(new UsesMethod<>(SYSTEM_GC), new UsesMethod<>(RUNTIME_GC)), new JavaVisitor<ExecutionContext>() {
             private final Set<UUID> emptiedBlocks = new HashSet<>();
 
             @Override
-            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-                J.Block b = super.visitBlock(block, ctx);
+            public J visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block b = (J.Block) super.visitBlock(block, ctx);
                 b = b.withStatements(ListUtils.map(b.getStatements(), s -> isEmptied(s) ||
                         s instanceof J.If && ((J.If) s).getElsePart() == null && isEmptied(((J.If) s).getThenPart()) &&
                         !mayHaveSideEffects(((J.If) s).getIfCondition()) ? null : s));
@@ -78,11 +78,14 @@ public class RemoveCallsToSystemGc extends Recipe {
             }
 
             @Override
-            public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
+            public @Nullable J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (SYSTEM_GC.matches(invocation) || RUNTIME_GC.matches(invocation)) {
-                    //noinspection DataFlowIssue
-                    return null;
+                    J replacement = StatementRemoval.remove(getCursor(), invocation);
+                    if (replacement instanceof J.Block && replacement.getPrefix().getComments().isEmpty()) {
+                        emptiedBlocks.add(replacement.getId());
+                    }
+                    return replacement;
                 }
                 return invocation;
             }

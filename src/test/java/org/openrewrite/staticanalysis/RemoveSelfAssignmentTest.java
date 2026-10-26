@@ -317,4 +317,48 @@ class RemoveSelfAssignmentTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int x;
+                  void m(boolean d, int y) {
+                      if (d) x = x; else x = y;
+                      for (int i = 0; i < y; i++) x = x;
+                  }
+              }
+              """,
+            """
+              class A {
+                  int x;
+                  void m(boolean d, int y) {
+                      if (d) {} else x = y;
+                      for (int i = 0; i < y; i++) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveSelfAssignmentInExpressionPosition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int x;
+                  int m() {
+                      return x = x;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

@@ -93,4 +93,45 @@ class RemoveSystemOutPrintlnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A {
+                  void m(boolean d, String x, List<String> xs, int n) {
+                      if (d) System.out.println(x); else log(x);
+                      if (d) log(x); else System.err.println(x);
+                      for (String s : xs) System.out.println(s);
+                      switch (n) {
+                          case 1 -> System.out.println(x);
+                          default -> log(x);
+                      }
+                  }
+                  void log(String s) {}
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A {
+                  void m(boolean d, String x, List<String> xs, int n) {
+                      if (d) {} else log(x);
+                      if (d) log(x); else {}
+                      for (String s : xs) {}
+                      switch (n) {
+                          case 1 -> {}
+                          default -> log(x);
+                      }
+                  }
+                  void log(String s) {}
+              }
+              """
+          )
+        );
+    }
 }
