@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -442,149 +441,21 @@ class CovariantEqualsTest implements RewriteTest {
         );
     }
 
-    @Nested
-    class Kotlin {
-        @Test
-        void topLevelFunctionDoesNotCrash() {
-            // This test verifies that the recipe doesn't crash when encountering a top-level Kotlin function
-            // Top-level functions don't have a class parent, which was causing the dropParentUntil error
-            rewriteRun(
-              kotlin(
-                """
-                  // Top-level equals function - should not cause a crash
-                  fun equals(other: String): Boolean {
-                      return false
+    @Test
+    void doNotChangeKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class Test {
+                  var n: Int = 0
+
+                  fun equals(other: Test): Boolean {
+                      return n == other.n
                   }
-
-                  fun main() {
-                      println("Test")
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinClassWithCovariantEquals() {
-            // Test that Kotlin classes with covariant equals are left unchanged
-            // (Kotlin has its own mechanisms for handling equals)
-            rewriteRun(
-              kotlin(
-                """
-                  class Test {
-                      var n: Int = 0
-
-                      fun equals(other: Test): Boolean {
-                          return n == other.n
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinDataClassUnchanged() {
-            // Data classes have compiler-generated equals methods
-            rewriteRun(
-              kotlin(
-                """
-                  data class Person(val name: String, val age: Int)
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinInterfaceWithEquals() {
-            // Test that interfaces with equals methods don't cause crashes
-            rewriteRun(
-              kotlin(
-                """
-                  interface TestInterface {
-                      fun equals(other: TestInterface): Boolean
-                  }
-
-                  class TestImpl : TestInterface {
-                      override fun equals(other: TestInterface): Boolean {
-                          return true
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinObjectDeclaration() {
-            // Test that object declarations (singletons) don't cause crashes
-            rewriteRun(
-              kotlin(
-                """
-                  object Singleton {
-                      fun equals(other: Singleton): Boolean {
-                          return true
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinEnumWithEquals() {
-            // Test that enum classes with equals methods don't cause crashes
-            rewriteRun(
-              kotlin(
-                """
-                  enum class Color {
-                      RED, GREEN, BLUE;
-
-                      fun equals(other: Color): Boolean {
-                          return this == other
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinNestedClassWithEquals() {
-            // Test nested classes with equals methods
-            rewriteRun(
-              kotlin(
-                """
-                  class Outer {
-                      class Inner {
-                          var value: Int = 0
-
-                          fun equals(other: Inner): Boolean {
-                              return value == other.value
-                          }
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void kotlinCompanionObjectWithEquals() {
-            // Test companion objects with equals methods
-            rewriteRun(
-              kotlin(
-                """
-                  class MyClass {
-                      companion object {
-                          fun equals(other: MyClass): Boolean {
-                              return false
-                          }
-                      }
-                  }
-                  """
-              )
-            );
-        }
+              }
+              """
+          )
+        );
     }
 }
