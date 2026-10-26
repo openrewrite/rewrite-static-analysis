@@ -916,7 +916,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-app/issues/17")
+    // Anonymous class passed to a generic constructor needs a cast on the lambda to keep type inference working
     @Test
     void lambdaWithComplexTypeInference() {
         rewriteRun(

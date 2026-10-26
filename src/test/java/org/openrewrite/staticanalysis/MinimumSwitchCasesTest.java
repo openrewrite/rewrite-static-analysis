@@ -889,7 +889,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label is a statically imported String constant from a nested class
     @Test
     void switchOnStringWithStaticConstant() {
         rewriteRun(
@@ -940,7 +940,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label is a statically imported int constant from a nested class
     @Test
     void switchOnIntWithStaticConstant() {
         rewriteRun(
@@ -991,7 +991,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label from a nested enum must be qualified with its outer class in the resulting if
     @Test
     void switchOnEnumWithNestedClass() {
         rewriteRun(
@@ -1325,7 +1325,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
     @Test
     void skipsTransformationWhenTypeInfoMissing() {
         // When type info is missing (e.g., incomplete classpath), the recipe should NOT transform

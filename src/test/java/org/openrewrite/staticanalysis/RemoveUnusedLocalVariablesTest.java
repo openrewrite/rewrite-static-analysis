@@ -367,7 +367,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/apache/dubbo/blob/747282cdf851c144af562d3f92e10349cc315e36/dubbo-metadata/dubbo-metadata-definition-protobuf/src/test/java/org/apache/dubbo/metadata/definition/protobuf/model/GooglePB.java#L938-L944")
+    // Reduced from https://github.com/apache/dubbo/blob/747282cdf851c144af562d3f92e10349cc315e36/dubbo-metadata/dubbo-metadata-definition-protobuf/src/test/java/org/apache/dubbo/metadata/definition/protobuf/model/GooglePB.java#L938-L944
     @Test
     void keepLocalVariablesAssignmentOperationToOtherVariables() {
         rewriteRun(
@@ -390,7 +390,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
+    // Reduced from https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65
     @Test
     void keepLocalVariableAssignmentOperation() {
         rewriteRun(
@@ -408,7 +408,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
+    // Reduced from https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65
     @Test
     void removeUnusedLocalVariableBitwiseAssignmentOperation() {
         rewriteRun(
@@ -436,7 +436,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
+    // Reduced from https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65
     @Test
     void keepLocalVariableBitwiseAssignmentOperationWithinExpression() {
         rewriteRun(
@@ -459,7 +459,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
+    // Reduced from https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65
     @Test
     void handleInstanceOf() {
         rewriteRun(
@@ -589,7 +589,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/apache/dubbo/blob/747282cdf851c144af562d3f92e10349cc315e36/dubbo-rpc/dubbo-rpc-api/src/main/java/org/apache/dubbo/rpc/RpcStatus.java#L108-L118")
+    // Reduced from https://github.com/apache/dubbo/blob/747282cdf851c144af562d3f92e10349cc315e36/dubbo-rpc/dubbo-rpc-api/src/main/java/org/apache/dubbo/rpc/RpcStatus.java#L108-L118
     @Test
     void forLoopWithExternalIncrementLogic() {
         rewriteRun(
@@ -798,7 +798,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/txazo/spring-cloud-sourcecode/blob/5ffe615558e76f3bb37f19026ece5cbaff4d0404/eureka-client/src/main/java/com/netflix/discovery/converters/jackson/builder/StringInterningAmazonInfoBuilder.java#L114-L124")
+    // Reduced from https://github.com/txazo/spring-cloud-sourcecode/blob/5ffe615558e76f3bb37f19026ece5cbaff4d0404/eureka-client/src/main/java/com/netflix/discovery/converters/jackson/builder/StringInterningAmazonInfoBuilder.java#L114-L124
     @Test
     void recognizeUsedVariableWithinWhileLoop() {
         rewriteRun(
@@ -858,7 +858,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("This still causes SonarQube to warn, but there isn't much that can be done in these cases. Maybe change to a while loop?")
+    // This still causes SonarQube to warn, but there isn't much that can be done in these cases. Maybe change to a while loop?
     @Test
     void ignoreForLoopIncrementVariableNeverRead() {
         rewriteRun(
@@ -880,7 +880,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("This still causes SonarQube to warn, but there isn't much that can be done in these cases. Maybe change to a forEach?")
+    // This still causes SonarQube to warn, but there isn't much that can be done in these cases. Maybe change to a forEach?
     @Test
     void ignoreEnhancedForLoops() {
         rewriteRun(
