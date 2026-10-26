@@ -40,6 +40,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(..)");
     private static final MethodMatcher STRING_BUILDER_APPEND_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(char[])");
     private static final MethodMatcher STRING_BUILDER_APPEND_KOTLIN_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(kotlin.CharArray)");
+    private static final MethodMatcher STRING_BUILDER_CAPACITY = new MethodMatcher("java.lang.StringBuilder <constructor>(int)");
     private static final MethodMatcher STRING_BUILDER_TO_STRING = new MethodMatcher("java.lang.StringBuilder toString()");
 
     @Getter
@@ -61,13 +62,13 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
                 if (STRING_BUILDER_TO_STRING.matches(method)) {
-                    SourceFile sourceFile = getCursor().firstEnclosingOrThrow(SourceFile.class);
-                    boolean kotlin = new KotlinFileChecker<ExecutionContext>().visit(sourceFile, ctx) != sourceFile;
                     List<Expression> arguments = new ArrayList<>();
                     boolean isFlattenable = flatMethodInvocationChain(method, arguments);
                     if (!isFlattenable || arguments.isEmpty()) {
                         return m;
                     }
+                    SourceFile sourceFile = getCursor().firstEnclosingOrThrow(SourceFile.class);
+                    boolean kotlin = new KotlinFileChecker<ExecutionContext>().visit(sourceFile, ctx) != sourceFile;
 
                     reverse(arguments);
                     arguments = adjustExpressions(method, arguments, kotlin);
@@ -100,9 +101,6 @@ public class ReplaceStringBuilderWithString extends Recipe {
             }
 
             private J.@Nullable Literal toStringLiteral(J.Literal input) {
-                if (input.getType() == JavaType.Primitive.String) {
-                    return input;
-                }
                 if (input.getValue() == null) {
                     return null;
                 }
@@ -130,7 +128,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                                 return literal;
                             }
                             if (kotlin) {
-                                Expression select = arg instanceof J.Identifier || arg instanceof J.FieldAccess || arg instanceof J.MethodInvocation || arg instanceof J.Literal ?
+                                Expression select = arg instanceof J.Identifier || arg instanceof J.FieldAccess || arg instanceof J.MethodInvocation || arg instanceof J.Literal || arg instanceof J.Parentheses ?
                                         arg.withPrefix(Space.EMPTY) :
                                         new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(arg.withPrefix(Space.EMPTY)));
                                 JavaType.FullyQualified declaringType = TypeUtils.asFullyQualified(arg.getType());
@@ -196,8 +194,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     J.NewClass nc = (J.NewClass) select;
                     if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
                         arguments.add(nc.getArguments().get(0));
-                    } else if (!(nc.getArguments().get(0) instanceof J.Empty) &&
-                            (nc.getConstructorType() == null || nc.getConstructorType().getParameterTypes().get(0) != JavaType.Primitive.Int)) {
+                    } else if (!(nc.getArguments().get(0) instanceof J.Empty) && !STRING_BUILDER_CAPACITY.matches(nc)) {
                         return false;
                     } else if (!arguments.isEmpty()) {
                         Expression lastArgument = arguments.get(arguments.size() - 1);

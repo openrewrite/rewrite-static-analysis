@@ -716,6 +716,9 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
                   fun sum(a: Int, b: Int): String {
                       return StringBuilder(16).append(a + b).append(" total").toString()
                   }
+                  fun parenthesized(a: Int, b: Int): String {
+                      return StringBuilder().append((a + b)).append(" total").toString()
+                  }
               }
               """,
             """
@@ -724,6 +727,9 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
                       return count.toString() + " items"
                   }
                   fun sum(a: Int, b: Int): String {
+                      return (a + b).toString() + " total"
+                  }
+                  fun parenthesized(a: Int, b: Int): String {
                       return (a + b).toString() + " total"
                   }
               }

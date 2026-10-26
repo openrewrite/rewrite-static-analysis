@@ -402,4 +402,4 @@ In Kotlin LSTs a `CharArray` (and the other primitive array types) is typed as `
 
 ## Converting a literal to a string literal
 
-Don't build a string literal from another literal's `valueSource`. `10L`, `0x10`, `1_000` and `1.0f` would become `"10L"`, `"0x10"`, `"1_000"` and `"1.0f"`. Use `String.valueOf(literal.getValue())` instead. A char literal's source content can be reused, because every escape sequence that's valid in a char literal is also valid in a string literal. The exception is `"`, both raw and as `"`: that one must be written as `\"`.
+Don't build a string literal from another literal's `valueSource`. `10L`, `0x10`, `1_000` and `1.0f` would become `"10L"`, `"0x10"`, `"1_000"` and `"1.0f"`. Use `String.valueOf(literal.getValue())` instead. A char literal's source content can be reused, because every escape sequence that's valid in a char literal is also valid in a string literal. The exception is `"`, whether written raw or as `\u0022` or `\42`: it must be written as `\"`, so derive the escaping from the literal's value, not its source.
