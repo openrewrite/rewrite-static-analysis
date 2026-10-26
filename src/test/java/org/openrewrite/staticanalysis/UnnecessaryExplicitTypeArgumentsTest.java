@@ -497,7 +497,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/moderneinc/customer-requests/issues/2370")
+        // Explicit type argument on a generic static method call passed as an argument to another generic method
         @Test
         void retainsExplicitTypeOnStaticMethodWithoutTypeBoundParameters() {
             rewriteRun(

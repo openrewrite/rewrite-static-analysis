@@ -111,6 +111,29 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
+    void retainNullCheckBeforeContentEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void check(String s) {
+                      if (s != null && s.contentEquals("test")) {}
+                  }
+              }
+              """,
+            """
+              class A {
+                  void check(String s) {
+                      if (s != null && "test".contentEquals(s)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainNecessaryNullCheck() {
         rewriteRun(
           //language=java

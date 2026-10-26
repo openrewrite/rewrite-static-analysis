@@ -16,11 +16,14 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Set;
@@ -36,7 +39,8 @@ public class BooleanChecksNotInverted extends Recipe {
     final String description = "Ensures that boolean checks are not unnecessarily inverted. " +
             "Also fixes double negative boolean expressions. Negating a comparison and " +
             "then inverting it adds cognitive overhead; using the direct operator " +
-            "(e.g., `>=` instead of `!(... < ...)`) is clearer and easier to reason about.";
+            "(e.g., `>=` instead of `!(... < ...)`) is clearer and easier to reason about. " +
+            "Ordered floating-point comparisons retain their negation to preserve NaN behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1940");
@@ -60,6 +64,18 @@ public class BooleanChecksNotInverted extends Recipe {
                         }
                         switch (binary.getOperator()) {
                             case LessThan:
+                            case GreaterThan:
+                            case LessThanOrEqual:
+                            case GreaterThanOrEqual:
+                                // A negated ordered comparison accepts NaN; its complementary operator does not.
+                                if (!isKnownIntegral(binary.getLeft().getType()) ||
+                                    !isKnownIntegral(binary.getRight().getType())) {
+                                    return super.visitUnary(unary, ctx);
+                                }
+                                break;
+                        }
+                        switch (binary.getOperator()) {
+                            case LessThan:
                                 return super.visit(binary.withOperator(J.Binary.Type.GreaterThanOrEqual), ctx).withPrefix(unary.getPrefix());
                             case GreaterThan:
                                 return super.visit(binary.withOperator(J.Binary.Type.LessThanOrEqual), ctx).withPrefix(unary.getPrefix());
@@ -80,6 +96,19 @@ public class BooleanChecksNotInverted extends Recipe {
                     }
                 }
                 return super.visitUnary(unary, ctx);
+            }
+
+            private boolean isKnownIntegral(@Nullable JavaType type) {
+                return type == JavaType.Primitive.Byte ||
+                       type == JavaType.Primitive.Short ||
+                       type == JavaType.Primitive.Int ||
+                       type == JavaType.Primitive.Long ||
+                       type == JavaType.Primitive.Char ||
+                       TypeUtils.isOfClassType(type, "java.lang.Byte") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Short") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Integer") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Long") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Character");
             }
 
             private boolean isComparison(J expr) {
