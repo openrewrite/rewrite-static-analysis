@@ -283,7 +283,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/294")
     @Test
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
         rewriteRun(
@@ -308,7 +308,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/294")
     @Test
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
         rewriteRun(
