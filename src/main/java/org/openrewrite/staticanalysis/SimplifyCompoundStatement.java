@@ -50,7 +50,7 @@ public class SimplifyCompoundStatement extends Recipe {
                     simplified = (Expression) new SimplifyBooleanExpressionVisitor()
                             .visitNonNull(simplified, ctx, parent);
                     if (J.Literal.isLiteralValue(simplified, identity)) {
-                        return null;
+                        return StatementRemoval.remove(getCursor(), assignOp);
                     }
                     if (J.Literal.isLiteralValue(simplified, !identity)) {
                         return maybeAutoFormat(
