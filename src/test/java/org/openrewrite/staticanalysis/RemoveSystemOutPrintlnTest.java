@@ -107,6 +107,8 @@ class RemoveSystemOutPrintlnTest implements RewriteTest {
                       if (d) System.out.println(x); else log(x);
                       if (d) log(x); else System.err.println(x);
                       for (String s : xs) System.out.println(s);
+                      while (d)
+                          System.out.println(x);
                       switch (n) {
                           case 1 -> System.out.println(x);
                           default -> log(x);
@@ -123,6 +125,7 @@ class RemoveSystemOutPrintlnTest implements RewriteTest {
                       if (d) {} else log(x);
                       if (d) log(x); else {}
                       for (String s : xs) {}
+                      while (d) {}
                       switch (n) {
                           case 1 -> {}
                           default -> log(x);

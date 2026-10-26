@@ -20,6 +20,7 @@ import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 /**
@@ -38,7 +39,9 @@ final class StatementRemoval {
         Object parent = parentCursor.getValue();
         Object original = cursor.getValue();
         if (parent instanceof J.Block || parent instanceof SourceFile ||
-                parent instanceof J.Case && ((J.Case) parent).getStatements().contains(original)) {
+                parent instanceof J.Case && ((J.Case) parent).getStatements().contains(original) ||
+                parent instanceof J.ForLoop.Control && (((J.ForLoop.Control) parent).getInit().contains(original) ||
+                        ((J.ForLoop.Control) parent).getUpdate().contains(original))) {
             return null;
         }
         if (parent instanceof J.If || parent instanceof J.If.Else || parent instanceof J.WhileLoop ||
@@ -48,7 +51,8 @@ final class StatementRemoval {
                         !(parentCursor.getParentTreeCursor().getParentTreeCursor().getValue() instanceof J.SwitchExpression) ||
                 parent instanceof J.Lambda && statement instanceof J.MethodInvocation &&
                         ((J.MethodInvocation) statement).getType() == JavaType.Primitive.Void) {
-            return J.Block.createEmptyBlock().withPrefix(statement.getPrefix());
+            Space prefix = statement.getPrefix();
+            return J.Block.createEmptyBlock().withPrefix(prefix.getComments().isEmpty() ? Space.SINGLE_SPACE : prefix);
         }
         return statement;
     }

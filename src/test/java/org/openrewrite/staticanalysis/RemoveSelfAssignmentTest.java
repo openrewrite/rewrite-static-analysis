@@ -329,6 +329,7 @@ class RemoveSelfAssignmentTest implements RewriteTest {
                   void m(boolean d, int y) {
                       if (d) x = x; else x = y;
                       for (int i = 0; i < y; i++) x = x;
+                      for (x = x; x < y; x++, x = x) {}
                   }
               }
               """,
@@ -338,6 +339,7 @@ class RemoveSelfAssignmentTest implements RewriteTest {
                   void m(boolean d, int y) {
                       if (d) {} else x = y;
                       for (int i = 0; i < y; i++) {}
+                      for (; x < y; x++) {}
                   }
               }
               """
@@ -353,6 +355,12 @@ class RemoveSelfAssignmentTest implements RewriteTest {
             """
               class A {
                   int x;
+                  int m(int n) {
+                      return switch (n) {
+                          case 1 -> x = x;
+                          default -> x;
+                      };
+                  }
                   int m() {
                       return x = x;
                   }
