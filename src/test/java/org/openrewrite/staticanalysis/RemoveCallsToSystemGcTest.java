@@ -110,4 +110,38 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A {
+                  void m(boolean low, boolean d, List<String> c) {
+                      if (low) System.gc();
+                      c.clear();
+                      if (d) System.gc(); else c.clear();
+                      while (d) Runtime.getRuntime().gc();
+                      Runnable r = () -> System.gc();
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A {
+                  void m(boolean low, boolean d, List<String> c) {
+                      c.clear();
+                      if (d) {} else c.clear();
+                      while (d) {}
+                      Runnable r = () -> {};
+                  }
+              }
+              """
+          )
+        );
+    }
 }
