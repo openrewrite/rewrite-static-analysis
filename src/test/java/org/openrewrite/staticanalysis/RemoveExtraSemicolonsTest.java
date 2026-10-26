@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 @SuppressWarnings({"UnnecessarySemicolon", "EmptyTryBlock", "UnusedAssignment", "ConstantValue"})
 class RemoveExtraSemicolonsTest implements RewriteTest {
@@ -325,6 +326,22 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
             """
               import java.util.List;
               class BetweenImport { }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeTypeScriptEnumTrailingComma() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              export enum ConnectionStatus {
+                  CONNECTING = 'connecting',
+                  CONNECTED = 'connected',
+                  NOT_CONNECTED = 'not_connected',
+              }
               """
           )
         );
