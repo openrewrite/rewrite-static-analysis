@@ -31,7 +31,7 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
         Expression cleanedUpAssignment = cleanupBooleanExpression(assignOp.getAssignment(), ctx);
         if (assignOp.getOperator() == J.AssignmentOperation.Type.BitAnd) {
             if (isLiteralTrue(cleanedUpAssignment)) {
-                return null;
+                return StatementRemoval.remove(getCursor(), assignOp);
             }
             if (isLiteralFalse(cleanedUpAssignment)) {
                 return maybeAutoFormat(
@@ -49,7 +49,7 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
             }
         } else if (assignOp.getOperator() == J.AssignmentOperation.Type.BitOr) {
             if (isLiteralFalse(cleanedUpAssignment)) {
-                return null;
+                return StatementRemoval.remove(getCursor(), assignOp);
             }
             if (isLiteralTrue(cleanedUpAssignment)) {
                 return maybeAutoFormat(

@@ -46,10 +46,10 @@ public class RemoveSelfAssignment extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
 
             @Override
-            public J.@Nullable Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
+            public @Nullable J visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
                 J.Assignment a = (J.Assignment) super.visitAssignment(assignment, ctx);
                 if (SemanticallyEqual.areEqual(a.getVariable(), a.getAssignment())) {
-                    return null;
+                    return StatementRemoval.remove(getCursor(), a);
                 }
                 return a;
             }

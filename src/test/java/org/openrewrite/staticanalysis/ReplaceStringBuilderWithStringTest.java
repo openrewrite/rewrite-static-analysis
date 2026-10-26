@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class ReplaceStringBuilderWithStringTest implements RewriteTest {
 
@@ -591,6 +592,161 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
               class A {
                   String render(char[] chars) {
                       return new StringBuilder().append("a").append(chars, 0, 2).toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void escapeCharLiteralsThatAreNotValidInStringLiterals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String quote(int n) {
+                      return new StringBuilder().append('"').append(n).toString();
+                  }
+                  String unicodeQuote(int n) {
+                      return new StringBuilder().append('\\u0022').append(n).toString();
+                  }
+                  String backslash(int n) {
+                      return new StringBuilder().append('\\\\').append(n).toString();
+                  }
+                  String apostrophe(int n) {
+                      return new StringBuilder().append('\\'').append(n).toString();
+                  }
+                  String newline(int n) {
+                      return new StringBuilder().append('\\n').append(n).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String quote(int n) {
+                      return "\\"" + n;
+                  }
+                  String unicodeQuote(int n) {
+                      return "\\"" + n;
+                  }
+                  String backslash(int n) {
+                      return "\\\\" + n;
+                  }
+                  String apostrophe(int n) {
+                      return "'" + n;
+                  }
+                  String newline(int n) {
+                      return "\\n" + n;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void convertNumericLiteralsByValue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String longLiteral(int n) {
+                      return new StringBuilder().append(10L).append(n).toString();
+                  }
+                  String hexLiteral(int n) {
+                      return new StringBuilder().append(0x10).append(n).toString();
+                  }
+                  String underscoreLiteral(int n) {
+                      return new StringBuilder().append(1_000).append(n).toString();
+                  }
+                  String floatLiteral(int n) {
+                      return new StringBuilder().append(1.0f).append(n).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String longLiteral(int n) {
+                      return "10" + n;
+                  }
+                  String hexLiteral(int n) {
+                      return "16" + n;
+                  }
+                  String underscoreLiteral(int n) {
+                      return "1000" + n;
+                  }
+                  String floatLiteral(int n) {
+                      return "1.0" + n;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenSeededWithCharSequence() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String m(CharSequence prefix) {
+                      return new StringBuilder(prefix).append("x").toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinUsesToStringInsteadOfStringValueOf() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun m(count: Int): String {
+                      return StringBuilder().append(count).append(" items").toString()
+                  }
+                  fun sum(a: Int, b: Int): String {
+                      return StringBuilder(16).append(a + b).append(" total").toString()
+                  }
+                  fun parenthesized(a: Int, b: Int): String {
+                      return StringBuilder().append((a + b)).append(" total").toString()
+                  }
+              }
+              """,
+            """
+              class A {
+                  fun m(count: Int): String {
+                      return count.toString() + " items"
+                  }
+                  fun sum(a: Int, b: Int): String {
+                      return (a + b).toString() + " total"
+                  }
+                  fun parenthesized(a: Int, b: Int): String {
+                      return (a + b).toString() + " total"
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlinCharArrayAppend() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun m(chars: CharArray): String {
+                      return StringBuilder().append("a").append(chars).toString()
                   }
               }
               """
