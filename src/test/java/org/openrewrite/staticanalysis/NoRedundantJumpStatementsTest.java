@@ -142,6 +142,32 @@ class NoRedundantJumpStatementsTest implements RewriteTest {
     }
 
     @Test
+    void keepCommentsOfRemovedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      System.out.println();
+                      // nothing left to do
+                      return;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      System.out.println();
+                      // nothing left to do
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotRemoveGoReturnWithExpression() {
         assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
         rewriteRun(

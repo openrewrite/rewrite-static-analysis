@@ -317,4 +317,97 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepCommentsOfRemovedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                          System.out.println("positive");
+                          // done
+                          return;
+                      }
+                      System.out.println("Hello world");
+                      /* nothing left */
+                      return;
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                          System.out.println("positive");
+                          // done
+                          return;
+                      }
+                      System.out.println("Hello world");
+                      /* nothing left */
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCommentsOfRemovedReturnInLastIf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                          System.out.println("positive");
+                          // done
+                          return;
+                      }
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                          System.out.println("positive");
+                          // done
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCommentsBeforeAndAfterRemovedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Hello {
+                  void world() {
+                      System.out.println("Hello world");
+                      // nothing left
+                      return; // trailing
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world() {
+                      System.out.println("Hello world");
+                      // nothing left
+                      // trailing
+                  }
+              }
+              """
+          )
+        );
+    }
 }

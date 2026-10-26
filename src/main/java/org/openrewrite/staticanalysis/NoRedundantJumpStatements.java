@@ -19,7 +19,6 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.InvertCondition;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
@@ -28,6 +27,7 @@ import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -92,8 +92,11 @@ public class NoRedundantJumpStatements extends Recipe {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method methodType = m.getMethodType();
                 if (m.getBody() != null && methodType != null && JavaType.Primitive.Void == methodType.getReturnType()) {
-                    return m.withBody(m.getBody().withStatements(ListUtils.mapLast(m.getBody().getStatements(),
-                            s -> s instanceof J.Return && ((J.Return) s).getExpression() == null ? null : s)));
+                    List<Statement> statements = m.getBody().getStatements();
+                    Statement last = statements.isEmpty() ? null : statements.get(statements.size() - 1);
+                    if (last instanceof J.Return && ((J.Return) last).getExpression() == null) {
+                        return m.withBody(UnnecessaryReturnAsLastStatement.removeLastStatement(m.getBody()));
+                    }
                 }
 
                 return m;
