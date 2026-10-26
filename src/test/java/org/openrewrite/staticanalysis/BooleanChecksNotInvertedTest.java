@@ -16,9 +16,16 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+
+import java.util.stream.Stream;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.python.Assertions.python;
@@ -120,4 +127,130 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
           )
         );
     }
+
+    static Stream<Arguments> floatingRelationalComparisons() {
+        return Stream.of("double", "float", "Double", "Float")
+          .flatMap(type -> Stream.of("<", ">", "<=", ">=")
+            .flatMap(operator -> Stream.of(false, true)
+              .map(reversed -> Arguments.of(type, operator, reversed))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("floatingRelationalComparisons")
+    void preserveFloatingRelationalComparison(String type, String operator, boolean reversed) {
+        String comparison = reversed ? "0 " + operator + " value" : "value " + operator + " 0";
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(0),
+          java(
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return !(%s);
+                  }
+              }
+              """.formatted(type, comparison)
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      "int, <, >=",
+      "long, >, <=",
+      "char, <=, >",
+      "byte, >=, <",
+      "short, <, >=",
+      "Integer, <, >=",
+      "Long, >, <=",
+      "Character, <=, >",
+      "Byte, >=, <",
+      "Short, <, >="
+    })
+    void continueInvertingIntegralComparisons(String type, String beforeOperator, String afterOperator) {
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
+          java(
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return !(value %s 0);
+                  }
+              }
+              """.formatted(type, beforeOperator),
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return value %s 0;
+                  }
+              }
+              """.formatted(type, afterOperator)
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      "double, ==, !=",
+      "float, !=, ==",
+      "Double, ==, !=",
+      "Float, !=, =="
+    })
+    void continueInvertingFloatingEquality(String type, String beforeOperator, String afterOperator) {
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
+          java(
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return !(value %s 0);
+                  }
+              }
+              """.formatted(type, beforeOperator),
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return value %s 0;
+                  }
+              }
+              """.formatted(type, afterOperator)
+          )
+        );
+    }
+
+    @Test
+    void preserveEffectfulFloatingOperand() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int calls;
+                  double next() {
+                      calls++;
+                      return Double.NaN;
+                  }
+                  boolean test() {
+                      return !(next() > 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Double", "Float"})
+    void preserveGenericFloatingBounds(String type) {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  <T extends %s> boolean test(T value) {
+                      return !(value > 0);
+                  }
+              }
+              """.formatted(type)
+          )
+        );
+    }
+
 }
