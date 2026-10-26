@@ -410,4 +410,29 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepTrailingCommentsOfPreviousStatementAndRemovedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Hello {
+                  void world() {
+                      System.out.println("Hello world"); // printed
+                      return; // trailing
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world() {
+                      System.out.println("Hello world"); // printed
+                      // trailing
+                  }
+              }
+              """
+          )
+        );
+    }
 }

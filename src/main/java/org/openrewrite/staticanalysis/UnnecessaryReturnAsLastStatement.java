@@ -22,7 +22,6 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
@@ -30,7 +29,6 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -113,18 +111,15 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
         if (statements.isEmpty()) {
             return block;
         }
-        Statement last = statements.get(statements.size() - 1);
+        Space prefix = statements.get(statements.size() - 1).getPrefix();
         J.Block b = block.withStatements(ListUtils.mapLast(statements, s -> null));
-        List<Comment> comments = last.getPrefix().getComments();
-        if (comments.isEmpty()) {
+        if (prefix.getComments().isEmpty()) {
             return b;
         }
         Space end = block.getEnd();
-        List<Comment> moved = new ArrayList<>(comments);
-        // A comment that trailed the removed statement on its line goes on its own line after the moved ones
-        moved.set(moved.size() - 1, moved.get(moved.size() - 1).withSuffix(end.getComments().isEmpty() ?
-                end.getWhitespace() : last.getPrefix().getWhitespace()));
-        moved.addAll(end.getComments());
-        return b.withEnd(Space.build(last.getPrefix().getWhitespace(), moved));
+        // A comment that trailed the removed statement keeps the line break and indent that preceded the statement
+        return b.withEnd(prefix.withComments(end.getComments().isEmpty() ?
+                ListUtils.mapLast(prefix.getComments(), c -> c.withSuffix(end.getWhitespace())) :
+                ListUtils.concatAll(prefix.getComments(), end.getComments())));
     }
 }
