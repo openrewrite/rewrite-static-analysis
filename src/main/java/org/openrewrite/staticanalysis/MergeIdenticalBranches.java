@@ -19,7 +19,7 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -46,19 +46,18 @@ public class MergeIdenticalBranches extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J visitIf(J.If if_, ExecutionContext ctx) {
-                J.If if__ = (J.If) super.visitIf(if_, ctx);
+            public J.If visitIf(J.If if_, ExecutionContext ctx) {
+                J.If if__ = super.visitIf(if_, ctx);
 
                 // Only process the outermost if
                 if (getCursor().getParentTreeCursor().getValue() instanceof J.If.Else) {
                     return if__;
                 }
 
-                J.If merged = mergeConsecutiveIdentical(if__);
-                return merged != if__ ? merged : if__;
+                return mergeConsecutiveIdentical(if__);
             }
 
             private J.If mergeConsecutiveIdentical(J.If outerIf) {

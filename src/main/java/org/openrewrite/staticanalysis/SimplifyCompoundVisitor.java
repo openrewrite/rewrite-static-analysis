@@ -24,6 +24,10 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 
+/**
+ * @deprecated Use {@link SimplifyCompoundStatement} instead.
+ */
+@Deprecated
 public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
 
     @Override

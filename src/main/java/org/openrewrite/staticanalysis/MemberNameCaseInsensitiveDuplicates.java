@@ -28,6 +28,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -73,7 +74,7 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
                 }
 
                 List<MemberInfo> currentMembers = new ArrayList<>();
-                for (Object stmt : cd.getBody().getStatements()) {
+                for (Statement stmt : cd.getBody().getStatements()) {
                     if (stmt instanceof J.VariableDeclarations) {
                         for (J.VariableDeclarations.NamedVariable var : ((J.VariableDeclarations) stmt).getVariables()) {
                             currentMembers.add(new MemberInfo(var.getSimpleName(), var));

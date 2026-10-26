@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -35,6 +36,8 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceRedundantFormatWithPrintf extends Recipe {
 
     private static final MethodMatcher STRING_FORMAT_MATCHER_LOCALE =
@@ -48,14 +51,11 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
             new MethodMatcher("java.io.PrintStream println(java.lang.String)", true);
 
 
-    @Getter
-    final String displayName = "Replace redundant `String.format()` invocations that are wrapped with `PrintStream` operations";
+    String displayName = "Replace redundant `String.format()` invocations that are wrapped with `PrintStream` operations";
 
-    @Getter
-    final String description = "Replaces `PrintStream.print(String.format(format, ...args))` with `PrintStream.printf(format, ...args)` (and for `println`, appends a newline to the format string).";
+    String description = "Replaces `PrintStream.print(String.format(format, ...args))` with `PrintStream.printf(format, ...args)` (and for `println`, appends a newline to the format string).";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S9413");
+    Set<String> tags = singleton("RSPEC-S9413");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

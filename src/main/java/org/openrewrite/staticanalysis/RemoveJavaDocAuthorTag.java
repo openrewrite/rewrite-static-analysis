@@ -18,7 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.StringUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.Javadoc;
 
@@ -41,7 +41,7 @@ public class RemoveJavaDocAuthorTag extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
                 return new JavadocVisitor<ExecutionContext>(this) {

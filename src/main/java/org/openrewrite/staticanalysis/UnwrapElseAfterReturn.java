@@ -22,7 +22,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
@@ -49,10 +49,10 @@ public class UnwrapElseAfterReturn extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> javaVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-                J.Block b = visitAndCast(block, ctx, super::visitBlock);
+                J.Block b = super.visitBlock(block, ctx);
                 AtomicReference<@Nullable Space> blockEnd = new AtomicReference<>(null);
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {

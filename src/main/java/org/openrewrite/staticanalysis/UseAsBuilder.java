@@ -109,8 +109,9 @@ public class UseAsBuilder extends Recipe {
                                     afterBuilder.clear();
                                 }
                                 consolidatedBuilder = (J.VariableDeclarations) statement;
+                            } else if (consolidatedBuilder == null) {
+                                return block.getStatements();
                             } else {
-                                assert consolidatedBuilder != null;
                                 if (statement instanceof J.Assignment) {
                                     J.Assignment assign = (J.Assignment) statement;
                                     consolidatedBuilder = consolidateBuilder(consolidatedBuilder,
@@ -184,7 +185,9 @@ public class UseAsBuilder extends Recipe {
                 J.VariableDeclarations cb = consolidatedBuilder.withVariables(
                         ListUtils.map(consolidatedBuilder.getVariables(), nv -> {
                             Expression init = nv.getInitializer();
-                            assert init != null;
+                            if (init == null) {
+                                return nv;
+                            }
                             return nv
                                     .withInitializer(builderCall
                                             .getPadding()

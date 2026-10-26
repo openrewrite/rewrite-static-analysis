@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -30,13 +31,13 @@ import org.openrewrite.marker.Markers;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
 
-    @Getter
-    final String displayName = "Use empty array for `Collection.toArray()`";
+    String displayName = "Use empty array for `Collection.toArray()`";
 
-    @Getter
-    final String description = "Changes new array creation with `Collection#toArray(T[])` to use an empty array argument, which is better for performance.\n" +
+    String description = "Changes new array creation with `Collection#toArray(T[])` to use an empty array argument, which is better for performance.\n" +
             "\n" +
             "According to the `Collection#toArray(T[])` documentation:\n" +
             "\n" +

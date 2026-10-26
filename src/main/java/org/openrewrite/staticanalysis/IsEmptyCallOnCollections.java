@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 
 public class IsEmptyCallOnCollections extends Recipe {
     private static final MethodMatcher COLLECTION_SIZE = new MethodMatcher("java.util.Collection size()", true);
@@ -96,8 +97,7 @@ public class IsEmptyCallOnCollections extends Recipe {
             private J newIsEmptyCall(J.MethodInvocation method, JavaCoordinates coordinates, boolean negate) {
                 JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()").build();
                 if (method.getSelect() == null) {
-                    assert method.getMethodType() != null;
-                    J.Identifier this_ = JavaElementFactory.newThis(method.getMethodType().getDeclaringType());
+                    J.Identifier this_ = JavaElementFactory.newThis(requireNonNull(method.getMethodType()).getDeclaringType());
                     J isEmptyCall = isEmpty.apply(getCursor(), coordinates, negate ? "!" : "", this_);
                     if (negate) {
                         return ((J.Unary) isEmptyCall).withExpression(((J.MethodInvocation) ((J.Unary) isEmptyCall).getExpression()).withSelect(null));

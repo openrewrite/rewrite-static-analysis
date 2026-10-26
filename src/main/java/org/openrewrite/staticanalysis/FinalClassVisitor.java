@@ -147,8 +147,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
                     cd = cd.getPadding().withKind(cd.getPadding().getKind().withPrefix(Space.EMPTY));
                 }
 
-                assert getCursor().getParent() != null;
-                cd = autoFormat(cd, cd.getName(), ctx, getCursor().getParent());
+                cd = autoFormat(cd, cd.getName(), ctx, getCursor().getParentOrThrow());
             }
             return cd;
         }

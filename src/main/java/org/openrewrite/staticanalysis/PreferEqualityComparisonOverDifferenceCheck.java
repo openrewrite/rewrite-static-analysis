@@ -40,55 +40,24 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
                 binary = super.visitBinary(binary, ctx);
 
                 J.Binary.Type operator = binary.getOperator();
-                if (isComparisonOperator(operator)) {
-                    Expression unwrappedLeft = unwrapParentheses(binary.getLeft());
-                    Expression unwrappedRight = unwrapParentheses(binary.getRight());
+                if (operator != J.Binary.Type.Equal &&
+                        operator != J.Binary.Type.NotEqual &&
+                        operator != J.Binary.Type.LessThan &&
+                        operator != J.Binary.Type.LessThanOrEqual &&
+                        operator != J.Binary.Type.GreaterThan &&
+                        operator != J.Binary.Type.GreaterThanOrEqual) {
+                    return binary;
+                }
 
-                    if (isSubtraction(unwrappedLeft) && isZero(unwrappedRight)) {
-                        J.Binary subtraction = (J.Binary) unwrappedLeft;
-                        return transformToEquality(binary, subtraction, ctx);
-                    }
+                Expression left = binary.getLeft().unwrap();
+                Expression right = binary.getRight().unwrap();
+                if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.Subtraction &&
+                        right instanceof J.Literal && ((J.Literal) right).getValue() instanceof Number &&
+                        ((Number) ((J.Literal) right).getValue()).doubleValue() == 0.0) {
+                    J.Binary subtraction = (J.Binary) left;
+                    return maybeAutoFormat(binary, binary.withLeft(subtraction.getLeft()).withRight(subtraction.getRight()), ctx);
                 }
                 return binary;
-            }
-
-            private boolean isComparisonOperator(J.Binary.Type operator) {
-                return operator == J.Binary.Type.Equal ||
-                        operator == J.Binary.Type.NotEqual ||
-                        operator == J.Binary.Type.LessThan ||
-                        operator == J.Binary.Type.LessThanOrEqual ||
-                        operator == J.Binary.Type.GreaterThan ||
-                        operator == J.Binary.Type.GreaterThanOrEqual;
-            }
-
-            private Expression unwrapParentheses(Expression expr) {
-                while (expr instanceof J.Parentheses) {
-                    J.Parentheses<?> parentheses = (J.Parentheses<?>) expr;
-                    expr = (Expression) parentheses.getTree();
-                }
-                return expr;
-            }
-
-            private boolean isSubtraction(Expression expr) {
-                return expr instanceof J.Binary &&
-                        ((J.Binary) expr).getOperator() == J.Binary.Type.Subtraction;
-            }
-
-            private boolean isZero(Expression expr) {
-                if (expr instanceof J.Literal) {
-                    Object value = ((J.Literal) expr).getValue();
-                    if (value instanceof Number) {
-                        return ((Number) value).doubleValue() == 0.0;
-                    }
-                }
-                return false;
-            }
-
-            private J.Binary transformToEquality(J.Binary original, J.Binary subtraction, ExecutionContext ctx) {
-                return maybeAutoFormat(original,
-                        original.withLeft(subtraction.getLeft())
-                                .withRight(subtraction.getRight()),
-                        ctx);
             }
         };
     }

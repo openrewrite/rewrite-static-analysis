@@ -297,7 +297,6 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                                 .add(instanceOf);
                         break;
                     case ELSE_PART:
-                        currentScope.get(identifier.getSimpleName());
                         variableUsage.elseParts
                                 .computeIfAbsent(
                                         ((J.If) parentTree).getElsePart(),

@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
@@ -32,21 +33,19 @@ import java.util.Set;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceTextBlockWithString extends Recipe {
 
-    @Getter
-    final String displayName = "Replace text block with regular string";
+    String displayName = "Replace text block with regular string";
 
-    @Getter
-    final String description = "Replace text block with a regular multi-line string. " +
+    String description = "Replace text block with a regular multi-line string. " +
             "Text blocks that fit on a single line without concatenation or escaped newlines gain " +
             "no readability benefit from the triple-quote syntax and are clearer as plain string literals.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S5663");
+    Set<String> tags = singleton("RSPEC-S5663");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

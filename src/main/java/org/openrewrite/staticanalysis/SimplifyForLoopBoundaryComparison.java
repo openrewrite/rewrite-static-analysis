@@ -19,8 +19,9 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -36,11 +37,11 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
             "For example, `i <= n - 1` simplifies to `i < n`, and `i <= n` becomes `i < n + 1`.";
 
     @Override
-    public JavaVisitor<ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-                binary = (J.Binary) super.visitBinary(binary, ctx);
+            public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
+                binary = super.visitBinary(binary, ctx);
 
                 if (binary.getOperator() != J.Binary.Type.LessThanOrEqual ||
                     !isIntegralType(binary.getLeft().getType()) ||
@@ -66,7 +67,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 }
 
                 // Handle parenthesized subtraction on right: i <= (n - 1) → i < n
-                Expression unwrappedRight = unwrapParentheses(binary.getRight());
+                Expression unwrappedRight = binary.getRight().unwrap();
                 if (unwrappedRight != binary.getRight() && unwrappedRight instanceof J.Binary) {
                     J.Binary rightArith = (J.Binary) unwrappedRight;
                     if (rightArith.getOperator() == J.Binary.Type.Subtraction && isIntLiteral(rightArith.getRight(), 1)) {
@@ -76,7 +77,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 }
 
                 // Handle parenthesized addition on left: (i + 1) <= n → i < n
-                Expression unwrappedLeft = unwrapParentheses(binary.getLeft());
+                Expression unwrappedLeft = binary.getLeft().unwrap();
                 if (unwrappedLeft != binary.getLeft() && unwrappedLeft instanceof J.Binary) {
                     J.Binary leftArith = (J.Binary) unwrappedLeft;
                     if (leftArith.getOperator() == J.Binary.Type.Addition) {
@@ -150,13 +151,6 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                                     withNewValue((J.Literal) leftArith.getLeft(), val - 1)));
                 }
                 return null;
-            }
-
-            private Expression unwrapParentheses(Expression expr) {
-                while (expr instanceof J.Parentheses) {
-                    expr = (Expression) ((J.Parentheses<?>) expr).getTree();
-                }
-                return expr;
             }
 
             private @Nullable Integer getIntLiteralValue(Expression expr) {

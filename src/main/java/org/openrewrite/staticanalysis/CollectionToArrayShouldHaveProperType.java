@@ -56,47 +56,6 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             @Override
-            public <T extends J> J visitParentheses(J.Parentheses<T> parentheses, ExecutionContext ctx) {
-                J visited = super.visitParentheses(parentheses, ctx);
-                if (visited instanceof J.Parentheses) {
-                    @SuppressWarnings("unchecked") J.Parentheses<T> visitedParentheses = (J.Parentheses<T>) visited;
-                    if (visitedParentheses.getTree() instanceof J.TypeCast) {
-                        J.TypeCast typeCast = (J.TypeCast) visitedParentheses.getTree();
-                        Expression expression = typeCast.getExpression();
-
-                        if (expression instanceof J.MethodInvocation) {
-                            J.MethodInvocation methodInvocation = (J.MethodInvocation) expression;
-                            if (TO_ARRAY.matches(methodInvocation)) {
-                                JavaType targetType = typeCast.getType();
-                                JavaType.Array arrayType = TypeUtils.asArray(targetType);
-                                if (arrayType != null) {
-                                    JavaType componentType = arrayType.getElemType();
-
-                                    JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(componentType);
-                                    if (fqType != null) {
-                                        String className = fqType.getClassName();
-                                        String fqn = fqType.getFullyQualifiedName();
-                                        JavaTemplate template = JavaTemplate.builder("#{any()}.toArray(new #{}[0])")
-                                                .imports(fqn)
-                                                .build();
-
-                                        Expression result = template.apply(getCursor(), visitedParentheses.getCoordinates().replace(),
-                                                requireNonNull(methodInvocation.getSelect()),
-                                                className);
-
-                                        maybeAddImport(fqn);
-
-                                        return visitedParentheses.withTree((T) result);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return visited;
-            }
-
-            @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                 J visited = super.visitTypeCast(typeCast, ctx);
                 if (!(visited instanceof J.TypeCast)) {

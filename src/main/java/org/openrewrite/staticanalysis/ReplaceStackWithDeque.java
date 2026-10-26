@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -40,23 +41,21 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceStackWithDeque extends Recipe {
-    @Getter
-    final String displayName = "Replace `java.util.Stack` with `java.util.Deque`";
+    String displayName = "Replace `java.util.Stack` with `java.util.Deque`";
 
-    @Getter
-    final String description = "From the Javadoc of `Stack`:\n" +
+    String description = "From the Javadoc of `Stack`:\n" +
             "> A more complete and consistent set of LIFO stack operations is provided by " +
             "the Deque interface and its implementations, which should be used in preference " +
             "to this class.\n\n" +
             "`Stack` inherits from `Vector`, which carries unnecessary synchronization overhead " +
             "in single-threaded contexts and exposes non-stack operations like random index access.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1149");
+    Set<String> tags = singleton("RSPEC-S1149");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);
 
     /**
      * Source file cursor message mapping each variable redeclared as a {@code Deque} to its retyped form,

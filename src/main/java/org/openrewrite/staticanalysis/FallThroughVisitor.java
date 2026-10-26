@@ -293,7 +293,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 @Override
                 public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean declaresFinalTrue) {
                     for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
-                        if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
+                        if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && J.Literal.isLiteralValue(v.getInitializer(), true)) {
                             declaresFinalTrue.set(true);
                             return vd;
                         }

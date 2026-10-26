@@ -29,9 +29,10 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+
+import static java.util.stream.Collectors.toList;
 
 public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
 
@@ -103,9 +104,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
                     new MethodMatcher(method),
                     J.Modifier.Type.Private
             );
-            md = (J.MethodDeclaration) changeMethodAccessLevelVisitor.visit(md, p, getCursor().getParentOrThrow());
-            assert md != null;
-            return md;
+            return (J.MethodDeclaration) changeMethodAccessLevelVisitor.visitNonNull(md, p, getCursor().getParentOrThrow());
         }
     }
 
@@ -114,10 +113,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         private final Collection<AnnotationMatcher> ignorableAnnotations;
 
         private UtilityClassMatcher(Collection<String> ignorableAnnotations) {
-            this.ignorableAnnotations = new ArrayList<>(ignorableAnnotations.size());
-            for (String ignorableAnnotation : ignorableAnnotations) {
-                this.ignorableAnnotations.add(new AnnotationMatcher(ignorableAnnotation));
-            }
+            this.ignorableAnnotations = ignorableAnnotations.stream().map(AnnotationMatcher::new).collect(toList());
         }
 
         boolean hasIgnorableAnnotation(Cursor cursor) {
