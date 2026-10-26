@@ -16,10 +16,24 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"BooleanConstructorCall", "CachedNumberConstructorCall"})
@@ -82,6 +96,93 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void preserveBoundedAndEffectfulDoubleArguments() {
+        rewriteRun(
+          java(
+            """
+              class T {
+                  <N extends Double> String bounded(N value) {
+                      return new Float(value).toString();
+                  }
+
+                  int effectful() {
+                      return new Float(nextDouble()).compareTo(nextFloat());
+                  }
+
+                  Double nextDouble() { return null; }
+                  Float nextFloat() { return 0f; }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDoubleConstructorInGroovy() {
+        rewriteRun(
+          groovy(
+            """
+              class T {
+                  String text(double value) {
+                      return new Float(value).toString()
+                  }
+
+                  int comparison(Double value, Float other) {
+                      return new Float(value).compareTo(other)
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    static Stream<JavaType> missingArgumentTypes() {
+        return Stream.of(null, JavaType.Unknown.getInstance());
+    }
+
+    @ParameterizedTest
+    @MethodSource("missingArgumentTypes")
+    void preserveDoubleConstructorWithMissingArgumentType(JavaType missingType) {
+        ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
+        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+          "class T { String text(Double value) { return new Float(value).toString(); } " +
+          "int comparison(Double value, Float other) { return new Float(value).compareTo(other); } }")
+          .findFirst().orElseThrow();
+        // Remove argument attribution only in this visitor contract test. RewriteTest
+        // cases retain normal type validation and prove the compiler-attributed overloads.
+        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
+                Expression argument = newClass.getArguments().get(0).withType(missingType);
+                return newClass.withArguments(List.of(argument));
+            }
+        }.visit(parsed, ctx);
+        J.CompilationUnit result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
+          .getVisitor().visit(unattributed, ctx);
+        assertThat(result).isNotNull();
+        assertThat(result.printAll()).isEqualTo(unattributed.printAll());
+    }
+
+    @Test
+    void preserveConstructorWithMissingAttribution() {
+        ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
+        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+          "class T { String text(double value) { return new Float(value).toString(); } " +
+          "int comparison(double value, Float other) { return new Float(value).compareTo(other); } }")
+          .findFirst().orElseThrow();
+        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
+                return newClass.withConstructorType(null);
+            }
+        }.visit(parsed, ctx);
+        J.CompilationUnit result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
+          .getVisitor().visit(unattributed, ctx);
+        assertThat(result).isNotNull();
+        assertThat(result.printAll()).isEqualTo(unattributed.printAll());
     }
 
     @Test
