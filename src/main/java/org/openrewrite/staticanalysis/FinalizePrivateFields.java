@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
@@ -34,6 +35,7 @@ import java.util.function.Predicate;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.*;
+import static org.openrewrite.Preconditions.or;
 import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class FinalizePrivateFields extends Recipe {
@@ -51,7 +53,8 @@ public class FinalizePrivateFields extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
+        // Groovy doesn't enforce `private`, so other classes may assign these fields
+        return Preconditions.check(Preconditions.not(or(new JavascriptFileChecker<>(), new GroovyFileChecker<>())), new JavaIsoVisitor<ExecutionContext>() {
             private Set<JavaType.Variable> privateFieldsToBeFinalized = new HashSet<>();
 
             @Nullable
@@ -92,16 +95,17 @@ public class FinalizePrivateFields extends Recipe {
                         .map(Map.Entry::getKey)
                         .collect(toSet());
 
-                // Skip fields only assigned in the constructor body that are read inside a lambda or
-                // anonymous class in an instance initializer: finalizing them breaks javac's definite
-                // assignment analysis, since initializers run before the constructor body.
+                // Skip instance fields without an initializer that an instance initializer reads before
+                // assigning them, or reads inside a lambda or anonymous class: finalizing them breaks
+                // javac's definite assignment analysis, since initializers run before the constructor body.
                 Set<JavaType.Variable> uninitializedFinalizable = privateFields.stream()
-                        .filter(v -> v.getInitializer() == null && v.getVariableType() != null)
+                        .filter(v -> v.getInitializer() == null && v.getVariableType() != null &&
+                                !v.getVariableType().hasFlags(Flag.Static))
                         .map(J.VariableDeclarations.NamedVariable::getVariableType)
                         .filter(privateFieldsToBeFinalized::contains)
                         .collect(toSet());
                 if (!uninitializedFinalizable.isEmpty()) {
-                    privateFieldsToBeFinalized.removeAll(findFieldsReadInDeferredInitializer(classDecl, uninitializedFinalizable));
+                    privateFieldsToBeFinalized.removeAll(findFieldsReadBeforeAssignedInInitializer(classDecl, uninitializedFinalizable));
                 }
 
                 return super.visitClassDeclaration(classDecl, ctx);
@@ -118,10 +122,16 @@ public class FinalizePrivateFields extends Recipe {
                         .allMatch(privateFieldsToBeFinalized::contains);
 
                 if (canAllVariablesBeFinalized) {
-                    return mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
+                    mv = mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
                         JavaType.Variable type = v.getVariableType();
                         return type != null ? v.withVariableType(type.withFlags(Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
-                    })).withModifiers(ListUtils.concat(mv.getModifiers(),
+                    }));
+                    if (mv.getModifiers().stream().anyMatch(FinalizePrivateFields::isKotlinVar)) {
+                        // Kotlin prints a `Final` modifier as `val`
+                        return mv.withModifiers(ListUtils.map(mv.getModifiers(), m -> isKotlinVar(m) ?
+                                m.withType(J.Modifier.Type.Final).withKeyword(null) : m));
+                    }
+                    return mv.withModifiers(ListUtils.concat(mv.getModifiers(),
                             new J.Modifier(Tree.randomId(), mv.getModifiers().isEmpty() ? Space.EMPTY : Space.SINGLE_SPACE, Markers.EMPTY, isInstanceOfCs(topLevel) ? "readonly" : "final",
                                     isInstanceOfCs(topLevel) ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList())));
                 }
@@ -148,7 +158,8 @@ public class FinalizePrivateFields extends Recipe {
                         .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) &&
                                 !mv.hasModifier(J.Modifier.Type.Final) &&
                                 (!isInstanceOfCs(topLevel) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword()))) &&
-                                !mv.hasModifier(J.Modifier.Type.Volatile))
+                                !mv.hasModifier(J.Modifier.Type.Volatile) &&
+                                mv.getModifiers().stream().noneMatch(m -> "lateinit".equals(m.getKeyword())))
                         .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
                         .map(J.VariableDeclarations::getVariables)
                         .flatMap(Collection::stream)
@@ -171,9 +182,14 @@ public class FinalizePrivateFields extends Recipe {
         return classDecl.getType() != null && classDecl.getType().getOwningClass() != null;
     }
 
-    private static Set<JavaType.Variable> findFieldsReadInDeferredInitializer(J.ClassDeclaration classDecl, Set<JavaType.Variable> candidates) {
+    private static boolean isKotlinVar(J.Modifier modifier) {
+        return modifier.getType() == J.Modifier.Type.LanguageExtension && "var".equals(modifier.getKeyword());
+    }
+
+    private static Set<JavaType.Variable> findFieldsReadBeforeAssignedInInitializer(J.ClassDeclaration classDecl, Set<JavaType.Variable> candidates) {
         Set<JavaType.Variable> found = new HashSet<>();
         JavaIsoVisitor<Set<JavaType.Variable>> reader = new JavaIsoVisitor<Set<JavaType.Variable>>() {
+            final Set<JavaType.Variable> assigned = new HashSet<>();
             int lambdaOrAnonDepth;
 
             @Override
@@ -198,9 +214,27 @@ public class FinalizePrivateFields extends Recipe {
             }
 
             @Override
+            public J.Assignment visitAssignment(J.Assignment assignment, Set<JavaType.Variable> set) {
+                Expression variable = assignment.getVariable();
+                if (variable instanceof J.FieldAccess) {
+                    visit(((J.FieldAccess) variable).getTarget(), set);
+                } else if (!(variable instanceof J.Identifier)) {
+                    visit(variable, set);
+                }
+                visit(assignment.getAssignment(), set);
+                J.Identifier name = variable instanceof J.FieldAccess ? ((J.FieldAccess) variable).getName() :
+                        variable instanceof J.Identifier ? (J.Identifier) variable : null;
+                if (lambdaOrAnonDepth == 0 && name != null && name.getFieldType() != null) {
+                    assigned.add(name.getFieldType());
+                }
+                return assignment;
+            }
+
+            @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, Set<JavaType.Variable> set) {
-                if (lambdaOrAnonDepth > 0 && candidates.contains(identifier.getFieldType())) {
-                    set.add(identifier.getFieldType());
+                JavaType.Variable fieldType = identifier.getFieldType();
+                if (candidates.contains(fieldType) && (lambdaOrAnonDepth > 0 || !assigned.contains(fieldType))) {
+                    set.add(fieldType);
                 }
                 return super.visitIdentifier(identifier, set);
             }

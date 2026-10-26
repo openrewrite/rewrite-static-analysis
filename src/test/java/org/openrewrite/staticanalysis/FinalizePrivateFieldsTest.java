@@ -27,8 +27,10 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class FinalizePrivateFieldsTest implements RewriteTest {
     @Override
@@ -944,6 +946,170 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                   public Foo(String name) {
                       this.name = name;
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldReadByInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private int x;
+                  private int y = x + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private int x;
+                  private final int y = x + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldReadByInitializerBlockBeforeAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private int x;
+                  private int y;
+                  {
+                      System.out.println(this.x);
+                      y = 1;
+                  }
+                  private int z = y + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private int x;
+                  private final int y;
+                  {
+                      System.out.println(this.x);
+                      y = 1;
+                  }
+                  private final int z = y + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticFieldReadByInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private static int x;
+                  static {
+                      x = 5;
+                  }
+                  private int y = x + 1;
+              }
+              """,
+            """
+              class A {
+                  private static final int x;
+                  static {
+                      x = 5;
+                  }
+                  private final int y = x + 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinVarBecomesVal() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private var count = 0
+                  fun get() = count
+              }
+              """,
+            """
+              class A {
+                  private val count = 0
+                  fun get() = count
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinReassignedVarUnchanged() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private var count = 0
+                  fun inc() {
+                      count = count + 1
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinLateinitVarUnchanged() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private lateinit var name: String
+                  init {
+                      name = "A"
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotFinalizeGroovyPrivateFields() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class A {
+                  private int count = 0
               }
               """
           )
