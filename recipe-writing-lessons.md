@@ -395,3 +395,11 @@ finds will still fail with `Unable to find recipe` until `./gradlew recipeCsvGen
 (run it on its own; it conflicts with `publishToMavenLocal` in the same invocation). Publish under a version
 of your own (`-Prelease.version=2.99.1-SNAPSHOT`) so the CLI resolves the local jar rather than the CI
 snapshot of the same coordinates, then `mod config recipes jar install org.openrewrite.recipe:rewrite-static-analysis:<that version>`.
+
+## Kotlin array types don't match Java array `MethodMatcher`s
+
+In Kotlin LSTs a `CharArray` (and the other primitive array types) is typed as `kotlin.CharArray`, a `JavaType.Class`, not as a `JavaType.Array`. So `new MethodMatcher("java.lang.StringBuilder append(char[])")` doesn't match `StringBuilder().append(chars)` in Kotlin, and the call falls through to the generic `append(..)` handling. Add a separate matcher on `kotlin.CharArray` when the distinction matters.
+
+## Converting a literal to a string literal
+
+Don't build a string literal from another literal's `valueSource`. `10L`, `0x10`, `1_000` and `1.0f` would become `"10L"`, `"0x10"`, `"1_000"` and `"1.0f"`. Use `String.valueOf(literal.getValue())` instead. A char literal's source content can be reused, because every escape sequence that's valid in a char literal is also valid in a string literal. The exception is `"`, both raw and as `"`: that one must be written as `\"`.
