@@ -75,7 +75,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                         return m;
                     }
 
-                    // group expressions
                     List<Expression> groups = new ArrayList<>();
                     List<Expression> group = new ArrayList<>();
                     boolean appendToString = false;
@@ -122,9 +121,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         }));
     }
 
-    /**
-     * Concat two literals to an expression with '+' and surrounded with single space.
-     */
     public static J.Binary concatAdditionBinary(Expression left, Expression right) {
         Space rightPrefix = right.getPrefix().isEmpty() ? Space.SINGLE_SPACE : right.getPrefix();
         return new J.Binary(
@@ -138,9 +134,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         );
     }
 
-    /**
-     * Concat expressions to an expression with '+' connected.
-     */
     public static @Nullable Expression additiveExpression(Expression... expressions) {
         Expression expression = null;
         for (Expression element : expressions) {
@@ -155,9 +148,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         return additiveExpression(expressions.toArray(new Expression[0]));
     }
 
-    /**
-     * Concat an additive expression in a group and add to groups
-     */
     private static void addToGroups(List<Expression> group, List<Expression> groups) {
         if (!group.isEmpty()) {
             groups.add(additiveExpression(group));

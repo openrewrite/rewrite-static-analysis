@@ -64,13 +64,13 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                // Anonymous classes are not of interest
+                // classes declared in method bodies are not of interest
                 return method;
             }
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
-                // Anonymous classes are not of interest
+                // nor are classes declared in field initializers
                 return multiVariable;
             }
 

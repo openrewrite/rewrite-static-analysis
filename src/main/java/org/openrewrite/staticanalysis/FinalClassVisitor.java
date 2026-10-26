@@ -141,14 +141,13 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
                     cd = cd.withType(((JavaType.Class) cd.getType()).withFlags(flags));
                 }
 
-                // Temporary work around until issue https://github.com/openrewrite/rewrite/issues/2348 is implemented.
+                // The `class` keyword still carries the line break that followed the annotations, which would now
+                // separate it from `final`; `autoFormat` doesn't join them, so drop it here.
                 if (!cd.getLeadingAnnotations().isEmpty()) {
-                    // Setting the prefix to empty will cause the `Spaces` visitor to fix the formatting.
                     cd = cd.getPadding().withKind(cd.getPadding().getKind().withPrefix(Space.EMPTY));
                 }
 
-                assert getCursor().getParent() != null;
-                cd = autoFormat(cd, cd.getName(), ctx, getCursor().getParent());
+                cd = autoFormat(cd, cd.getName(), ctx, getCursor().getParentOrThrow());
             }
             return cd;
         }

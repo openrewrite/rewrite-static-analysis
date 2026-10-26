@@ -31,7 +31,6 @@ import org.openrewrite.staticanalysis.go.GoFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,7 +42,6 @@ import static org.openrewrite.Preconditions.and;
 import static org.openrewrite.Preconditions.not;
 
 @EqualsAndHashCode(callSuper = false)
-@SuppressWarnings("ConstantConditions")
 @Value
 public class RemoveUnusedLocalVariables extends Recipe {
     @Option(displayName = "Ignore matching variable names",
@@ -96,13 +94,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
         // All methods that start with 'get' matching this InvocationMatcher will be considered non-side effecting.
         MethodMatcher SAFE_GETTER_METHODS = new MethodMatcher("java.io.File get*(..)");
 
-        Set<String> ignoreVariableNames;
-        if (ignoreVariablesNamed == null) {
-            ignoreVariableNames = null;
-        } else {
-            ignoreVariableNames = new HashSet<>(ignoreVariablesNamed.length);
-            ignoreVariableNames.addAll(Arrays.asList(ignoreVariablesNamed));
-        }
+        Set<String> ignoreVariableNames = ignoreVariablesNamed == null ? null : new HashSet<>(asList(ignoreVariablesNamed));
 
         TreeVisitor<?, ExecutionContext> notJsNorKtNorGo = and(not(new JavascriptFileChecker<>()), not(new KotlinFileChecker<>()), not(new GoFileChecker<>()));
         return Preconditions.check(notJsNorKtNorGo, new JavaIsoVisitor<ExecutionContext>() {

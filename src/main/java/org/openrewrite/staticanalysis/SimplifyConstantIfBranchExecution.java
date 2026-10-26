@@ -106,7 +106,6 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 J.Literal.isLiteralValue(ex1, Boolean.TRUE)) {
                 return ex1;
             }
-            // Run recursively until no further changes are needed
             return cleanupBooleanExpression(ex1, c, ctx);
         }
 
@@ -123,24 +122,19 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), getCursor(), ctx);
             if__ = if__.withIfCondition(cp);
 
-            // The compile-time constant value of the if condition control parentheses.
             final Optional<Boolean> compileTimeConstantBoolean;
             if (J.Literal.isLiteralValue(cp.getTree(), Boolean.TRUE)) {
                 compileTimeConstantBoolean = Optional.of(true);
             } else if (J.Literal.isLiteralValue(cp.getTree(), Boolean.FALSE)) {
                 compileTimeConstantBoolean = Optional.of(false);
             } else {
-                // The condition is not a literal, so we can't simplify it.
                 compileTimeConstantBoolean = Optional.empty();
             }
 
-            // The simplification process did not result in resolving to a single 'true' or 'false' value
             if (!compileTimeConstantBoolean.isPresent()) {
-                return ifBeforeCleanup; // Return the visited `if`
+                return ifBeforeCleanup;
             }
             if (compileTimeConstantBoolean.get()) {
-                // True branch
-                // Only keep the `then` branch, and remove the `else` branch.
                 Statement s = if__.getThenPart().withPrefix(if__.getPrefix());
                 doAfterVisit(new RemoveUnreachableCodeVisitor());
                 return simplified(maybeAutoFormat(
@@ -149,10 +143,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                         ctx
                 ));
             }
-            // False branch
-            // Only keep the `else` branch, and remove the `then` branch.
             if (if__.getElsePart() != null) {
-                // The `else` part needs to be kept
                 Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
                 doAfterVisit(new RemoveUnreachableCodeVisitor());
                 return simplified(maybeAutoFormat(

@@ -23,6 +23,7 @@ import java.util.Scanner;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 final class JavaElementFactory {
@@ -80,13 +81,9 @@ final class JavaElementFactory {
             qualifiedName = type.toString();
         }
 
-        // Check if this is a local class (contains $<digit>)
-        // Local classes have names like "Outer$1LocalName" where the digit indicates the scope
-        // For method references, we should use only the simple name without the numeric prefix
+        // a local class is named like "Outer$1LocalName", but is referenced by its simple name only
         if (qualifiedName.matches(".*\\$\\d+.*")) {
-            // Extract the simple name after the last $<digit> sequence
             String simpleName = qualifiedName.replaceAll(".*\\$\\d+", "");
-            // Remove any remaining $ characters and get just the class name
             simpleName = simpleName.replace('$', '.');
             if (simpleName.indexOf('.') > 0) {
                 simpleName = simpleName.substring(simpleName.lastIndexOf('.') + 1);
@@ -112,8 +109,7 @@ final class JavaElementFactory {
                 name = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), part, type, null);
             }
         }
-        assert name != null;
-        return name;
+        return requireNonNull(name);
     }
 
     static J.MemberReference newInstanceMethodReference(Expression containing, JavaType.Method method, @Nullable JavaType type) {
@@ -140,7 +136,7 @@ final class JavaElementFactory {
                 randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
-                instanceOfClass.withPrefix(Space.EMPTY), // Use the original expression directly
+                instanceOfClass.withPrefix(Space.EMPTY),
                 new JLeftPadded<>(
                         Space.EMPTY,
                         new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "class", parameterized, null),
@@ -184,15 +180,11 @@ final class JavaElementFactory {
         return null;
     }
 
-    public static J.Identifier newThis(JavaType type) {
+    static J.Identifier newThis(JavaType type) {
         return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "this", type, null);
     }
 
-    /**
-     * Create a qualified {@code this} expression such as {@code Outer.this}, used when referencing a
-     * member of an enclosing (outer) class from within an inner class.
-     */
-    public static J.FieldAccess newQualifiedThis(JavaType.FullyQualified type) {
+    static J.FieldAccess newQualifiedThis(JavaType.FullyQualified type) {
         String className = type.getClassName();
         String simpleName = className.substring(className.lastIndexOf('.') + 1);
         return new J.FieldAccess(

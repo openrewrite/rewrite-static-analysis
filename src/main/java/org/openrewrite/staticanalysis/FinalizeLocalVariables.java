@@ -15,17 +15,13 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 
@@ -45,12 +41,10 @@ public class FinalizeLocalVariables extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
-                // if this already has "final", we don't need to bother going any further; we're done
                 if (mv.hasModifier(J.Modifier.Type.Final)) {
                     return mv;
                 }
 
-                // consider uninitialized local variables non-final
                 if (mv.getVariables().stream().anyMatch(nv -> nv.getInitializer() == null)) {
                     return mv;
                 }
@@ -62,7 +56,6 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                // ignore fields (aka "instance variable" or "class variable")
                 if (mv.getVariables().stream().anyMatch(v -> v.isField(getCursor()))) {
                     return mv;
                 }
@@ -91,69 +84,5 @@ public class FinalizeLocalVariables extends Recipe {
                 return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration || is instanceof SourceFile);
             }
         };
-    }
-
-    @EqualsAndHashCode(callSuper = false)
-    @Value
-    private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
-
-        J.VariableDeclarations.NamedVariable variable;
-
-        /**
-         * @param j        The subtree to search.
-         * @param variable A {@link J.VariableDeclarations.NamedVariable} to check for any reassignment calls.
-         * @return An {@link AtomicBoolean} that is true if the variable has been reassigned and false otherwise.
-         */
-        static AtomicBoolean find(J j, J.VariableDeclarations.NamedVariable variable) {
-            return new FindAssignmentReferencesToVariable(variable)
-                    .reduce(j, new AtomicBoolean());
-        }
-
-        @Override
-        public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean hasAssignment) {
-            if (hasAssignment.get()) {
-                return assignment;
-            }
-            J.Assignment a = super.visitAssignment(assignment, hasAssignment);
-            if (a.getVariable() instanceof J.Identifier) {
-                J.Identifier i = (J.Identifier) a.getVariable();
-                if (i.getSimpleName().equals(variable.getSimpleName())) {
-                    hasAssignment.set(true);
-                }
-            }
-            return a;
-        }
-
-        @Override
-        public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, AtomicBoolean hasAssignment) {
-            if (hasAssignment.get()) {
-                return assignOp;
-            }
-
-            J.AssignmentOperation a = super.visitAssignmentOperation(assignOp, hasAssignment);
-            if (a.getVariable() instanceof J.Identifier) {
-                J.Identifier i = (J.Identifier) a.getVariable();
-                if (i.getSimpleName().equals(variable.getSimpleName())) {
-                    hasAssignment.set(true);
-                }
-            }
-            return a;
-        }
-
-        @Override
-        public J.Unary visitUnary(J.Unary unary, AtomicBoolean hasAssignment) {
-            if (hasAssignment.get()) {
-                return unary;
-            }
-
-            J.Unary u = super.visitUnary(unary, hasAssignment);
-            if (u.getOperator().isModifying() && u.getExpression() instanceof J.Identifier) {
-                J.Identifier i = (J.Identifier) u.getExpression();
-                if (i.getSimpleName().equals(variable.getSimpleName())) {
-                    hasAssignment.set(true);
-                }
-            }
-            return u;
-        }
     }
 }

@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class CovariantEqualsTest implements RewriteTest {
 
@@ -434,6 +435,24 @@ class CovariantEqualsTest implements RewriteTest {
                   boolean equals(final Test other);
 
                   int hashCode();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class Test {
+                  var n: Int = 0
+
+                  fun equals(other: Test): Boolean {
+                      return n == other.n
+                  }
               }
               """
           )

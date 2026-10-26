@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.J;
@@ -30,29 +30,22 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class SimplifyBooleanExpression extends Recipe {
 
-    @Getter
-    final String displayName = "Simplify boolean expression";
+    String displayName = "Simplify boolean expression";
 
-    @Getter
-    final String description = "Checks for overly complicated boolean expressions, such as " +
+    String description = "Checks for overly complicated boolean expressions, such as " +
             "`if (b == true)`, `b || true`, `!false`, etc. Needlessly complex boolean logic makes " +
             "code harder to reason about and increases the chance of introducing errors " +
             "during future modifications.";
 
-    @Getter
-    final Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1125", "RSPEC-S1940", "RSPEC-S9435"));
+    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1125", "RSPEC-S1940", "RSPEC-S9435"));
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new SimplifyBooleanExpressionVisitor() {
-
-            @Override
-            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                // NOTE: This method is required here for the `TreeVisitorAdapter` to work
-                return super.visit(tree, ctx);
-            }
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`

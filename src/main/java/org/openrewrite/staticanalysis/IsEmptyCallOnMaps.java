@@ -31,6 +31,8 @@ import org.openrewrite.java.tree.JavaCoordinates;
 import java.time.Duration;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 public class IsEmptyCallOnMaps extends Recipe {
     private static final MethodMatcher MAP_SIZE = new MethodMatcher("java.util.Map size()", true);
 
@@ -89,8 +91,7 @@ public class IsEmptyCallOnMaps extends Recipe {
             private J newIsEmptyCall(J.MethodInvocation method, JavaCoordinates coordinates, boolean negate) {
                 JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Map)}.isEmpty()").build();
                 if (method.getSelect() == null) {
-                    assert method.getMethodType() != null;
-                    J.Identifier this_ = JavaElementFactory.newThis(method.getMethodType().getDeclaringType());
+                    J.Identifier this_ = JavaElementFactory.newThis(requireNonNull(method.getMethodType()).getDeclaringType());
                     J isEmptyCall = isEmpty.apply(getCursor(), coordinates, negate ? "!" : "", this_);
                     if (negate) {
                         return ((J.Unary) isEmptyCall).withExpression(((J.MethodInvocation) ((J.Unary) isEmptyCall).getExpression()).withSelect(null));

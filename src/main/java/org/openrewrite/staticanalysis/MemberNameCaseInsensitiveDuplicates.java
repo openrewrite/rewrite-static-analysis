@@ -28,6 +28,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -58,7 +59,6 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
 
-                // Collect member names from parent classes and interfaces, keyed by lowercase
                 Set<String> inheritedNames = new HashSet<>();
                 Map<String, Set<String>> inheritedByLowerCase = new HashMap<>();
                 JavaType.FullyQualified type = TypeUtils.asFullyQualified(cd.getType());
@@ -73,9 +73,8 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
                     }
                 }
 
-                // Collect current class member names
                 List<MemberInfo> currentMembers = new ArrayList<>();
-                for (Object stmt : cd.getBody().getStatements()) {
+                for (Statement stmt : cd.getBody().getStatements()) {
                     if (stmt instanceof J.VariableDeclarations) {
                         for (J.VariableDeclarations.NamedVariable var : ((J.VariableDeclarations) stmt).getVariables()) {
                             currentMembers.add(new MemberInfo(var.getSimpleName(), var));
@@ -89,18 +88,15 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
                     }
                 }
 
-                // Check each current member against inherited names and other current members
                 Set<J> marked = new HashSet<>();
                 for (int i = 0; i < currentMembers.size(); i++) {
                     MemberInfo member = currentMembers.get(i);
 
-                    // Check against inherited names via O(1) lookup
                     Set<String> sameKey = inheritedByLowerCase.get(member.name.toLowerCase());
                     if (sameKey != null && !sameKey.contains(member.name)) {
                         marked.add(member.tree);
                     }
 
-                    // Check against other members in the same class
                     for (int j = i + 1; j < currentMembers.size(); j++) {
                         MemberInfo other = currentMembers.get(j);
                         if (member.name.equalsIgnoreCase(other.name) && !member.name.equals(other.name)) {
@@ -118,7 +114,6 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
                     return cd;
                 }
 
-                // Apply SearchResult markers
                 return cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), stmt -> {
                     if (stmt instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) stmt;

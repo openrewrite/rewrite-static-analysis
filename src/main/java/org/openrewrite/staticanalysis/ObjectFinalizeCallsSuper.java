@@ -122,18 +122,16 @@ public class ObjectFinalizeCallsSuper extends Recipe {
             }
 
             private boolean hasSuperFinalizeMethodInvocation(J.MethodDeclaration md) {
-                AtomicBoolean hasSuperFinalize = new AtomicBoolean(Boolean.FALSE);
-                new JavaIsoVisitor<AtomicBoolean>() {
+                return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean exists) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, exists);
                         if (FINALIZE_METHOD_MATCHER.matches(mi)) {
-                            exists.set(Boolean.TRUE);
+                            exists.set(true);
                         }
                         return mi;
                     }
-                }.visit(md, hasSuperFinalize);
-                return hasSuperFinalize.get();
+                }.reduce(md, new AtomicBoolean()).get();
             }
         });
     }

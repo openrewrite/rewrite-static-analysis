@@ -560,7 +560,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CommonStaticAnalysis
 examples:
-- description: '`CommonStaticAnalysisIssuesPerformanceTest#indexOfOnList`'
+- description: '`CommonStaticAnalysisTest#indexOfOnList`'
   sources:
   - before: |
       import java.util.List;
@@ -887,7 +887,7 @@ examples:
           private final Long n = null;
       }
     language: java
-- description: '`ExplicitInitializationVisitorCsharpTest#removeExplicitInitialization`'
+- description: '`ExplicitInitializationCsharpTest#removeExplicitInitialization`'
   sources:
   - before: |
       class A {
@@ -1216,7 +1216,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
 examples:
-- description: '`ExternalizableHasNoArgConstructorTest#needsNoArgsConstructor`'
+- description: '`ExternalizableHasNoArgsConstructorTest#needsNoArgsConstructor`'
   sources:
   - before: |
       import java.io.Externalizable;
@@ -3991,37 +3991,6 @@ examples:
           }
       }
     language: java
-- description: '`ReplaceLambdaWithMethodReferenceTest#toQualifiedMethodReference`'
-  sources:
-  - before: |
-      fun main() {
-          val pets = listOf(Cat(), Dog())
-          pets.forEach { it.move() }
-      }
-    after: |
-      fun main() {
-          val pets = listOf(Cat(), Dog())
-          pets.forEach ( Pet::move )
-      }
-    language: kotlin
-  - before: |
-      interface Pet {
-          fun move() {
-          }
-      }
-
-      class Cat : Pet {
-          override fun move() {
-              println("Cat is moving")
-          }
-      }
-
-      class Dog : Pet {
-          override fun move() {
-              println("Dog is moving")
-          }
-      }
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent

@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -30,20 +31,18 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class RemoveUnusedPrivateMethods extends Recipe {
 
-    @Getter
-    final String displayName = "Remove unused private methods";
+    String displayName = "Remove unused private methods";
 
-    @Getter
-    final String description = "`private` methods that are never executed are dead code and should be removed. " +
+    String description = "`private` methods that are never executed are dead code and should be removed. " +
             "Keeping unreachable methods around adds maintenance burden and can give a false impression of the class's capabilities.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1144");
+    Set<String> tags = singleton("RSPEC-S1144");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -106,7 +105,6 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                     }
 
                     ReferencedImports.namesReferencedBy(m).forEach(this::maybeRemoveImport);
-                    //noinspection ConstantConditions
                     return null;
                 }
 

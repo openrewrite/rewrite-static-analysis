@@ -22,7 +22,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -54,9 +54,9 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
+            public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 String src = literal.getValueSource();
                 if (src != null && literal.getValue() != null && OCTAL_LITERAL.matcher(src).matches() &&
                         !isGoFileMode(literal, getCursor())) {

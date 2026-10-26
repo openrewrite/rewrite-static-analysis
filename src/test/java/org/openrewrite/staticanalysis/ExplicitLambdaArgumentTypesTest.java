@@ -704,8 +704,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void doNotStackOverflowOnRecursiveGenericType() {
         rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("assertj-core"))
-            .typeValidationOptions(TypeValidation.none()),
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("assertj-core")),
           //language=java
           java(
             """

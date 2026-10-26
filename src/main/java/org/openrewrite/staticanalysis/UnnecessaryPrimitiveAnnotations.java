@@ -109,13 +109,13 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
                     }
 
                     private List<J.Annotation> filterAnnotations(List<J.Annotation> annotations) {
-                        return ListUtils.map(annotations, anno -> {
+                        return ListUtils.filter(annotations, anno -> {
                             if (NULLABLE_ANNOTATION_MATCHER.matches(anno) || CHECK_FOR_NULL_ANNOTATION_MATCHER.matches(anno)) {
                                 maybeRemoveImport("javax.annotation.CheckForNull");
                                 maybeRemoveImport("javax.annotation.Nullable");
-                                return null;
+                                return false;
                             }
-                            return anno;
+                            return true;
                         });
                     }
                 }

@@ -15,9 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -35,13 +33,9 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 
-/**
- * Finalize method arguments v2
- */
 public class FinalizeMethodArguments extends Recipe {
 
     @Getter
@@ -64,30 +58,15 @@ public class FinalizeMethodArguments extends Recipe {
                     return declarations;
                 }
 
-                final AtomicBoolean assigned = new AtomicBoolean(false);
-
-                methodDeclaration.getParameters().forEach(p -> checkIfAssigned(assigned, p));
-                if (assigned.get()) {
+                J enclosing = getCursor().getParentTreeCursor().getValue();
+                if (methodDeclaration.getParameters().stream().anyMatch(p -> p instanceof J.VariableDeclarations &&
+                        ((J.VariableDeclarations) p).getVariables().stream()
+                                .anyMatch(v -> FindAssignmentReferencesToVariable.find(enclosing, v).get()))) {
                     return declarations;
                 }
 
                 List<Statement> parameters = ListUtils.map(declarations.getParameters(), FinalizeMethodArguments::updateParam);
                 return declarations.withParameters(parameters);
-            }
-
-            private void checkIfAssigned(final AtomicBoolean assigned, final Statement p) {
-                if (p instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) p;
-                    if (variableDeclarations.getVariables().stream()
-                            .anyMatch(namedVariable ->
-                                    FindAssignmentReferencesToVariable.find(getCursor()
-                                                            .getParentTreeCursor()
-                                                            .getValue(),
-                                                    namedVariable)
-                                            .get())) {
-                        assigned.set(true);
-                    }
-                }
             }
         });
     }
@@ -102,75 +81,6 @@ public class FinalizeMethodArguments extends Recipe {
 
     private static boolean isAbstractMethod(J.MethodDeclaration method) {
         return method.getModifiers().stream().anyMatch(modifier -> modifier.getType() == J.Modifier.Type.Abstract);
-    }
-
-    @EqualsAndHashCode(callSuper = false)
-    @Value
-    private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
-
-        J.VariableDeclarations.NamedVariable variable;
-
-        /**
-         * @param subtree  The subtree to search.
-         * @param variable A {@link J.VariableDeclarations.NamedVariable} to check for any reassignment calls.
-         * @return An {@link AtomicBoolean} that is true if the variable has been reassigned and false otherwise.
-         */
-        static AtomicBoolean find(J subtree, J.VariableDeclarations.NamedVariable variable) {
-            return new FindAssignmentReferencesToVariable(variable)
-                    .reduce(subtree, new AtomicBoolean());
-        }
-
-        @Override
-        public J.Assignment visitAssignment(J.Assignment a, AtomicBoolean hasAssignment) {
-            // Return quickly if the variable has been reassigned before
-            if (hasAssignment.get()) {
-                return a;
-            }
-
-            J.Assignment assignment = super.visitAssignment(a, hasAssignment);
-
-            if (assignment.getVariable() instanceof J.Identifier) {
-                J.Identifier identifier = (J.Identifier) assignment.getVariable();
-
-                if (identifier.getSimpleName().equals(variable.getSimpleName())) {
-                    hasAssignment.set(true);
-                }
-            }
-
-            return assignment;
-        }
-
-        @Override
-        public J.Unary visitUnary(final J.Unary unary, final AtomicBoolean hasAssignment) {
-            if (hasAssignment.get()) {
-                return unary;
-            }
-
-            final J.Unary u = super.visitUnary(unary, hasAssignment);
-            if (u.getOperator().isModifying() && u.getExpression() instanceof J.Identifier) {
-                final J.Identifier i = (J.Identifier) u.getExpression();
-                if (i.getSimpleName().equals(this.variable.getSimpleName())) {
-                    hasAssignment.set(true);
-                }
-            }
-            return u;
-        }
-
-        @Override
-        public J.AssignmentOperation visitAssignmentOperation(final J.AssignmentOperation assignOp, final AtomicBoolean hasAssignment) {
-            if (hasAssignment.get()) {
-                return assignOp;
-            }
-
-            final J.AssignmentOperation a = super.visitAssignmentOperation(assignOp, hasAssignment);
-            if (a.getVariable() instanceof J.Identifier) {
-                final J.Identifier i = (J.Identifier) a.getVariable();
-                if (i.getSimpleName().equals(this.variable.getSimpleName())) {
-                    hasAssignment.set(true);
-                }
-            }
-            return a;
-        }
     }
 
     private static Statement updateParam(final Statement p) {

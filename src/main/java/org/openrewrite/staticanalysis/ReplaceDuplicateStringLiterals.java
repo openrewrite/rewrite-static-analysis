@@ -20,6 +20,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.*;
 import org.openrewrite.java.marker.JavaSourceSet;
@@ -31,7 +32,6 @@ import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
 
@@ -72,10 +72,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 return tree;
             }
         };
-        return Preconditions.check(inIncludedSourceSet, new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(inIncludedSourceSet, new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            @SuppressWarnings("UnusedAssignment")
-            public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 if (classDecl.getType() == null) {
                     return classDecl;
                 }
@@ -121,8 +120,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             J.Block applied = template
                                     .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().lastStatement(), replaceLiteral);
                             List<Statement> statements = applied.getStatements();
-                            statements.add(1, statements.remove(statements.size() - 1));
-                            classDecl = classDecl.withBody(applied.withStatements(statements));
+                            int last = statements.size() - 1;
+                            classDecl = classDecl.withBody(applied.withStatements(
+                                    ListUtils.insert(statements.subList(0, last), statements.get(last), 1)));
                         } else {
                             classDecl = classDecl.withBody(
                                     template
@@ -133,15 +133,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     entry.getValue().forEach(v -> replacements.put(v, variableName));
                 }
                 return replacements.isEmpty() ? classDecl :
-                        new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, requireNonNull(getCursor().getParent()));
+                        (J.ClassDeclaration) new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, getCursor().getParentOrThrow());
             }
 
-            /**
-             * Generate a variable name that does not create a name space conflict.
-             * @param name variable name to replace duplicate literals with.
-             * @param variableNames variable names that exist in the compilation unit.
-             * @return unique variable name.
-             */
             private String getNameWithoutShadow(String name, Set<String> variableNames) {
                 String transformedName = transformToVariableName(name);
                 String newName = transformedName;
@@ -213,7 +207,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, integer);
                     Cursor parentScope = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.MethodDeclaration);
                     boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(variable);
-                    // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
+                    // `private static final String`(s) are collected into `fieldValueToFieldName` below, to be reused.
                     if (v.getInitializer() instanceof J.Literal &&
                             (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
                             !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String) &&
@@ -270,9 +264,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         }
     }
 
-    /**
-     * ReplaceStringLiterals in a class with a reference to a `private static final String` with the provided variable name.
-     */
     @EqualsAndHashCode(callSuper = false)
     @Value
     private static class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {
@@ -283,7 +274,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
             String variableName = replacements.get(literal);
             if (variableName != null) {
-                assert isClass.getType() != null;
                 return new J.Identifier(
                         randomId(),
                         literal.getPrefix(),

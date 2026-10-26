@@ -31,6 +31,7 @@ import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 import java.util.*;
 
 import static java.util.Collections.*;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 public class MinimumSwitchCases extends Recipe {
@@ -55,14 +56,12 @@ public class MinimumSwitchCases extends Recipe {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
-                // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), statement -> {
                     Statement visited = (Statement) visit(statement, ctx, getCursor());
                     Set<UUID> defaultOnly = getCursor().getMessage(DEFAULT_ONLY, emptySet());
                     if (!(visited instanceof J.Switch) || !defaultOnly.contains(visited.getId())) {
                         return visited;
                     }
-                    // Unwrap the contents of the default block, discarding the break statement if one exists
                     J.Case defaultCase = (J.Case) ((J.Switch) visited).getCases().getStatements().get(0);
 
                     return ListUtils.map(defaultCase.getStatements(), caseStatement -> {
@@ -77,8 +76,7 @@ public class MinimumSwitchCases extends Recipe {
             @Override
             public J visitSwitch(J.Switch switch_, ExecutionContext ctx) {
                 if (doRewrite(switch_)) {
-                    J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visit(switch_, ctx, getCursor().getParentTreeCursor());
-                    assert sortedSwitch != null;
+                    J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visitNonNull(switch_, ctx, getCursor().getParentTreeCursor());
 
                     J.Case[] cases = new J.Case[2];
                     int i = 0;
@@ -157,35 +155,27 @@ public class MinimumSwitchCases extends Recipe {
                             }
                         }
 
-                        // move first case to "if"
                         List<Statement> thenStatements = getStatements(cases[0]);
                         List<Statement> filteredThen = removeBreaksPreservingComments(thenStatements);
 
                         generatedIf = generatedIf.withThenPart(((J.Block) generatedIf.getThenPart()).withStatements(filteredThen));
 
-                        // Collect variable declarations from first case for redeclaration in else block
                         Map<String, J.VariableDeclarations> declaredVars = collectDeclaredVariables(filteredThen);
 
-                        // move second case to "else"
                         if (cases[1] != null) {
-                            assert generatedIf.getElsePart() != null;
+                            J.If.Else elsePart = requireNonNull(generatedIf.getElsePart());
                             List<Statement> elseStatements = removeBreaksPreservingComments(getStatements(cases[1]));
-                            // Transfer comments from the switch block's end space to the else block
                             Space switchEnd = sortedSwitch.getCases().getEnd();
                             if (!switchEnd.getComments().isEmpty()) {
                                 if (elseStatements.isEmpty()) {
-                                    // Create a placeholder empty statement to carry the comments
                                     J.Block elseBlock = (J.Block) (isDefault(cases[1]) ?
-                                            generatedIf.getElsePart().getBody() :
-                                            ((J.If) generatedIf.getElsePart().getBody()).getThenPart());
+                                            elsePart.getBody() :
+                                            ((J.If) elsePart.getBody()).getThenPart());
                                     elseBlock = elseBlock.withEnd(elseBlock.getEnd().withComments(
                                             ListUtils.concatAll(switchEnd.getComments(), elseBlock.getEnd().getComments())));
-                                    if (isDefault(cases[1])) {
-                                        generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseBlock));
-                                    } else {
-                                        generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(
-                                                ((J.If) generatedIf.getElsePart().getBody()).withThenPart(elseBlock)));
-                                    }
+                                    elsePart = isDefault(cases[1]) ?
+                                            elsePart.withBody(elseBlock) :
+                                            elsePart.withBody(((J.If) elsePart.getBody()).withThenPart(elseBlock));
                                 } else {
                                     Statement first = elseStatements.get(0);
                                     elseStatements.set(0, first.withPrefix(first.getPrefix().withComments(
@@ -194,11 +184,12 @@ public class MinimumSwitchCases extends Recipe {
                             }
                             elseStatements = redeclareAssignments(elseStatements, declaredVars);
                             if (isDefault(cases[1])) {
-                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(((J.Block) generatedIf.getElsePart().getBody()).withStatements(elseStatements)));
+                                elsePart = elsePart.withBody(((J.Block) elsePart.getBody()).withStatements(elseStatements));
                             } else {
-                                J.If elseIf = (J.If) generatedIf.getElsePart().getBody();
-                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(elseStatements))));
+                                J.If elseIf = (J.If) elsePart.getBody();
+                                elsePart = elsePart.withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(elseStatements)));
                             }
+                            generatedIf = generatedIf.withElsePart(elsePart);
                         }
 
                         return autoFormat(super.visit(generatedIf, ctx), ctx);
@@ -288,7 +279,6 @@ public class MinimumSwitchCases extends Recipe {
                     if (s instanceof J.Break) {
                         return null;
                     }
-                    // Collect comments from any following break statement
                     if (i + 1 < statements.size() && statements.get(i + 1) instanceof J.Break) {
                         List<Comment> breakComments = statements.get(i + 1).getComments();
                         if (!breakComments.isEmpty()) {

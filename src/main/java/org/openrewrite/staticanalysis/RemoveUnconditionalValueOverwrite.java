@@ -81,7 +81,6 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
                     if (SemanticallyEqual.areEqual(key, nextKey) &&
                         SemanticallyEqual.areEqual(receiver, nextReceiver) &&
                         !discardsSideEffects(stmt)) {
-                        //noinspection DataFlowIssue
                         return null;
                     }
                     return stmt;

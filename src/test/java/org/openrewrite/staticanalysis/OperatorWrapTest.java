@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Tree;
@@ -35,6 +36,7 @@ import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"StringConcatenationMissingWhitespace", "ConstantConditions", "CStyleArrayDeclaration"})
 class OperatorWrapTest implements RewriteTest {
@@ -701,5 +703,25 @@ class OperatorWrapTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Kotlin {
+        @Test
+        void doesNotMoveBinaryOperatorToNewLineInKotlin() {
+            // In Kotlin a newline ends an expression, so a leading binary operator is parsed as a unary
+            // operator on a new statement. Moving `+` to the start of the next line breaks the code.
+            rewriteRun(
+              kotlin(
+                """
+                  fun method(): String {
+                      val s = "aaa" + "b" +
+                          "c"
+                      return s
+                  }
+                  """
+              )
+            );
+        }
     }
 }

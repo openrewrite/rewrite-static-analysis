@@ -151,4 +151,43 @@ class SimplifyCompoundStatementTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(boolean b, boolean d) {
+                      if (d) b &= true; else b |= false;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(boolean b, boolean d) {
+                      if (d) {} else {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCompoundInExpressionPosition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean b) {
+                      return b &= true;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

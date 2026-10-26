@@ -169,7 +169,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                     if (targetType == null && TypeUtils.isAssignableTo(castType, expressionType)) {
                         targetType = castType;
                     }
-                } else if (parentValue instanceof J.Return && expressionIsTypeCast((J.Return) parentValue, typeCast)) {
+                } else if (parentValue instanceof J.Return && Expression.unwrap(((J.Return) parentValue).getExpression()) == typeCast) {
                     parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
                                                           is instanceof J.MethodDeclaration ||
                                                           is instanceof J.ClassDeclaration ||
@@ -340,20 +340,6 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType type = parameterTypes.get(Math.min(arg, last));
                 boolean varargsElement = arg > last || arg == last && !(argType instanceof JavaType.Array);
                 return varargsElement && type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
-            }
-
-            private boolean expressionIsTypeCast(J.Return return_, J.TypeCast typeCast) {
-                if (return_.getExpression() instanceof J.Parentheses<?>) {
-                    return expressionIsTypeCast((J.Parentheses<?>) return_.getExpression(), typeCast);
-                }
-                return return_.getExpression() == typeCast;
-            }
-
-            private boolean expressionIsTypeCast(J.Parentheses<?> parentheses, J.TypeCast typeCast) {
-                if (parentheses.getTree() instanceof J.Parentheses) {
-                    return expressionIsTypeCast((J.Parentheses<?> ) parentheses.getTree(), typeCast);
-                }
-               return parentheses.getTree() == typeCast;
             }
         });
     }

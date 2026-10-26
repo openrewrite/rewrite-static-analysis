@@ -22,7 +22,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
@@ -49,10 +49,10 @@ public class UnwrapElseAfterReturn extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> javaVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-                J.Block b = visitAndCast(block, ctx, super::visitBlock);
+                J.Block b = super.visitBlock(block, ctx);
                 AtomicReference<@Nullable Space> blockEnd = new AtomicReference<>(null);
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
@@ -60,19 +60,16 @@ public class UnwrapElseAfterReturn extends Recipe {
                         if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.If) {
-                                // Else-if chain: find and unwrap the innermost else
                                 J.If innermost = findInnermostIfWithElse((J.If) elsePart);
                                 if (innermost != null &&
                                         innermost.getElsePart() != null &&
                                         endsWithReturnOrThrow(innermost.getThenPart()) &&
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
-                                    // Unwrap the innermost else
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
                                     return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
                                 }
                             } else {
-                                // Plain else block: unwrap directly
                                 J.If newIf = ifStatement.withElsePart(null);
                                 return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
@@ -133,17 +130,14 @@ public class UnwrapElseAfterReturn extends Recipe {
                 if (elseBody instanceof J.If) {
                     J.If innerIf = (J.If) elseBody;
                     if (innerIf.getElsePart() != null && !(innerIf.getElsePart().getBody() instanceof J.If)) {
-                        // This is the innermost if with a non-if else, remove its else
                         return ifStatement.withElsePart(
                                 ifStatement.getElsePart().withBody(innerIf.withElsePart(null))
                         );
                     }
-                    // Recurse deeper into the chain
                     return ifStatement.withElsePart(
                             ifStatement.getElsePart().withBody(removeInnermostElse(innerIf))
                     );
                 }
-                // Direct else (not else-if), remove it
                 return ifStatement.withElsePart(null);
             }
 

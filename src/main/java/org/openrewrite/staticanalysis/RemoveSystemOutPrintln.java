@@ -21,21 +21,16 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
-import static org.openrewrite.Tree.randomId;
 
 public class RemoveSystemOutPrintln extends Recipe {
     private static final MethodMatcher SYSTEM_OUT_PRINTLN = new MethodMatcher("java.io.PrintStream println(..)");
@@ -57,25 +52,14 @@ public class RemoveSystemOutPrintln extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(SYSTEM_OUT_PRINTLN), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(SYSTEM_OUT_PRINTLN), new JavaVisitor<ExecutionContext>() {
 
             @Override
-            public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
-                J.Lambda l = super.visitLambda(lambda, ctx);
-                //noinspection ConstantValue
-                if (l.getBody() == null) {
-                    l = l.withBody(new J.Block(randomId(), lambda.getPrefix(), Markers.EMPTY, JRightPadded.build(false), emptyList(), Space.EMPTY));
-                }
-                return l;
-            }
-
-            @Override
-            @SuppressWarnings("NullableProblems")
-            public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            public @Nullable J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (SYSTEM_OUT_PRINTLN.matches(method) &&
                         method.getSelect() instanceof J.FieldAccess &&
                         TypeUtils.isAssignableTo("java.lang.System", ((J.FieldAccess) method.getSelect()).getTarget().getType())) {
-                    return null;
+                    return StatementRemoval.remove(getCursor(), method);
                 }
                 return super.visitMethodInvocation(method, ctx);
             }

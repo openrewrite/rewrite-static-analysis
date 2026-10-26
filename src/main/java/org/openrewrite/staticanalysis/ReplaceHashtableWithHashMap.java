@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -24,17 +25,17 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceHashtableWithHashMap extends ReplaceLegacyCollection {
 
     // Hashtable (Dictionary) methods that HashMap does not provide; if any is used the type cannot be swapped.
     private static final Set<String> INCOMPATIBLE_METHODS = new HashSet<>(Arrays.asList(
             "contains", "elements", "keys"));
 
-    @Getter
-    final String displayName = "Replace `java.util.Hashtable` with `java.util.HashMap`";
+    String displayName = "Replace `java.util.Hashtable` with `java.util.HashMap`";
 
-    @Getter
-    final String description = "`Hashtable` synchronizes every operation, which adds overhead in the common " +
+    String description = "`Hashtable` synchronizes every operation, which adds overhead in the common " +
             "single-threaded case. This recipe replaces a local `Hashtable` with a `HashMap` when data flow " +
             "analysis can prove the `Hashtable` never escapes its method (it is not returned, assigned to a field, " +
             "or passed as an argument), so no other thread can observe it and the synchronization is redundant. " +
@@ -42,11 +43,9 @@ public class ReplaceHashtableWithHashMap extends ReplaceLegacyCollection {
             "are left untouched. `HashMap` permits `null` keys and values, so it accepts every input `Hashtable` " +
             "did.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1149");
+    Set<String> tags = singleton("RSPEC-S1149");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     String getLegacyType() {

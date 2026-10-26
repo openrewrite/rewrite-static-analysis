@@ -30,7 +30,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.*;
-import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 public class UseCollectionInterfaces extends Recipe {
@@ -96,19 +95,8 @@ public class UseCollectionInterfaces extends Recipe {
         return Preconditions.check(Preconditions.not(new GroovyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-
-                    if (new InterfaceIncompatibleMethodDetector().reduce(tree, new AtomicBoolean(false)).get()) {
-                        return cu;
-                    }
-
-                    for (JavaType type : cu.getTypesInUse().getTypesInUse()) {
-                        JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
-                        if (fq != null && rspecRulesReplaceTypeMap.containsKey(fq.getFullyQualifiedName())) {
-                            return super.visit(cu, ctx);
-                        }
-                    }
+                if (tree instanceof JavaSourceFile && new InterfaceIncompatibleMethodDetector().reduce(tree, new AtomicBoolean(false)).get()) {
+                    return (JavaSourceFile) tree;
                 }
                 return super.visit(tree, ctx);
             }
