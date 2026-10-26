@@ -35,6 +35,39 @@ class AllBranchesIdenticalTest implements RewriteTest {
         spec.recipe(new AllBranchesIdentical());
     }
 
+    @Test
+    void keepUnrelatedBlocks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(boolean a) {
+                      {
+                          System.out.println("unrelated");
+                      }
+                      if (a) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(boolean a) {
+                      {
+                          System.out.println("unrelated");
+                      }
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void collapseIfElseWithIdenticalBodies() {

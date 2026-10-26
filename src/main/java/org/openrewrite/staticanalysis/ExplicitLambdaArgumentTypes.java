@@ -29,13 +29,11 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 
 public class ExplicitLambdaArgumentTypes extends Recipe {
     @Getter
@@ -44,7 +42,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
     @Getter
     final String description = "Adds explicit types on lambda arguments, which are otherwise optional. This can make the code clearer and easier to read. " +
             "This does not add explicit types on arguments when the lambda has one or two parameters and does not have a block body, as things are considered more readable in those cases. " +
-            "For example, `stream.map((a, b) -> a.length);` will not have explicit types added.";
+            "For example, `(a, b) -> a.length() - b.length()` will not have explicit types added.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2211");
@@ -105,7 +103,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             }
 
             private Set<JavaType> newRecursionGuard() {
-                return Collections.newSetFromMap(new IdentityHashMap<>());
+                return newSetFromMap(new IdentityHashMap<>());
             }
 
             private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space, Set<JavaType> recursionGuard) {

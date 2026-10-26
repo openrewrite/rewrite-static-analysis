@@ -21,15 +21,20 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 public class RemoveCallsToSystemGc extends Recipe {
 
@@ -54,12 +59,28 @@ public class RemoveCallsToSystemGc extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.or(new UsesMethod<>(SYSTEM_GC), new UsesMethod<>(RUNTIME_GC)), new JavaIsoVisitor<ExecutionContext>() {
+            private final Set<UUID> emptiedBlocks = new HashSet<>();
+
+            @Override
+            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block b = super.visitBlock(block, ctx);
+                b = b.withStatements(ListUtils.map(b.getStatements(), s -> isEmptied(s) ||
+                        s instanceof J.If && ((J.If) s).getElsePart() == null && isEmptied(((J.If) s).getThenPart()) &&
+                        !mayHaveSideEffects(((J.If) s).getIfCondition()) ? null : s));
+                if (b.getStatements().isEmpty() && !block.getStatements().isEmpty() && b.getEnd().getComments().isEmpty()) {
+                    emptiedBlocks.add(b.getId());
+                }
+                return b;
+            }
+
+            private boolean isEmptied(Statement statement) {
+                return statement instanceof J.Block && emptiedBlocks.contains(statement.getId());
+            }
 
             @Override
             public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
                 if (SYSTEM_GC.matches(invocation) || RUNTIME_GC.matches(invocation)) {
-                    doAfterVisit(new EmptyBlock().getVisitor());
                     //noinspection DataFlowIssue
                     return null;
                 }

@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class MoveFieldAnnotationToType extends Recipe {
 
     @Option(displayName = "Annotation type",
-            description = "The type of annotation to move.",
+            description = "The type of annotation to move. Defaults to `org.openrewrite..*`.",
             example = "org.openrewrite..*",
             required = false)
     @Nullable
@@ -45,13 +45,18 @@ public class MoveFieldAnnotationToType extends Recipe {
                "type are better applied to the type, because similar annotations " +
                "may be more restrictive, leading to compile errors like " +
                "'scoping construct cannot be annotated with type-use annotation' " +
-               "when migrating later.";
+               "when migrating later. Applies to fields, local variables, method parameters " +
+               "and method return types.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         String annotationTypeInput = annotationType == null ? "org.openrewrite..*" : annotationType;
 
-        return Preconditions.check(new UsesType<>(annotationTypeInput, null), new JavaIsoVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> condition = Preconditions.and(
+                new JavaFileChecker<>(),
+                new UsesType<>(annotationTypeInput, null)
+        );
+        return Preconditions.check(condition, new JavaIsoVisitor<ExecutionContext>() {
             final TypeMatcher typePattern = new TypeMatcher(annotationTypeInput);
 
             @Override

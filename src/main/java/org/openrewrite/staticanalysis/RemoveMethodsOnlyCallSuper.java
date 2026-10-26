@@ -118,6 +118,7 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
+                ReferencedImports.namesReferencedBy(md).forEach(this::maybeRemoveImport);
                 //noinspection DataFlowIssue
                 return null;
             }

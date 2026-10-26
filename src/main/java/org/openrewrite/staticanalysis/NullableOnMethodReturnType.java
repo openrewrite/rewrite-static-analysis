@@ -38,7 +38,7 @@ public class NullableOnMethodReturnType extends Recipe {
     final String displayName = "Move `@Nullable` method annotations to the return type";
 
     @Getter
-    final String description = "This is the way the cool kids do it. " +
+    final String description = "Moves `@Nullable` annotations from the method declaration to its return type. " +
             "Only annotations declared with `@Target(ElementType.TYPE_USE)` are moved, as the return type is a type context; " +
             "declaration annotations such as `javax.annotation.Nullable` are left on the method.";
 
@@ -59,8 +59,8 @@ public class NullableOnMethodReturnType extends Recipe {
                         .findFirst()
                         .map(nullable -> {
                             J.MethodDeclaration m2 = m;
-                            m2 = m2.withLeadingAnnotations(ListUtils.map(m2.getLeadingAnnotations(),
-                                    a -> a == nullable.getTree() ? null : a));
+                            m2 = m2.withLeadingAnnotations(ListUtils.filter(m2.getLeadingAnnotations(),
+                                    a -> a != nullable.getTree()));
                             if (m2 != m) {
                                 // For array types, annotate the array brackets, not the element type
                                 if (m2.getReturnTypeExpression() instanceof J.ArrayType) {

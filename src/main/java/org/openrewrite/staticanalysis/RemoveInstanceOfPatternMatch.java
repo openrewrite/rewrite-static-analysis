@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -25,7 +26,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.time.Duration;
@@ -40,10 +40,10 @@ import static java.util.Collections.singletonList;
 public class RemoveInstanceOfPatternMatch extends Recipe {
 
     @Getter
-    final String displayName = "Removes from code Java 14's `instanceof` pattern matching";
+    final String displayName = "Remove Java 14's `instanceof` pattern matching";
 
     @Getter
-    final String description = "Adds an explicit variable declaration at the beginning of `if` statement instead of `instanceof` pattern matching.";
+    final String description = "Adds an explicit variable declaration at the beginning of the `if` statement instead of `instanceof` pattern matching.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
@@ -194,11 +194,39 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             JavaTemplate template = JavaTemplate
                     .builder("#{} #{} = (#{}) #{any()};")
                     .contextSensitive()
+                    .imports(typesNamedBy(instanceOf.getClazz()))
                     .build();
             return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().toString(),
                     ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
                     instanceOf.getClazz().toString(),
                     visit(instanceOf.getExpression(), ctx));
+        }
+
+        /**
+         * The fully qualified names of the top-level types a type tree names by their simple names.
+         *
+         * @param typeTree the type tree
+         * @return the names for the template to import
+         */
+        private static String[] typesNamedBy(J typeTree) {
+            return new JavaIsoVisitor<Set<String>>() {
+                @Override
+                public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, Set<String> t) {
+                    // a qualified name is found through its first part
+                    visit(fieldAccess.getTarget(), t);
+                    return fieldAccess;
+                }
+
+                @Override
+                public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> t) {
+                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(identifier.getType());
+                    if (type != null && !type.getPackageName().isEmpty() &&
+                            identifier.getSimpleName().equals(type.getClassName())) {
+                        t.add(type.getFullyQualifiedName());
+                    }
+                    return identifier;
+                }
+            }.reduce(typeTree, new LinkedHashSet<>()).toArray(new String[0]);
         }
 
         /**

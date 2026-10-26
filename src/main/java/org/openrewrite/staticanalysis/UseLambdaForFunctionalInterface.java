@@ -21,17 +21,17 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -45,7 +45,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             "code duplication, and achieve better performance in some cases.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S1604");
+    final Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1604", "RSPEC-S9357"));
 
     transient AnonymousFunctionalInterfaceImplementations report = new AnonymousFunctionalInterfaceImplementations(this);
 
@@ -144,7 +144,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
 
                 lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-                doAfterVisit(new RemoveUnusedImports().getVisitor());
+                ReferencedImports.namesReferencedBy(n).forEach(this::maybeRemoveImport);
 
                 return autoFormat(maybeAddCast(lambda, n), ctx);
             }
@@ -335,20 +335,13 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
         });
 
-        return new TreeVisitor<Tree, ExecutionContext>() {
-            @Override
-            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
-                return sourceFile instanceof JavaSourceFile;
-            }
-
+        return Preconditions.check(new JavaFileChecker<>(), new TreeVisitor<Tree, ExecutionContext>() {
             @Override
             public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    new ReportVisitor().visit(tree, ctx);
-                }
+                new ReportVisitor().visit(tree, ctx);
                 return convert.visit(tree, ctx);
             }
-        };
+        });
     }
 
     /**
@@ -717,8 +710,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {
-        AtomicBoolean atomicBoolean = new AtomicBoolean();
-        new JavaVisitor<AtomicBoolean>() {
+        return new JavaVisitor<AtomicBoolean>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, AtomicBoolean atomicBoolean) {
                 if (method.getMethodType() != null &&
@@ -730,8 +722,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 return super.visitMethodInvocation(method, atomicBoolean);
             }
-        }.visit(lambda.getBody(), atomicBoolean);
-        return atomicBoolean.get();
+        }.reduce(lambda.getBody(), new AtomicBoolean()).get();
     }
 
     // TODO consider moving to TypeUtils

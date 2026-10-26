@@ -39,7 +39,7 @@ public class SimplifyElseBranch extends Recipe {
     final String displayName = "Simplify `else` branch if it only has a single `if`";
 
     @Getter
-    final String description = "Simplify `else` branch if it only has a single `if`.";
+    final String description = "Replaces an `else` block that contains only a single `if` statement with an `else if`.";
 
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {

@@ -20,11 +20,11 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
-import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
@@ -41,6 +41,9 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1144");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -102,7 +105,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                         }
                     }
 
-                    doAfterVisit(new RemoveUnusedImports().getVisitor());
+                    ReferencedImports.namesReferencedBy(m).forEach(this::maybeRemoveImport);
                     //noinspection ConstantConditions
                     return null;
                 }

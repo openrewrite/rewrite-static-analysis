@@ -36,10 +36,10 @@ import java.util.List;
 public class RemoveEmptyJavaDocParameters extends Recipe {
 
     @Getter
-    final String displayName = "Remove JavaDoc `@param`, `@return`, and `@throws` with no description";
+    final String displayName = "Remove Javadoc `@param`, `@return`, and `@throws` with no description";
 
     @Getter
-    final String description = "Removes `@param`, `@return`, and `@throws` with no description from JavaDocs.";
+    final String description = "Removes `@param` and `@return` tags with no description, and `@throws` tags with neither an exception type nor a description, from Javadoc comments.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

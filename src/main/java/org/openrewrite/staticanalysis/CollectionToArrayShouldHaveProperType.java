@@ -37,7 +37,7 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
     private static final MethodMatcher TO_ARRAY = new MethodMatcher("java.util.Collection toArray()", true);
 
     @Getter
-    final String displayName = "'Collection.toArray()' should be passed an array of the proper type";
+    final String displayName = "`Collection.toArray()` should be passed an array of the proper type";
 
     @Getter
     final String description = "Using `Collection.toArray()` without parameters returns an " +

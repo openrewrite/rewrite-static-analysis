@@ -29,10 +29,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaCoordinates;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class IsEmptyCallOnCollections extends Recipe {
     private static final MethodMatcher COLLECTION_SIZE = new MethodMatcher("java.util.Collection size()", true);
@@ -41,14 +41,14 @@ public class IsEmptyCallOnCollections extends Recipe {
     final String displayName = "Use `Collection#isEmpty()` instead of comparing `size()`";
 
     @Getter
-    final String description = "Also check for _not_ `isEmpty()` when testing for not equal " +
-            "to zero size. Using `isEmpty()` communicates intent more clearly " +
+    final String description = "Replaces comparisons of `size()` to zero with `isEmpty()`, or with `!isEmpty()` " +
+            "when testing for a non-zero size. Using `isEmpty()` communicates intent more clearly " +
             "than comparing `size()` to zero, and for some collection " +
             "implementations `isEmpty()` can be more efficient since `size()` " +
             "may require traversal.";
 
     @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
+    final Set<String> tags = singleton("RSPEC-S1155");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

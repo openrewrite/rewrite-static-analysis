@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -41,7 +42,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     final String displayName = "Use method references in lambda";
 
     @Getter
-    final String description = "Replaces the single statement lambdas `o -> o instanceOf X`, " +
+    final String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
             "`o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, " +
             "`o -> o == null` with the equivalent method reference. Method references are often " +
             "more concise and readable than their lambda equivalents, making the code's intent " +
@@ -297,13 +298,13 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return false;
             }
             boolean static_ = methodType.hasFlags(Flag.Static);
-            List<Expression> methodArgs = getMethodArguments(method);
+            List<Expression> methodArgs = ListUtils.filter(method.getArguments(), a -> !(a instanceof J.Empty));
             List<J.VariableDeclarations.NamedVariable> lambdaParameters = getLambdaParameters(lambda);
             if (methodArgs.isEmpty() && lambdaParameters.isEmpty()) {
                 return true;
             }
             if (!static_ && methodSelectMatchesFirstLambdaParameter(method, lambda)) {
-                methodArgs.add(0, ((J.MethodInvocation) method).getSelect());
+                methodArgs = ListUtils.concat(((J.MethodInvocation) method).getSelect(), methodArgs);
             }
             if (methodArgs.size() != lambdaParameters.size()) {
                 return false;
@@ -319,32 +320,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
             }
             return true;
-        }
-
-        private static List<Expression> getMethodArguments(MethodCall method) {
-            List<Expression> list = new ArrayList<>();
-            if (method instanceof J.MethodInvocation) {
-                // avoid additional `ArrayList` allocation by using `JContainer#getElements()`
-                for (Expression a : ((J.MethodInvocation) method).getPadding().getArguments().getElements()) {
-                    if (!(a instanceof J.Empty)) {
-                        list.add(a);
-                    }
-                }
-            } else if (method instanceof J.NewClass) {
-                // avoid additional `ArrayList` allocation by using `JContainer#getElements()`
-                for (Expression a : ((J.NewClass) method).getPadding().getArguments().getElements()) {
-                    if (!(a instanceof J.Empty)) {
-                        list.add(a);
-                    }
-                }
-            } else {
-                for (Expression a : method.getArguments()) {
-                    if (!(a instanceof J.Empty)) {
-                        list.add(a);
-                    }
-                }
-            }
-            return list;
         }
 
         private static List<J.VariableDeclarations.NamedVariable> getLambdaParameters(J.Lambda lambda) {

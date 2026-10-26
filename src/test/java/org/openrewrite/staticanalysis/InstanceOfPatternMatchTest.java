@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 import static org.openrewrite.java.Assertions.version;
 
 @SuppressWarnings({"RedundantCast", "DataFlowIssue", "ConstantValue", "ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable", "SizeReplaceableByIsEmpty", "rawtypes", "ResultOfMethodCallIgnored", "ArraysAsListWithZeroOrOneArgument", "DuplicateCondition"})
@@ -31,7 +32,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new InstanceOfPatternMatch())
-          .allSources(sourceSpec -> version(sourceSpec, 17));
+          .allSources(s -> s.markers(javaVersion(17)));
     }
 
     @DocumentExample
@@ -87,6 +88,60 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                       else if (o1 instanceof RightNode node && o2 instanceof LeftNode node1) {
                         node.bar();
                         node1.bar();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentOnRemovedDeclaration() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void use(Object value) {}
+                  void test(Object value) {
+                      if (value instanceof Integer) { // integers need special handling
+                          Integer i = (Integer) value;
+                          use(i);
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void use(Object value) {}
+                  void test(Object value) {
+                      if (value instanceof Integer i) { // integers need special handling
+                          use(i);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentWhenDeclarationIsLastStatement() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(Object value) {
+                      if (value instanceof Integer) { // preserve even in an empty block
+                          Integer i = (Integer) value;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(Object value) {
+                      if (value instanceof Integer i) { // preserve even in an empty block
                       }
                   }
               }
@@ -1095,7 +1150,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/openrewrite/rewrite/issues/2787")
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/334")
         @Test
         void nestedPotentiallyConflictingIfs() {
             rewriteRun(
@@ -2299,7 +2354,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/2202")
+    // A pattern variable from an if whose else returns stays in scope after the if, so the next one needs a distinct name
     @Test
     void flowScopedPatternVariableConflictWithElseReturn() {
         rewriteRun(
@@ -2343,7 +2398,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/1131")
     @Test
     void castDirectlyAfterThrowKeywordWithoutSpace() {
         rewriteRun(
@@ -2369,7 +2424,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/1131")
     @Test
     void castDirectlyAfterReturnKeywordWithoutSpace() {
         rewriteRun(
@@ -2436,4 +2491,43 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           )
         );
     }
+
+
+@Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1075")
+@Test
+void doesNotReplaceCastAfterReassignment() {
+    rewriteRun(
+      //language=java
+      java(
+        """
+          public class A {
+              void test(Object value) {
+                  if (value instanceof String) {
+                      value = ((String) value).strip();
+                      if (((String) value).isEmpty()) {
+                          System.out.println("empty");
+                      } else {
+                          System.out.println("not empty");
+                      }
+                  }
+              }
+          }
+          """,
+        """
+          public class A {
+              void test(Object value) {
+                  if (value instanceof String string) {
+                      value = string.strip();
+                      if (((String) value).isEmpty()) {
+                          System.out.println("empty");
+                      } else {
+                          System.out.println("not empty");
+                      }
+                  }
+              }
+          }
+          """
+      )
+    );
+ }
 }

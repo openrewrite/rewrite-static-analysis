@@ -19,14 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
@@ -134,10 +133,8 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
             J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
             if (cd.getType() != null && typesToFinalize.remove(cd.getType().getFullyQualifiedName())) {
-                List<J.Modifier> modifiers = new ArrayList<>(cd.getModifiers());
-                modifiers.add(new J.Modifier(randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()));
-                modifiers = sortModifiers(modifiers);
-                cd = cd.withModifiers(modifiers);
+                cd = cd.withModifiers(sortModifiers(ListUtils.concat(cd.getModifiers(),
+                        new J.Modifier(randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()))));
                 if (cd.getType() instanceof JavaType.Class && !cd.getType().hasFlags(Flag.Final)) {
                     Set<Flag> flags = new HashSet<>(cd.getType().getFlags());
                     flags.add(Flag.Final);

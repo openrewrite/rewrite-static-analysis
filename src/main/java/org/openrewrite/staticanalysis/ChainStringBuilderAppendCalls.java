@@ -40,7 +40,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
     @Getter
     final String description = "String concatenation within calls to `StringBuilder.append()` " +
-            "causes unnecessary memory allocation. Except for concatenations of String " +
+            "causes unnecessary memory allocation, except for concatenations of `String` " +
             "literals, which are joined together at compile time. Replaces inefficient " +
             "concatenations with chained calls to `StringBuilder.append()`. " +
             "Using `+` inside `append()` defeats the purpose of the `StringBuilder`, " +
@@ -109,7 +109,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                     J.MethodInvocation chainedMethods = m.withArguments(singletonList(groups.get(0)));
                     for (int i = 1; i < groups.size(); i++) {
-                        chainedMethods = chainedMethods.withSelect(chainedMethods)
+                        chainedMethods = chainedMethods.withSelect(chainedMethods.withId(Tree.randomId()))
                                 .withArguments(singletonList(groups.get(i).unwrap()))
                                 .withPrefix(Space.EMPTY);
                     }

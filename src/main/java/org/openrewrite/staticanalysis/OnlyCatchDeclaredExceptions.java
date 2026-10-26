@@ -17,7 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -27,6 +30,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.JavaType.FullyQualified;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.time.Duration;
 import java.util.*;
 
 import static java.util.stream.Collectors.joining;
@@ -49,6 +53,9 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
 
     @Getter
     final Set<String> tags = new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -135,7 +142,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 J.Try generatedTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
                         .imports(imports)
                         .build()
-                        .apply(new Cursor(getCursor(), surroundingTry), surroundingTry.getCoordinates().replace());
+                        .apply(getCursor(), surroundingTry.getCoordinates().replace());
                 return aCatch.withParameter(generatedTry.getCatches().get(0).getParameter());
             }
         };

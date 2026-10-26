@@ -23,6 +23,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -34,11 +35,14 @@ public class AbstractClassPublicConstructor extends Recipe {
 
     @Getter
     final String description = "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
-            "Therefore the visibility of `public` constructors are reduced to `protected`. " +
+            "Therefore, the visibility of `public` constructors is reduced to `protected`. " +
             "Declaring them `public` is misleading since it implies they could be invoked directly, which is never possible.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5993");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -18,10 +18,12 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.marker.SearchResult;
@@ -50,7 +52,7 @@ public class FindMainWithThrowsClause extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new DeclaresMethod<>(MAIN), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
@@ -72,6 +74,6 @@ public class FindMainWithThrowsClause extends Recipe {
                         "`main` declares `throws`; uncaught exceptions propagate to the JVM's " +
                                 "default handler. Handle them explicitly and exit with a meaningful code.");
             }
-        };
+        });
     }
 }

@@ -102,8 +102,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
-                statements.add(breakToAdd);
-                return case_.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                return case_.withStatements(ListUtils.map(ListUtils.concat(statements, breakToAdd), stmt -> autoFormat(stmt, p, getCursor())));
             }
             return case_;
         }
@@ -120,8 +119,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
-                statements.add(breakToAdd);
-                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                b = b.withStatements(ListUtils.map(ListUtils.concat(statements, breakToAdd), stmt -> autoFormat(stmt, p, getCursor())));
             }
             return b;
         }
@@ -140,9 +138,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          * @return A set representing whether the last {@link Statement} is an acceptable "break"-able type or has a "fallthrough" comment.
          */
         private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
-            Set<J> references = new HashSet<>();
-            new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).visit(enclosingSwitch, references);
-            return references;
+            return new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).reduce(enclosingSwitch, new HashSet<>());
         }
 
         @RequiredArgsConstructor

@@ -30,6 +30,43 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
         spec.recipe(new RemoveMethodsOnlyCallSuper());
     }
 
+    @Test
+    void removeOnlyTheImportsOfTheRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Parent {
+                  void foo(List<String> list) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Child extends Parent {
+                  @Override
+                  void foo(List<String> list) {
+                      super.foo(list);
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void removeVoidMethodOnlyCallingSuper() {
@@ -652,6 +689,58 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
                   void foo() {
                       this.toString();
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeImportOnlyUsedByRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example.holder;
+
+              public class Holder {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example.base;
+
+              import com.example.holder.Holder;
+
+              public class Base {
+                  public void report(Holder holder) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example.child;
+
+              import com.example.base.Base;
+              import com.example.holder.Holder;
+
+              public class Child extends Base {
+                  @Override
+                  public void report(Holder holder) {
+                      super.report(holder);
+                  }
+              }
+              """,
+            """
+              package com.example.child;
+
+              import com.example.base.Base;
+
+              public class Child extends Base {
               }
               """
           )

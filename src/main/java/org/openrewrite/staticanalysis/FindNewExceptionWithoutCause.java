@@ -38,17 +38,11 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.staticanalysis.table.ExceptionsWithoutCause;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -69,6 +63,8 @@ public class FindNewExceptionWithoutCause extends Recipe {
             "the `catch` block establishes whether the caught exception—or any value derived from it—reaches the thrown " +
             "exception, so indirect references through local variables, helper calls and string concatenation are not " +
             "falsely reported. This mirrors PMD's `PreserveStackTrace` rule.";
+
+    Set<String> tags = singleton("RSPEC-S1166");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -151,7 +147,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
                             .<Map<UUID, int[]>>computeMessageIfAbsent(POSITIONS_KEY, k -> throwPositions(sourceFile))
                             .getOrDefault(thrown.getId(), position);
                 }
-                String snippet = thrown.printTrimmed(getCursor()).replaceAll("\\s+", " ");
+                String snippet = thrown.printTrimmed(getCursor().getParentOrThrow()).replaceAll("\\s+", " ");
                 if (snippet.length() > SNIPPET_LENGTH) {
                     snippet = snippet.substring(0, SNIPPET_LENGTH - 3) + "...";
                 }
@@ -215,8 +211,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
     }
 
     private static boolean containsTainted(Expression value, Taint taint) {
-        AtomicBoolean found = new AtomicBoolean(false);
-        new JavaIsoVisitor<AtomicBoolean>() {
+        return new JavaIsoVisitor<AtomicBoolean>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean f) {
                 // An accessor named like a tainted local, `cfg.message()`, reads nothing from that local.
@@ -234,8 +229,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
                 }
                 return identifier;
             }
-        }.visit(value, found);
-        return found.get();
+        }.reduce(value, new AtomicBoolean(false)).get();
     }
 
     /**

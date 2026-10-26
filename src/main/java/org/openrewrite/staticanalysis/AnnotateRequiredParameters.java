@@ -30,6 +30,7 @@ import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 
 @EqualsAndHashCode(callSuper = false)
@@ -39,7 +40,7 @@ public class AnnotateRequiredParameters extends Recipe {
     private static final String DEFAULT_NONNULL_ANN_CLASS = "org.jspecify.annotations.NonNull";
 
     @Option(displayName = "`@NonNull` annotation class",
-            description = "The fully qualified name of the @NonNull annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.NonNull`",
+            description = "The fully qualified name of the `@NonNull` annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.NonNull`.",
             example = "org.jspecify.annotations.NonNull",
             required = false)
     @Nullable
@@ -90,14 +91,20 @@ public class AnnotateRequiredParameters extends Recipe {
                 md = addAnnotationsToParameters(md, analysis, ctx);
 
                 // Replace null checks on required parameters with false
-                md = md.withBody((J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visit(md.getBody(), ctx));
+                J.Block body = md.getBody();
+                J.Block replaced = (J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visitNonNull(body, ctx);
+                maybeRemoveImport("java.util.Objects");
 
-                // Simplify boolean expressions (e.g., "false || x" becomes "x")
-                doAfterVisit(new SimplifyBooleanExpression().getVisitor());
-                // Simplify constant if branches (e.g., "if (false) throw ..." will be removed)
-                doAfterVisit(new SimplifyConstantIfBranchExecution().getVisitor());
-
-                return md;
+                // Simplify only the statements with a replaced null check, e.g. "if (false || x) throw ..." becomes "if (x) throw ..."
+                return md.withBody(replaced.withStatements(ListUtils.flatMap(replaced.getStatements(), statement -> {
+                    if (body.getStatements().stream().anyMatch(original -> original == statement)) {
+                        return statement;
+                    }
+                    J.Block single = replaced.withStatements(singletonList(statement));
+                    single = (J.Block) new SimplifyBooleanExpression().getVisitor().visitNonNull(single, ctx, getCursor());
+                    single = (J.Block) new SimplifyConstantIfBranchExecution().getVisitor().visitNonNull(single, ctx, getCursor());
+                    return single.getStatements();
+                })));
             }
 
             private J.MethodDeclaration addAnnotationsToParameters(J.MethodDeclaration md, RequiredParameterAnalysis analysis, ExecutionContext ctx) {

@@ -37,6 +37,37 @@ class StringLiteralEqualityTest implements RewriteTest {
         spec.recipe(new StringLiteralEquality());
     }
 
+    @Test
+    void keepUnrelatedEqualsCalls() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean unrelated(String s) {
+                      return s.equals("x");
+                  }
+
+                  boolean method(String s) {
+                      return s == "y";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean unrelated(String s) {
+                      return s.equals("x");
+                  }
+
+                  boolean method(String s) {
+                      return "y".equals(s);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void stringLiteralEqualityReplacedWithEquals() {

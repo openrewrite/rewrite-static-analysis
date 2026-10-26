@@ -35,10 +35,10 @@ public class RemoveExtraSemicolons extends Recipe {
     final String displayName = "Remove extra semicolons";
 
     @Getter
-    final String description = "Removes not needed semicolons. Semicolons are considered not needed:\n" +
-            " * Optional semicolons at the end of try-with-resources,\n" +
+    final String description = "Removes unnecessary semicolons. Semicolons are considered unnecessary:\n" +
+            " * at the end of try-with-resources,\n" +
             " * after the last enum value if no field or method is defined,\n" +
-            " * no statement between two semicolon.\n\n" +
+            " * when there is no statement between two semicolons.\n\n" +
             "Stray semicolons are typically typos or remnants of refactoring and can mislead " +
             "readers into thinking a statement is present.";
 
@@ -58,7 +58,7 @@ public class RemoveExtraSemicolons extends Recipe {
             // except in whitespace
             @Override
             public Space visitSpace(@Nullable Space space, Space.Location loc, ExecutionContext ctx) {
-                if (space.getWhitespace().contains(";")) {
+                if (space != null && space.getWhitespace().contains(";")) {
                     return space.withWhitespace(space.getWhitespace().replace(";", ""));
                 }
                 return space;

@@ -30,12 +30,11 @@ import static java.util.Collections.singleton;
 public class CompareEnumsWithEqualityOperator extends Recipe {
 
     @Getter
-    final String displayName = "Enum values should be compared with \"==\"";
+    final String displayName = "Enum values should be compared with `==`";
 
     @Getter
-    final String description = "Replaces `Enum equals(java.lang.Object)` with " +
-            "`Enum == java.lang.Object`. An `!Enum equals(java.lang.Object)` will " +
-            "change to `!=`. Using `==` for enum comparison is null-safe, catches type " +
+    final String description = "Replaces `a.equals(b)` with `a == b` when `a` is an enum, and " +
+            "`!a.equals(b)` with `a != b`. Using `==` for enum comparison is null-safe, catches type " +
             "mismatches at compile time, and is idiomatic since each enum constant is " +
             "guaranteed to be a singleton.";
 

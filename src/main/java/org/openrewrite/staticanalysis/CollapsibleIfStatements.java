@@ -32,7 +32,7 @@ import static java.util.Collections.singleton;
 @Getter
 public class CollapsibleIfStatements extends Recipe {
 
-    final String displayName = "Mergeable \"if\" statements should be combined";
+    final String displayName = "Mergeable `if` statements should be combined";
 
     final String description = "When an `if` statement body contains only another `if` with no `else`, " +
             "the two conditions can be combined with `&&`. " +
@@ -81,17 +81,25 @@ public class CollapsibleIfStatements extends Recipe {
                     innerCond = wrapInParens(innerCond);
                 }
 
-                Expression combined = JavaElementFactory.newLogicalExpression(
-                        J.Binary.Type.And,
-                        outerCond,
-                        innerCond.withPrefix(Space.SINGLE_SPACE)
-                );
+                Expression combined = and(outerCond, innerCond.withPrefix(Space.SINGLE_SPACE));
 
                 J.If merged = outerIf
                         .withIfCondition(outerIf.getIfCondition().withTree(combined))
                         .withThenPart(innerIf.getThenPart().withPrefix(outerIf.getThenPart().getPrefix()));
 
                 return autoFormat(merged, ctx);
+            }
+
+            /**
+             * Joins two conditions with {@code &&}, grouped from the left as the parser reads {@code a && b && c}.
+             */
+            private Expression and(Expression left, Expression right) {
+                if (right instanceof J.Binary && ((J.Binary) right).getOperator() == J.Binary.Type.And) {
+                    J.Binary binary = (J.Binary) right;
+                    return binary.withLeft(and(left, binary.getLeft().withPrefix(binary.getPrefix())))
+                            .withPrefix(Space.EMPTY);
+                }
+                return JavaElementFactory.newLogicalExpression(J.Binary.Type.And, left, right);
             }
 
             private Expression wrapInParens(Expression expr) {

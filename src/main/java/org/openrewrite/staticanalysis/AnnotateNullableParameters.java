@@ -56,7 +56,7 @@ public class AnnotateNullableParameters extends Recipe {
     ));
 
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation to add. " +
+            description = "The fully qualified name of the `@Nullable` annotation to add. " +
                     "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
                     "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
@@ -68,7 +68,7 @@ public class AnnotateNullableParameters extends Recipe {
             displayName = "Additional null-checking methods",
             description = "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. " +
                     "These will be added to the built-in list of known null-checking methods. " +
-                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`",
+                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`.",
             example = "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
             required = false)
     @Nullable
@@ -143,8 +143,8 @@ public class AnnotateNullableParameters extends Recipe {
                                     if (nullableAnnotation != null) {
                                         J.Annotation finalAnnotation = nullableAnnotation;
                                         J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
-                                        annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
-                                                a -> a == finalAnnotation ? null : a));
+                                        annotated = annotated.withLeadingAnnotations(ListUtils.filter(annotated.getLeadingAnnotations(),
+                                                a -> a != finalAnnotation));
                                         arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
                                         if (annotated.getLeadingAnnotations().isEmpty()) {
                                             arrayType = arrayType.withPrefix(Space.EMPTY);

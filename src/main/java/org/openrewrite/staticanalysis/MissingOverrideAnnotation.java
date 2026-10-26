@@ -25,7 +25,8 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.kotlin.tree.K;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.Comparator;
 import java.util.Set;
@@ -51,17 +52,14 @@ public class MissingOverrideAnnotation extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new MissingOverrideAnnotationVisitor();
+        // Other languages either have an `override` keyword (Kotlin, C#, TypeScript, Scala) or no `@Override` at all (Python, Go)
+        return Preconditions.check(
+                Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
+                new MissingOverrideAnnotationVisitor());
     }
 
     private class MissingOverrideAnnotationVisitor extends JavaIsoVisitor<ExecutionContext> {
         private final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
-
-        @Override
-        public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
-            // Kotlin has a dedicated `override` keyword which is enforced by the compiler
-            return super.isAcceptable(sourceFile, ctx) && !(sourceFile instanceof K.CompilationUnit);
-        }
 
         private Cursor getCursorToParentScope(Cursor cursor) {
             return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration);

@@ -23,14 +23,14 @@ import org.openrewrite.*;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.*;
 import org.openrewrite.java.marker.JavaSourceSet;
-import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.SearchResult;
 
 import java.time.Duration;
 import java.util.*;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
@@ -54,7 +54,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                "The generated name will append a numeric value to the variable name if a name already exists in the compilation unit. " +
                "Centralizing repeated string values into constants makes refactoring safer and reduces the risk of inconsistent updates.";
 
-    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1192", "RSPEC-S1889"));
+    Set<String> tags = singleton("RSPEC-S1192");
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
@@ -62,19 +62,17 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> inIncludedSourceSet = new TreeVisitor<Tree, ExecutionContext>() {
             @Override
-            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) tree;
-                    Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
-                    if (!Boolean.TRUE.equals(includeTestSources) && !(sourceSet.isPresent() && "main".equals(sourceSet.get().getName()))) {
-                        return cu;
-                    }
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (tree instanceof JavaSourceFile && (Boolean.TRUE.equals(includeTestSources) ||
+                        tree.getMarkers().findFirst(JavaSourceSet.class).filter(s -> "main".equals(s.getName())).isPresent())) {
+                    return SearchResult.found(tree);
                 }
-                return super.visit(tree, ctx);
+                return tree;
             }
-
+        };
+        return Preconditions.check(inIncludedSourceSet, new JavaVisitor<ExecutionContext>() {
             @Override
             @SuppressWarnings("UnusedAssignment")
             public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {

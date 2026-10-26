@@ -21,6 +21,7 @@ import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 class CovariantEqualsTest implements RewriteTest {
@@ -32,7 +33,7 @@ class CovariantEqualsTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replaceWithNonCovariantEquals() {
+    void addEqualsObjectDelegatingToCovariantEquals() {
         rewriteRun(
           //language=java
           java(
@@ -43,52 +44,63 @@ class CovariantEqualsTest implements RewriteTest {
                   public boolean equals(Test tee) {
                       return n == tee.n;
                   }
+
+                  @Override
+                  public int hashCode() {
+                      return n;
+                  }
               }
               """,
             """
               class Test {
                   int n;
 
-                  @Override
-                  public boolean equals(Object obj) {
-                      if (obj == this) return true;
-                      if (obj == null || getClass() != obj.getClass()) return false;
-                      Test tee = (Test) obj;
+                  public boolean equals(Test tee) {
                       return n == tee.n;
                   }
+
+                  @Override
+                  public boolean equals(Object obj) {
+                      return obj instanceof Test && equals((Test) obj);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return n;
+                  }
               }
               """
           )
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
-    void replaceMultiStatementReturnBody() {
+    void abstractCovariantEquals() {
         rewriteRun(
           //language=java
           java(
             """
-              class A {
-                  String id;
+              abstract class Shape {
+                  public abstract boolean equals(Shape other);
 
-                  public boolean equals(A other) {
-                      boolean isEqual = id.equals(other.id);
-                      return isEqual;
+                  @Override
+                  public int hashCode() {
+                      return 0;
                   }
               }
               """,
             """
-              class A {
-                  String id;
+              abstract class Shape {
+                  public abstract boolean equals(Shape other);
 
                   @Override
                   public boolean equals(Object obj) {
-                      if (obj == this) return true;
-                      if (obj == null || getClass() != obj.getClass()) return false;
-                      A other = (A) obj;
-                      boolean isEqual = id.equals(other.id);
-                      return isEqual;
+                      return obj instanceof Shape && equals((Shape) obj);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return 0;
                   }
               }
               """
@@ -97,15 +109,121 @@ class CovariantEqualsTest implements RewriteTest {
     }
 
     @Test
-    void replaceEqualsBasedOnTypeSignature() {
+    void keepCovariantEqualsForOverridesAndCallers() {
+        rewriteRun(
+          java(
+            """
+              class Point {
+                  int x;
+
+                  public boolean equals(Point other) {
+                      return x == other.x;
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return x;
+                  }
+              }
+              """,
+            """
+              class Point {
+                  int x;
+
+                  public boolean equals(Point other) {
+                      return x == other.x;
+                  }
+
+                  @Override
+                  public boolean equals(Object obj) {
+                      return obj instanceof Point && equals((Point) obj);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return x;
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class ColorPoint extends Point {
+                  int color;
+
+                  @Override
+                  public boolean equals(Point other) {
+                      return super.equals(other) && (!(other instanceof ColorPoint) || color == ((ColorPoint) other).color);
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class Caller {
+                  boolean same(Point a, Point b) {
+                      return a.equals(b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void genericClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Objects;
+
+              class Box<T> {
+                  T value;
+
+                  public boolean equals(Box<T> other) {
+                      return Objects.equals(value, other.value);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return Objects.hashCode(value);
+                  }
+              }
+              """,
+            """
+              import java.util.Objects;
+
+              class Box<T> {
+                  T value;
+
+                  public boolean equals(Box<T> other) {
+                      return Objects.equals(value, other.value);
+                  }
+
+                  @Override
+                  public boolean equals(Object obj) {
+                      return obj instanceof Box && equals((Box) obj);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return Objects.hashCode(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void onlyMatchCovariantEqualsSignature() {
         rewriteRun(
           //language=java
           java(
             """
               class Test {
                   int n;
-                  public void placeholder(Test test) {}
-                  public void placeholder(Object test) {}
 
                   public boolean equals(Number test) {
                       return false;
@@ -119,69 +237,36 @@ class CovariantEqualsTest implements RewriteTest {
                       return false;
                   }
 
-                  public boolean equals(String test) {
-                      return false;
+                  @Override
+                  public int hashCode() {
+                      return n;
                   }
               }
               """,
             """
               class Test {
                   int n;
-                  public void placeholder(Test test) {}
-                  public void placeholder(Object test) {}
 
                   public boolean equals(Number test) {
                       return false;
                   }
 
+                  public boolean equals(Test test) {
+                      return n == test.n;
+                  }
+
                   @Override
                   public boolean equals(Object obj) {
-                      if (obj == this) return true;
-                      if (obj == null || getClass() != obj.getClass()) return false;
-                      Test test = (Test) obj;
-                      return n == test.n;
+                      return obj instanceof Test && equals((Test) obj);
                   }
 
                   public boolean equals() {
                       return false;
                   }
 
-                  public boolean equals(String test) {
-                      return false;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    @Test
-    void replaceEqualsMaintainsExistingAnnotations() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  String id;
-
-                  public boolean equals(A other) {
-                      boolean isEqual = id.equals(other.id);
-                      return isEqual;
-                  }
-              }
-              """,
-            """
-              class A {
-                  String id;
-
                   @Override
-                  public boolean equals(Object obj) {
-                      if (obj == this) return true;
-                      if (obj == null || getClass() != obj.getClass()) return false;
-                      A other = (A) obj;
-                      boolean isEqual = id.equals(other.id);
-                      return isEqual;
+                  public int hashCode() {
+                      return n;
                   }
               }
               """
@@ -191,7 +276,7 @@ class CovariantEqualsTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite/issues/653")
     @Test
-    void replaceWithNonCovariantEqualsWhenNested() {
+    void nestedClass() {
         rewriteRun(
           //language=java
           java(
@@ -203,6 +288,11 @@ class CovariantEqualsTest implements RewriteTest {
                       public boolean equals(B bee) {
                           return n == bee.n;
                       }
+
+                      @Override
+                      public int hashCode() {
+                          return n;
+                      }
                   }
               }
               """,
@@ -211,12 +301,18 @@ class CovariantEqualsTest implements RewriteTest {
                   class B {
                       int n;
 
+                      public boolean equals(B bee) {
+                          return n == bee.n;
+                      }
+
                       @Override
                       public boolean equals(Object obj) {
-                          if (obj == this) return true;
-                          if (obj == null || getClass() != obj.getClass()) return false;
-                          B bee = (B) obj;
-                          return n == bee.n;
+                          return obj instanceof B && equals((B) obj);
+                      }
+
+                      @Override
+                      public int hashCode() {
+                          return n;
                       }
                   }
               }
@@ -226,29 +322,39 @@ class CovariantEqualsTest implements RewriteTest {
     }
 
     @Test
-    void renameExistingParameterNameWhenParameterNameIsDefaultTemplateName() {
+    void groovyClass() {
         rewriteRun(
-          //language=java
-          java(
+          groovy(
             """
               class Test {
-                  int n;
+                  int n
 
-                  public boolean equals(Test obj) {
-                      return n == obj.n;
+                  public boolean equals(Test tee) {
+                      return n == tee.n
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return n
                   }
               }
               """,
             """
               class Test {
-                  int n;
+                  int n
+
+                  public boolean equals(Test tee) {
+                      return n == tee.n
+                  }
 
                   @Override
-                  public boolean equals(Object other) {
-                      if (other == this) return true;
-                      if (other == null || getClass() != other.getClass()) return false;
-                      Test obj = (Test) other;
-                      return n == obj.n;
+                  public boolean equals(Object obj) {
+                      return obj instanceof Test && equals((Test) obj)
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return n
                   }
               }
               """
@@ -257,7 +363,25 @@ class CovariantEqualsTest implements RewriteTest {
     }
 
     @Test
-    void ignoreIfAtLeastOneExistingNonCovariantEqualsMethod() {
+    void doNotChangeWithoutHashCode() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+
+                  public boolean equals(Test tee) {
+                      return n == tee.n;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWithExistingEqualsObject() {
         rewriteRun(
           //language=java
           java(
@@ -271,8 +395,9 @@ class CovariantEqualsTest implements RewriteTest {
                       return false;
                   }
 
-                  public boolean equals(Object i, Test t) {
-                      return false;
+                  @Override
+                  public int hashCode() {
+                      return 0;
                   }
               }
               """
@@ -281,17 +406,17 @@ class CovariantEqualsTest implements RewriteTest {
     }
 
     @Test
-    void ignoreIfNoExistingEqualsMethod() {
+    void doNotChangeEnum() {
         rewriteRun(
           //language=java
           java(
             """
-              class A {}
+              enum Color {
+                  RED;
 
-              class B {
-                  B() {}
-                  public void placeholder(B t) {}
-                  public void placeholder(Object t) {}
+                  public boolean equals(Color other) {
+                      return this == other;
+                  }
               }
               """
           )
@@ -300,15 +425,15 @@ class CovariantEqualsTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite/issues/2775")
     @Test
-    void equalsInInterface() {
+    void doNotChangeInterface() {
         rewriteRun(
           //language=java
           java(
             """
               public interface Test {
-                  String id;
-
                   boolean equals(final Test other);
+
+                  int hashCode();
               }
               """
           )

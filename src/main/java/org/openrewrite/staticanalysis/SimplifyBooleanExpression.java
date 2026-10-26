@@ -25,9 +25,10 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static java.util.Collections.singleton;
+import static java.util.Arrays.asList;
 
 public class SimplifyBooleanExpression extends Recipe {
 
@@ -41,7 +42,7 @@ public class SimplifyBooleanExpression extends Recipe {
             "during future modifications.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S1125");
+    final Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1125", "RSPEC-S1940", "RSPEC-S9435"));
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -58,8 +59,8 @@ public class SimplifyBooleanExpression extends Recipe {
             // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                if (j instanceof J.MethodInvocation) {
-                    return !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                if (j instanceof J.MethodInvocation && j.getMarkers().findFirst(IsNullSafe.class).isPresent()) {
+                    return false;
                 }
                 return super.shouldSimplifyEqualsOn(j);
             }

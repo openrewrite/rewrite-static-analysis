@@ -110,7 +110,7 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/29")
+    // Charset name is not a compile-time constant
     @Test
     void nonConstantCharset() {
         rewriteRun(

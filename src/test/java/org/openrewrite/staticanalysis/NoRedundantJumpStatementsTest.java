@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -26,11 +27,15 @@ import static org.openrewrite.java.Assertions.java;
 @SuppressWarnings({"UnnecessaryContinue", "UnnecessaryReturnStatement"})
 class NoRedundantJumpStatementsTest implements RewriteTest {
 
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new NoRedundantJumpStatements());
+    }
+
     @DocumentExample
     @Test
     void noRedundantJumpStatements() {
         rewriteRun(
-          spec -> spec.recipe(new NoRedundantJumpStatements()),
           //language=java
           java(
             """
@@ -70,7 +75,6 @@ class NoRedundantJumpStatementsTest implements RewriteTest {
     void doNotRemoveGoReturnWithExpression() {
         assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
         rewriteRun(
-          spec -> spec.recipe(new NoRedundantJumpStatements()),
           go(
             """
               package main

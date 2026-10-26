@@ -32,6 +32,31 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-params"));
     }
 
+    @Test
+    void removeOnlyTheImportsOfTheRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Test {
+                  private Map<String, String> unused() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void removeUnusedPrivateMethods() {
@@ -258,7 +283,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/294")
     @Test
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
         rewriteRun(
@@ -283,7 +308,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/294")
     @Test
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
         rewriteRun(

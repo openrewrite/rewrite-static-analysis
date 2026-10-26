@@ -31,10 +31,10 @@ import static java.util.Collections.reverse;
 public class RemoveJavaDocAuthorTag extends Recipe {
 
     @Getter
-    final String displayName = "Remove author tags from JavaDocs";
+    final String displayName = "Remove author tags from Javadoc";
 
     @Getter
-    final String description = "Removes author tags from JavaDocs to reduce code maintenance.";
+    final String description = "Removes author tags from Javadoc comments to reduce code maintenance.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
@@ -81,9 +81,7 @@ public class RemoveJavaDocAuthorTag extends Recipe {
 
     static boolean isBlank(Cursor cursor, List<Javadoc> newBody) {
         return newBody.stream().allMatch(jd -> {
-            PrintOutputCapture<Object> p = new PrintOutputCapture<>(null);
-            jd.printer(cursor).visit(jd, p);
-            String currentLine = p.getOut().trim();
+            String currentLine = jd.printer(cursor).reduce(jd, new PrintOutputCapture<>(null)).getOut().trim();
             return StringUtils.isBlank(currentLine) || "*".equals(currentLine);
         });
     }

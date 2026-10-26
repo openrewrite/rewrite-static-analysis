@@ -16,12 +16,14 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
@@ -79,13 +81,15 @@ public class MoveConditionsToWhile extends Recipe {
                     return wl;
                 }
 
-                doAfterVisit(new SimplifyBooleanExpressionVisitor());
-                return JavaTemplate.apply(
+                J.WhileLoop result = JavaTemplate.apply(
                         "while (!(#{any()})) #{}",
                         getCursor(),
                         wl.getCoordinates().replace(),
                         ifStatement.getIfCondition().getTree(),
                         ((J.Block) wl.getBody()).withStatements(statements.subList(1, statements.size())));
+                //noinspection unchecked
+                return result.withCondition((J.ControlParentheses<Expression>) new SimplifyBooleanExpressionVisitor()
+                        .visitNonNull(result.getCondition(), ctx, new Cursor(getCursor().getParentOrThrow(), result)));
             }
         };
     }

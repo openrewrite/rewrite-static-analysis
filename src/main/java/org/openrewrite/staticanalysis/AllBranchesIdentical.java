@@ -90,7 +90,9 @@ public class AllBranchesIdentical extends Recipe {
                     }
                 }
 
-                doAfterVisit(new RemoveUnneededBlock().getVisitor());
+                if (first instanceof J.Block) {
+                    doAfterVisit(new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor((J.Block) first));
+                }
                 return first.withPrefix(if__.getPrefix());
             }
         };
