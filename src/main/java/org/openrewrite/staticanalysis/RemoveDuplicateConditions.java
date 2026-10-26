@@ -91,7 +91,7 @@ public class RemoveDuplicateConditions extends Recipe {
                 for (int i = conditions.size() - 1; i >= 1; i--) {
                     for (int j = 0; j < i; j++) {
                         if (SemanticallyEqual.areEqual(conditions.get(i), conditions.get(j))) {
-                            result = removeBranch(result, ifNodes.get(i));
+                            result = rebuildChain(result, ifNodes.get(i));
                             changed = true;
                             break;
                         }
@@ -101,18 +101,7 @@ public class RemoveDuplicateConditions extends Recipe {
                 return changed ? result : if__;
             }
 
-            private J.If removeBranch(J.If root, J.If toRemove) {
-                // Walk the chain and skip the duplicate branch
-                return rebuildChain(root, toRemove);
-            }
-
             private J.If rebuildChain(J.If current, J.If toRemove) {
-                if (current == toRemove) {
-                    // Skip this branch: connect its else to the previous branch
-                    // This case is handled by the caller
-                    return current;
-                }
-
                 if (current.getElsePart() == null) {
                     return current;
                 }

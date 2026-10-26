@@ -45,8 +45,7 @@ public class MoveConditionsToWhile extends Recipe {
             public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, ExecutionContext ctx) {
                 J.WhileLoop wl = super.visitWhileLoop(whileLoop, ctx);
 
-                if (!(wl.getCondition().getTree() instanceof J.Literal) ||
-                        !J.Literal.isLiteralValue(wl.getCondition().getTree(), true) ||
+                if (!J.Literal.isLiteralValue(wl.getCondition().getTree(), true) ||
                         !(wl.getBody() instanceof J.Block)) {
                     return wl;
                 }

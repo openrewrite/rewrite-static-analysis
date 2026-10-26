@@ -63,10 +63,7 @@ public class LambdaBlockToExpression extends Recipe {
                                         return l.withBody(expression.withPrefix(prefix));
                                     }
                                 } else if (statement instanceof J.MethodInvocation) {
-                                    if (prefix.getComments().isEmpty()) {
-                                        return l.withBody(statement);
-                                    }
-                                    return l.withBody(statement.withPrefix(prefix));
+                                    return l.withBody(statement);
                                 }
                             }
                         }

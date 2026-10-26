@@ -57,8 +57,7 @@ public class MergeIdenticalBranches extends Recipe {
                     return if__;
                 }
 
-                J.If merged = mergeConsecutiveIdentical(if__);
-                return merged != if__ ? merged : if__;
+                return mergeConsecutiveIdentical(if__);
             }
 
             private J.If mergeConsecutiveIdentical(J.If outerIf) {

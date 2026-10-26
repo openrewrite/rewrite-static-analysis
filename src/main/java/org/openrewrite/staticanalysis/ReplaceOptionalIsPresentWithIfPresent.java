@@ -75,10 +75,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            if (!(_if.getIfCondition().getTree() instanceof J.MethodInvocation) || !OPTIONAL_IS_PRESENT.matches((J.MethodInvocation) _if.getIfCondition().getTree())) {
-                return _if;
-            }
-
             Expression select = ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
             if (!(select instanceof J.Identifier) || !isStatementLambdaConvertible(_if.getThenPart())) {
                 return _if;
