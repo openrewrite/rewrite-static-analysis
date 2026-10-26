@@ -30,6 +30,130 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
         spec.recipe(new NoPrimitiveWrappersForToStringOrCompareTo());
     }
 
+    @Test
+    void preserveDoubleConstructorForToString() {
+        rewriteRun(
+          java(
+            """
+              class T {
+                  String primitive(double value) {
+                      return new Float(value).toString();
+                  }
+
+                  String boxed(Double value) {
+                      return new Float(value).toString();
+                  }
+
+                  String parenthesized(double value) {
+                      return new Float((value)).toString();
+                  }
+
+                  String literal() {
+                      return new Float(1.25d).toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDoubleConstructorForCompareTo() {
+        rewriteRun(
+          java(
+            """
+              class T {
+                  int primitive(double value, Float other) {
+                      return new Float(value).compareTo(other);
+                  }
+
+                  int boxed(Double value, Float other) {
+                      return new Float(value).compareTo(other);
+                  }
+
+                  int parenthesized(double value, Float other) {
+                      return new Float((value)).compareTo(other);
+                  }
+
+                  int literal(Float other) {
+                      return new Float(1.25d).compareTo(other);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void stillMigrateFloatArgumentsAndWideningConversions() {
+        rewriteRun(
+          java(
+            """
+              class T {
+                  String primitive(float value) {
+                      return new Float(value).toString();
+                  }
+
+                  String boxed(Float value) {
+                      return new Float(value).toString();
+                  }
+
+                  int compare(float value, Float other) {
+                      return new Float(value).compareTo(other);
+                  }
+
+                  String integral(int value) {
+                      return new Float(value).toString();
+                  }
+
+                  int wideIntegral(long value, Float other) {
+                      return new Float(value).compareTo(other);
+                  }
+
+                  String explicitNarrowing(double value) {
+                      return new Float((float) value).toString();
+                  }
+
+                  String valueOf(float value) {
+                      return Float.valueOf(value).toString();
+                  }
+              }
+              """,
+            """
+              class T {
+                  String primitive(float value) {
+                      return Float.toString(value);
+                  }
+
+                  String boxed(Float value) {
+                      return Float.toString(value);
+                  }
+
+                  int compare(float value, Float other) {
+                      return Float.compare(value, other);
+                  }
+
+                  String integral(int value) {
+                      return Float.toString(value);
+                  }
+
+                  int wideIntegral(long value, Float other) {
+                      return Float.compare(value, other);
+                  }
+
+                  String explicitNarrowing(double value) {
+                      return Float.toString((float) value);
+                  }
+
+                  String valueOf(float value) {
+                      return Float.toString(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @SuppressWarnings({"removal", "UnnecessaryTemporaryOnConversionToString"})
     @Test
