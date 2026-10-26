@@ -105,7 +105,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Test
-    void useDiamondOperatorTest2() {
+    void diamondWhereTargetTypeIsKnown() {
         rewriteRun(
           //language=java
           java(
@@ -469,7 +469,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Nested
-    class kotlinTest {
+    class Kotlin {
         @Test
         void doNotChange() {
             rewriteRun(

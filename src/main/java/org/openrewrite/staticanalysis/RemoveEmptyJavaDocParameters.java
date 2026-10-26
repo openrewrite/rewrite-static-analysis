@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -32,7 +31,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-@Incubating(since = "7.33.0")
 public class RemoveEmptyJavaDocParameters extends Recipe {
 
     @Getter

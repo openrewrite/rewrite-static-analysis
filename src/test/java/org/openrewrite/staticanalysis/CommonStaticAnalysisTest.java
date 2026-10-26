@@ -16,28 +16,44 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.java.Assertions.java;
 
-class OperatorWrapKotlinTest implements RewriteTest {
+class CommonStaticAnalysisTest implements RewriteTest {
+
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new OperatorWrap(null));
+        spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis");
     }
 
+    @DocumentExample
     @Test
-    void doesNotMoveBinaryOperatorToNewLineInKotlin() {
-        // In Kotlin a newline ends an expression, so a leading binary operator is parsed as a unary
-        // operator on a new statement. Moving `+` to the start of the next line breaks the code.
+    void indexOfOnList() {
         rewriteRun(
-          kotlin(
+          //language=java
+          java(
             """
-              fun method(): String {
-                  val s = "aaa" + "b" +
-                      "c"
-                  return s
+              import java.util.List;
+
+              class Test {
+                  static boolean hasIndex(List<String> strList, String str) {
+                      if (strList.indexOf(str) > 0) {
+                      }
+                      return strList.indexOf(str) > 0;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  static boolean hasIndex(List<String> strList, String str) {
+                      strList.indexOf(str);
+                      return strList.indexOf(str) >= 1;
+                  }
               }
               """
           )

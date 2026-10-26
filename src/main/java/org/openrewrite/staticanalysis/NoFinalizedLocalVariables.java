@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.J;
 import java.util.Iterator;
 
 @EqualsAndHashCode(callSuper = false)
-@Incubating(since = "7.0.0")
 @Value
 public class NoFinalizedLocalVariables extends Recipe {
 

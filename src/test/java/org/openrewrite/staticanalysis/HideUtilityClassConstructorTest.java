@@ -40,7 +40,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         spec.recipe(new HideUtilityClassConstructor());
     }
 
-    /// Should be a utility class since all methods are static, but class has public constructor
     @DocumentExample
     @Test
     void changePublicConstructorToPrivate() {
@@ -219,7 +218,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Should be a utility class since all methods are static, but class has no constructor (default/package-private)
     @Test
     void addPrivateConstructorWhenOnlyDefaultConstructor() {
         rewriteRun(
@@ -269,7 +267,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Should be a utility class since all fields are static, but class has public constructor
     @Test
     void identifyUtilityClassesOnlyStaticFields() {
         rewriteRun(
@@ -295,7 +292,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Not a utility class since the class implements an interface
     @Test
     void identifyNonUtilityClassesWhenImplementsInterface() {
         rewriteRun(
@@ -324,7 +320,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Not a utility class since the class extends another
     @Test
     void identifyNonUtilityClassesWhenExtendsClass() {
         rewriteRun(
@@ -352,7 +347,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Not a utility class since some fields are static, but at least one non-static
     @Test
     void identifyNonUtilityClassesMixedFields() {
         rewriteRun(
@@ -372,7 +366,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Should be a utility class since all methods are static, but class has public constructor
     @Test
     void identifyUtilityClassesOnlyStaticMethods() {
         rewriteRun(
@@ -408,7 +401,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Inner class should be a utility class since all it's methods are static, but it has public constructor
     @Test
     void identifyUtilityClassesInnerStaticClasses() {
         rewriteRun(
@@ -448,7 +440,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /// Not a utility class since some methods are static, but at least one non-static
     @Test
     void identifyNonUtilityClassesMixedMethods() {
         rewriteRun(

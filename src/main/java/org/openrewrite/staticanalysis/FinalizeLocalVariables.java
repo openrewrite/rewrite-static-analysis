@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 
-@Incubating(since = "7.0.0")
 public class FinalizeLocalVariables extends Recipe {
 
     @Getter

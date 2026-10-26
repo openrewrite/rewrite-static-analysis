@@ -560,7 +560,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CommonStaticAnalysis
 examples:
-- description: '`CommonStaticAnalysisIssuesPerformanceTest#indexOfOnList`'
+- description: '`CommonStaticAnalysisTest#indexOfOnList`'
   sources:
   - before: |
       import java.util.List;
@@ -644,7 +644,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CovariantEquals
 examples:
-- description: '`CovariantEqualsTest#replaceWithNonCovariantEquals`'
+- description: '`CovariantEqualsTest#addEqualsObjectDelegatingToCovariantEquals`'
   sources:
   - before: |
       class Test {
@@ -653,17 +653,28 @@ examples:
           public boolean equals(Test tee) {
               return n == tee.n;
           }
+
+          @Override
+          public int hashCode() {
+              return n;
+          }
       }
     after: |
       class Test {
           int n;
 
+          public boolean equals(Test tee) {
+              return n == tee.n;
+          }
+
           @Override
           public boolean equals(Object obj) {
-              if (obj == this) return true;
-              if (obj == null || getClass() != obj.getClass()) return false;
-              Test tee = (Test) obj;
-              return n == tee.n;
+              return obj instanceof Test && equals((Test) obj);
+          }
+
+          @Override
+          public int hashCode() {
+              return n;
           }
       }
     language: java
@@ -876,7 +887,7 @@ examples:
           private final Long n = null;
       }
     language: java
-- description: '`ExplicitInitializationVisitorCsharpTest#removeExplicitInitialization`'
+- description: '`ExplicitInitializationCsharpTest#removeExplicitInitialization`'
   sources:
   - before: |
       class A {
@@ -1205,7 +1216,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
 examples:
-- description: '`ExternalizableHasNoArgConstructorTest#needsNoArgsConstructor`'
+- description: '`ExternalizableHasNoArgsConstructorTest#needsNoArgsConstructor`'
   sources:
   - before: |
       import java.io.Externalizable;
@@ -3980,37 +3991,6 @@ examples:
           }
       }
     language: java
-- description: '`ReplaceLambdaWithMethodReferenceTest#toQualifiedMethodReference`'
-  sources:
-  - before: |
-      fun main() {
-          val pets = listOf(Cat(), Dog())
-          pets.forEach { it.move() }
-      }
-    after: |
-      fun main() {
-          val pets = listOf(Cat(), Dog())
-          pets.forEach ( Pet::move )
-      }
-    language: kotlin
-  - before: |
-      interface Pet {
-          fun move() {
-          }
-      }
-
-      class Cat : Pet {
-          override fun move() {
-              println("Cat is moving")
-          }
-      }
-
-      class Dog : Pet {
-          override fun move() {
-              println("Dog is moving")
-          }
-      }
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent

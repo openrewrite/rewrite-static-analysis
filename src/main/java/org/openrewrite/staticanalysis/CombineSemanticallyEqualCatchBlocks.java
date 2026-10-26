@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.*;
 import static org.openrewrite.java.tree.Space.EMPTY;
 
-@Incubating(since = "7.25.0")
 public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Getter

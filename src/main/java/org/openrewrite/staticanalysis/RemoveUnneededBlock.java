@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -34,7 +33,6 @@ import java.util.UUID;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.21.0")
 public class RemoveUnneededBlock extends Recipe {
     @Getter
     final String displayName = "Remove unneeded block";
