@@ -28,7 +28,6 @@ import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.*;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)

@@ -28,17 +28,6 @@ import org.openrewrite.java.tree.Space;
 
 import java.text.Normalizer;
 
-/**
- * Maven's javadoc-plugin configuration does not support non-ASCII characters in Javadoc comments.
- * This can cause build failures with ambiguous error messages that don't clearly indicate the root cause.
- * <p>
- * This recipe removes non-ASCII characters from Javadoc comments by:
- * 1. Normalizing text using Unicode NFKD form
- * 2. Removing any characters that are not in the ASCII character set
- * <p>
- * This is particularly useful when working with international codebases or when comments
- * contain accented characters, special symbols, or other non-ASCII content.
- */
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class MavenJavadocNonAsciiRecipe extends Recipe {

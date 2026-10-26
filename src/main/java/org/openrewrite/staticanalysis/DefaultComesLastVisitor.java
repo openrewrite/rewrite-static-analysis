@@ -43,7 +43,6 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null) {
             SourceFile s;
             if (tree instanceof SourceFile) {
@@ -140,7 +139,6 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         if (!postDefaultCases.isEmpty()) {
             List<Statement> statements = postDefaultCases.get(postDefaultCases.size() - 1).getStatements();
             defaultCase = defaultCase.withStatements(statements);
-            //noinspection DataFlowIssue
             fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(emptyList())));
         }
         assert defaultCase != null;
@@ -150,7 +148,6 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
         return ListUtils.mapLast(cases, e -> {
-            //noinspection DataFlowIssue
             if (isFallthroughCase(e.getStatements())) {
                 return addBreak(e, p);
             }

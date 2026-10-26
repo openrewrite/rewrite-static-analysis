@@ -60,14 +60,12 @@ public class RemoveUnusedPrivateFields extends Recipe {
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
 
-                // Do not remove fields if class has Lombok @Data annotation
                 Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
                 if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_ANNOTATION)) {
                     return cd;
                 }
 
                 List<CheckField> checkFields = new ArrayList<>();
-                // Do not remove fields with `serialVersionUID` name.
                 boolean skipSerialVersionUID = cd.getType() == null ||
                         cd.getType().isAssignableTo("java.io.Serializable");
 
@@ -104,7 +102,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     }
                 }
                 for (CheckField checkField : checkFields) {
-                    // Find variable uses.
                     Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> inUse =
                             VariableUses.find(checkField.declarations, outer);
                     for (Map.Entry<J.VariableDeclarations.NamedVariable, List<J.Identifier>> entry : inUse.entrySet()) {
@@ -115,7 +112,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             if (fieldToRemove.getType() != null) {
                                 maybeRemoveImport(fieldToRemove.getType().toString());
                             }
-                            // Maybe remove next statement comment if variable declarations is removed
+                            // a trailing comment on the removed field is in the next statement's prefix
                             if (declarationDeleted.get()) {
                                 cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, ctx);
                             }
@@ -149,7 +146,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     found.computeIfAbsent(variable, k -> new ArrayList<>());
                     // Note: Using a variable type signature is only safe to find uses of class fields.
                     signatureMap.put(variable.getVariableType().toString(), variable);
-                    // Also map by name for fallback matching
                     nameMap.put(variable.getSimpleName(), variable);
                 }
             }
@@ -163,7 +159,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             if (identifier.getFieldType() != null) {
                                 J.VariableDeclarations.NamedVariable match = null;
 
-                                // First try exact type signature match
                                 String fieldTypeSignature = identifier.getFieldType().toString();
                                 if (signatureMap.containsKey(fieldTypeSignature)) {
                                     match = signatureMap.get(fieldTypeSignature);
@@ -171,7 +166,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
                                     // Fallback: match by name if it's a field reference from the same class
                                     J.VariableDeclarations.NamedVariable nameMatch = nameMap.get(identifier.getSimpleName());
                                     if (nameMatch != null && nameMatch.getVariableType() != null) {
-                                        // Check if the owner type matches the parent class type
                                         JavaType.FullyQualified ownerType = TypeUtils.asFullyQualified(identifier.getFieldType().getOwner());
                                         JavaType.FullyQualified parentType = parent.getType();
                                         if (ownerType != null && parentType != null &&
@@ -210,7 +204,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
         public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
             if (multiVariable.getVariables().size() == 1 && multiVariable.getVariables().contains(namedVariable)) {
                 declarationDeleted.set(true);
-                //noinspection ConstantConditions
                 return null;
             }
             return super.visitVariableDeclarations(multiVariable, declarationDeleted);
@@ -219,7 +212,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
         @Override
         public @Nullable J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
             if (variable == namedVariable) {
-                //noinspection ConstantConditions
                 return null;
             }
             return super.visitVariable(variable, declarationDeleted);
@@ -237,12 +229,9 @@ public class RemoveUnusedPrivateFields extends Recipe {
         public J visitStatement(Statement s, ExecutionContext ctx) {
             if (s == statement) {
                 Space prefix = s.getPrefix();
-                // If we have at least one comment and there is no newline
                 if (!prefix.getComments().isEmpty() && !prefix.getWhitespace().contains("\n")) {
                     return s.withPrefix(prefix
-                            // Copy suffix to prefix
                             .withWhitespace(prefix.getComments().get(0).getSuffix())
-                            // Remove the first comment
                             .withComments(prefix.getComments().subList(1, prefix.getComments().size())
                             ));
 
@@ -253,10 +242,9 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
         @Override
         public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext ctx) {
-            // We also need to remove comments attached to end of classDeclaration if it's the last statement
+            // a removed last field's trailing comment is in the end of the class body
             if (statement == null && c == classDeclaration) {
                 Space end = c.getBody().getEnd();
-                // If we have at least one comment and there is no newline
                 if (!end.getComments().isEmpty() && !end.getWhitespace().contains("\n")) {
                     return c.withBody(c.getBody().withEnd(end
                             .withWhitespace(end.getComments().get(0).getSuffix())

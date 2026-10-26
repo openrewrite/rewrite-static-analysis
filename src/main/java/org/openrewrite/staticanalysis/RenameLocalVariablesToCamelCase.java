@@ -29,18 +29,6 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
-/**
- * This recipe converts local variables to camel case convention.
- * The recipe will not rename variables declared in for loop controls or catches with a single character.
- * <br/>
- * The first character is set to lower case and existing capital letters are preserved.
- * Special characters that are allowed in java field names `$` and `_` are removed.
- * If a special character is removed the next valid alphanumeric will be capitalized.
- * <br/>
- * Currently, unsupported:
- * - The recipe will not rename variables declared in a class.
- * - The recipe will not rename variables if the result already exists in a class or the result will be a java reserved keyword.
- */
 public class RenameLocalVariablesToCamelCase extends Recipe {
 
     @Getter

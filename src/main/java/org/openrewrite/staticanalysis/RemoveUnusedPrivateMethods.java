@@ -106,7 +106,6 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                     }
 
                     ReferencedImports.namesReferencedBy(m).forEach(this::maybeRemoveImport);
-                    //noinspection ConstantConditions
                     return null;
                 }
 

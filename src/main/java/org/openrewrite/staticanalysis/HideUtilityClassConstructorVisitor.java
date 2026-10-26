@@ -33,43 +33,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 
-/**
- * HideUtilityClassConstructorVisitor will perform the following operations on a Utility Class:
- * <ul>
- *     <li>Change any Public constructors to Private</li>
- *     <li>Change any Package-Private ("Default", no modifiers) to Private</li>
- *     <li>If the Implicit Default Constructor is used (as in, no explicit constructors defined), add a Private constructor</li>
- * </ul>
- * <p>
- * HideUtilityClassConstructorVisitor will NOT perform operations on a Utility Class under these circumstances:
- * <ul>
- *     <li>Will NOT change any Protected constructors to Private</li>
- *     <li>
- *         HideUtilityClassConstructorVisitor will ignore classes with a Main method signature ({@code public static void main(String[] args)}).
- *         This prevents HideUtilityClassConstructorVisitor from generating a Private constructor on classes which only
- *         serve as application entry points, though they are technically a Utility Class.
- *     </li>
- *     <li>
- *         HideUtilityClassConstructorVisitor can be configured with a list of fully-qualified "ignorable Annotations" strings.
- *         These are used with {@link AnnotationMatcher} to check for the presence of annotations on the class.
- *         HideUtilityClassConstructorVisitor will ignore classes which have any of the configured Annotations.
- *         This is valuable for situations such as Lombok Utility classes, which generate Private constructors in bytecode.
- *     </li>
- * </ul>
- */
 public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
 
     private static final EnumSet<J.ClassDeclaration.Kind.Type> EXCLUDE_CLASS_TYPES =
             EnumSet.of(J.ClassDeclaration.Kind.Type.Interface, J.ClassDeclaration.Kind.Type.Record);
 
-    @SuppressWarnings("NotNullFieldNotInitialized")
     private UtilityClassMatcher utilityClassMatcher;
-    @SuppressWarnings("NotNullFieldNotInitialized")
     private HideUtilityClassConstructorStyle style;
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(HideUtilityClassConstructorStyle.class, (SourceFile)tree, Checkstyle::hideUtilityClassConstructorStyle);
             utilityClassMatcher = new UtilityClassMatcher(style.getIgnoreIfAnnotatedBy());
@@ -78,22 +51,9 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     @Override
-    @SuppressWarnings("ConstantConditions")
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         J.ClassDeclaration c = super.visitClassDeclaration(classDecl, p);
         if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(getCursor())) {
-            /*
-             * Note, it's a deliberate choice to have these be their own respective visitors rather than putting
-             * all the logic in one visitor. It's conceptually easier to distinguish what each are doing.
-             * And some linters which deal with "utility classes", such as IntelliJ, Checkstyle, etc., treat
-             * "change public constructor to private" and "generate a private constructor" as different toggleable flags.
-             * Here we're just saying "do both", but having the logic be implemented as separate visitors does mean
-             * it could be simpler to break these out into their own visitors in the future. Maybe. For now, to defer that decision
-             * and keep the API surface area small, we're keeping these private.
-             *
-             * But, first and foremost, the main rationale is because it's hopefully conceptually easier to distinguish the steps
-             * required for HideUtilityClassConstructorVisitor to work.
-             */
             c = (J.ClassDeclaration) new UtilityClassWithImplicitDefaultConstructorVisitor().visit(c, p, getCursor().getParentOrThrow());
             c = (J.ClassDeclaration) new UtilityClassWithExposedConstructorInspectionVisitor<>(c).visit(c, p, getCursor().getParentOrThrow());
         }
@@ -149,24 +109,6 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         }
     }
 
-    /**
-     * Utility class for identifying utility classes.
-     * <p>
-     * A Class is considered a Utility Class if it meets these rules:
-     *
-     * <ul>
-     *     <li>A utility class contains only static methods and fields in its API</li>
-     *     <li>A utility class does not have any public constructors</li>
-     *     <li>A utility class does not have any {@code implements} or {@code extends} keywords.</li>
-     * </ul>
-     *
-     * <p>
-     * What's an actual example of a utility class, you ask? Well, here's one.
-     * <p>
-     * We are keeping this class private for the moment in order to keep the API surface area small. However,
-     * there are other cleanup rules which could benefit from these, such as "make utility class final", etc.
-     * Until then, however, we'll keep this private and unexposed.
-     */
     private final class UtilityClassMatcher {
         private final AnnotationMatcher configurationAnnotation = new AnnotationMatcher("@org.springframework.context.annotation.Configuration", true);
         private final Collection<AnnotationMatcher> ignorableAnnotations;

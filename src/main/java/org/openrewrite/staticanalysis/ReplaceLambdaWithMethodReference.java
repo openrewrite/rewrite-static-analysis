@@ -108,7 +108,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     JavaType.Class classType = getClassType(originalType);
                     if (classType != null) {
                         J.FieldAccess classLiteral = newClassLiteral(classType, originalType, j);
-                        //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
                         if (isInstanceMethod.isPresent()) {
@@ -133,7 +132,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         JavaType.Class classType = getClassType(((Expression) tree).getType());
                         if (classType != null) {
                             J.FieldAccess classLiteral = newClassLiteral(classType, ((Expression) tree).getType(), tree);
-                            //noinspection DataFlowIssue
                             JavaType.FullyQualified fullClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                             Optional<JavaType.Method> castMethod = fullClassType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {
@@ -253,11 +251,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         }
 
         private boolean insideAnonymousInnerClass() {
-            // Check if we're inside an anonymous inner class
             Cursor current = getCursor();
             while (current != null) {
                 if (current.getValue() instanceof J.ClassDeclaration) {
-                    // We've reached a regular class declaration, stop looking
                     return false;
                 }
                 if (current.getValue() instanceof J.NewClass &&
@@ -373,10 +369,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
          * where fold is generic and foo is overloaded.
          */
         private boolean isLambdaInGenericAndOverloadedContext() {
-            // Walk up the cursor tree to find enclosing method invocations
             Cursor cursor = getCursor();
 
-            // Find the first method invocation that the lambda is an argument to
             Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
             if (!(parent.getValue() instanceof J.MethodInvocation)) {
                 return false;
@@ -384,8 +378,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             J.MethodInvocation innerMethod = parent.getValue();
 
-            // Now check if there's an enclosing overloaded method where innerMethod is an argument
-            // Start from the parent of the first method invocation
             Cursor grandparent = parent.getParent();
             if (grandparent == null) {
                 return false;
@@ -398,7 +390,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             J.MethodInvocation outerMethod = grandparent.getValue();
 
-            // Check that innerMethod is actually an ARGUMENT to outerMethod, not just chained
+            // an argument to outerMethod, not just chained onto it
             boolean isInnerMethodAnArgument = outerMethod.getArguments().stream()
                     .anyMatch(arg -> arg == innerMethod);
 
@@ -411,13 +403,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return false;
             }
 
-            // Check if the outer method is overloaded
             long overloadCount = outerType.getDeclaringType().getMethods().stream()
                     .filter(m -> m.getName().equals(outerType.getName()) && !m.isConstructor())
                     .count();
 
-            // If we have nested method calls where the outer one is overloaded,
-            // be conservative and don't transform to avoid breaking type inference
             return overloadCount > 1;
         }
     }

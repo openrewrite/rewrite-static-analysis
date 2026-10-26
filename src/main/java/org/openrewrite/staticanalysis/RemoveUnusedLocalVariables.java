@@ -43,7 +43,6 @@ import static org.openrewrite.Preconditions.and;
 import static org.openrewrite.Preconditions.not;
 
 @EqualsAndHashCode(callSuper = false)
-@SuppressWarnings("ConstantConditions")
 @Value
 public class RemoveUnusedLocalVariables extends Recipe {
     @Option(displayName = "Ignore matching variable names",
