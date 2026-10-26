@@ -486,9 +486,8 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     }
 
     @Test
-    void whenIgnoreObjectMethodsIsFalseAndAMethodOverridesFromTheBaseObjectClass() {
+    void whenAMethodOverridesFromTheBaseObjectClass() {
         rewriteRun(
-          spec -> spec.recipe(new MissingOverrideAnnotation(null)),
           //language=java
           java(
             """

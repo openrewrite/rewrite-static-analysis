@@ -1429,7 +1429,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
-    void constantTernarySimplfied() {
+    void constantTernarySimplified() {
         rewriteRun(
           //language=java
           java(
