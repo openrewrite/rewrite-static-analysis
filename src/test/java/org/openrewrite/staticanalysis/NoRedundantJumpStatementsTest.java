@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"UnnecessaryContinue", "UnnecessaryReturnStatement"})
 class NoRedundantJumpStatementsTest implements RewriteTest {
@@ -64,6 +65,101 @@ class NoRedundantJumpStatementsTest implements RewriteTest {
                               System.out.println();
                           }
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveLabelledContinue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[][] rows, boolean stop) {
+                      outer:
+                      for (int[] row : rows) {
+                          for (int cell : row) {
+                              if (stop) {
+                                  continue outer;
+                              } else {
+                                  System.out.println(cell);
+                              }
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveLabelledContinueWithoutBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[][] rows, boolean stop) {
+                      outer:
+                      for (int[] row : rows) {
+                          for (int cell : row) {
+                              if (stop) continue outer;
+                              else System.out.println(cell);
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveLabelledContinueInKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(rows: List<List<Int>>, stop: Boolean) {
+                  outer@ for (row in rows) {
+                      for (cell in row) {
+                          if (stop) {
+                              continue@outer
+                          } else {
+                              println(cell)
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCommentsOfRemovedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      System.out.println();
+                      // nothing left to do
+                      return;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      System.out.println();
+                      // nothing left to do
                   }
               }
               """
