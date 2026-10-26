@@ -133,8 +133,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                     maybeAddImport(s, false);
                 }
 
-                J.Try surroundingTry = getCursor().firstEnclosing(J.Try.class);
-                assert surroundingTry != null;
+                J.Try surroundingTry = getCursor().firstEnclosingOrThrow(J.Try.class);
 
                 String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
                 J.Try generatedTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))

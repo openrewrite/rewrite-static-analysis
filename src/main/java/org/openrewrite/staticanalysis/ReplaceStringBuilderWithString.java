@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -36,6 +37,8 @@ import static java.util.Collections.reverse;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceStringBuilderWithString extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(..)");
     private static final MethodMatcher STRING_BUILDER_APPEND_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(char[])");
@@ -43,16 +46,13 @@ public class ReplaceStringBuilderWithString extends Recipe {
     private static final MethodMatcher STRING_BUILDER_CAPACITY = new MethodMatcher("java.lang.StringBuilder <constructor>(int)");
     private static final MethodMatcher STRING_BUILDER_TO_STRING = new MethodMatcher("java.lang.StringBuilder toString()");
 
-    @Getter
-    final String displayName = "Replace `StringBuilder#append` with `String`";
+    String displayName = "Replace `StringBuilder#append` with `String`";
 
-    @Getter
-    final String description = "Replace `StringBuilder.append()` with `String` concatenation if you are only concatenating a small number of strings " +
+    String description = "Replace `StringBuilder.append()` with `String` concatenation if you are only concatenating a small number of strings " +
             "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
             "expressions into a single `String` object, which can be more efficient than using `StringBuilder`.";
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

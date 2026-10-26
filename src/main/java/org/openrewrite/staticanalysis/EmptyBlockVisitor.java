@@ -34,7 +34,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
 
 import java.util.HashMap;
@@ -46,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static org.openrewrite.Tree.randomId;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -181,11 +179,6 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
                 return i;
         }
         i = i.withIfCondition(cond);
-
-        if (i.getElsePart() == null) {
-            return i.withThenPart(new J.Empty(randomId(), Space.EMPTY, Markers.EMPTY))
-                    .withElsePart(null);
-        }
 
         // NOTE: then part MUST be a J.Block, because otherwise impossible to have an empty if condition followed by else-if/else chain
         J.Block thenPart = (J.Block) i.getThenPart();

@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -36,23 +37,21 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     private static final MethodMatcher RUNTIME_EXEC_CMD = new MethodMatcher("java.lang.Runtime exec(String)");
     private static final MethodMatcher RUNTIME_EXEC_CMD_ENVP = new MethodMatcher("java.lang.Runtime exec(String, String[])");
     private static final MethodMatcher RUNTIME_EXEC_CMD_ENVP_FILE = new MethodMatcher("java.lang.Runtime exec(String, String[], java.io.File)");
 
-    @Getter
-    final String displayName = "Replace deprecated `Runtime#exec()` methods";
+    String displayName = "Replace deprecated `Runtime#exec()` methods";
 
-    @Getter
-    final String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
+    String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
             "since Java 18 and is no longer recommended for use by the Java documentation.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1874");
+    Set<String> tags = singleton("RSPEC-S1874");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -20,7 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -44,11 +44,11 @@ public class CollapsibleIfStatements extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J visitIf(J.If if_, ExecutionContext ctx) {
-                J.If outerIf = (J.If) super.visitIf(if_, ctx);
+            public J.If visitIf(J.If if_, ExecutionContext ctx) {
+                J.If outerIf = super.visitIf(if_, ctx);
 
                 if (outerIf.getElsePart() != null) {
                     return outerIf;

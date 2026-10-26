@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
@@ -25,6 +26,8 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceVectorWithArrayList extends ReplaceLegacyCollection {
 
     // Vector methods that ArrayList does not provide; if any is used the type cannot be swapped.
@@ -34,22 +37,18 @@ public class ReplaceVectorWithArrayList extends ReplaceLegacyCollection {
             "insertElementAt", "lastElement", "removeAllElements", "removeElement",
             "removeElementAt", "setElementAt", "setSize"));
 
-    @Getter
-    final String displayName = "Replace `java.util.Vector` with `java.util.ArrayList`";
+    String displayName = "Replace `java.util.Vector` with `java.util.ArrayList`";
 
-    @Getter
-    final String description = "`Vector` synchronizes every operation, which adds overhead in the common " +
+    String description = "`Vector` synchronizes every operation, which adds overhead in the common " +
             "single-threaded case. This recipe replaces a local `Vector` with an `ArrayList` when data flow " +
             "analysis can prove the `Vector` never escapes its method (it is not returned, assigned to a field, " +
             "or passed as an argument), so no other thread can observe it and the synchronization is redundant. " +
             "Fields, escaping variables, `Vector`-specific method usages (like `elementAt` or `addElement`), and " +
             "the `Vector(int, int)` constructor are left untouched.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1149");
+    Set<String> tags = singleton("RSPEC-S1149");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     String getLegacyType() {

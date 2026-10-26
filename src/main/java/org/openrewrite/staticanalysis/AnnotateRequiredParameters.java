@@ -106,7 +106,6 @@ public class AnnotateRequiredParameters extends Recipe {
 
             private J.MethodDeclaration addAnnotationsToParameters(J.MethodDeclaration md, RequiredParameterAnalysis analysis, ExecutionContext ctx) {
                 maybeAddImport(fullyQualifiedName);
-                String nullableFqn = fullyQualifiedPackage + ".Nullable";
 
                 return md.withParameters(ListUtils.map(md.getParameters(), stm -> {
                     if (stm instanceof J.VariableDeclarations) {
@@ -114,10 +113,6 @@ public class AnnotateRequiredParameters extends Recipe {
                         J.Identifier identifier = vd.getVariables().get(0).getName();
                         if (containsIdentifierByName(analysis.requiredIdentifiers, identifier) &&
                                 FindAnnotations.find(vd, "@" + fullyQualifiedName).isEmpty()) {
-
-                            maybeRemoveImport(nullableFqn);
-                            vd = (J.VariableDeclarations) new RemoveAnnotationVisitor(new AnnotationMatcher(nullableFqn)).visit(vd, ctx, getCursor());
-
                             J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
                                     .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
