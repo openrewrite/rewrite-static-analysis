@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Loop;
+import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
 import java.util.Set;
@@ -53,11 +54,12 @@ public class NoRedundantJumpStatements extends Recipe {
             public J.If visitIf(J.If iff, ExecutionContext ctx) {
                 J.If i = super.visitIf(iff, ctx);
 
-                boolean thenIsOnlyContinue = i.getThenPart() instanceof J.Continue;
-                if (i.getThenPart() instanceof J.Block) {
-                    J.Block then = (J.Block) i.getThenPart();
-                    thenIsOnlyContinue = then.getStatements().size() == 1 && then.getStatements().get(0) instanceof J.Continue;
+                Statement then = i.getThenPart();
+                if (then instanceof J.Block && ((J.Block) then).getStatements().size() == 1) {
+                    then = ((J.Block) then).getStatements().get(0);
                 }
+                // A labelled continue can target an outer loop, so only an unlabelled one is redundant here
+                boolean thenIsOnlyContinue = then instanceof J.Continue && ((J.Continue) then).getLabel() == null;
 
                 if (getCursor().getParentOrThrow().getParentOrThrow().getValue() instanceof J.Block) {
                     J enclosing = getCursor().dropParentUntil(J.Block.class::isInstance)
