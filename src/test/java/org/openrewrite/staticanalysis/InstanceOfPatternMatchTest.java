@@ -841,7 +841,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/openrewrite/rewrite/issues/2787")
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/334")
         @Test
         void nestedPotentiallyConflictingIfs() {
             rewriteRun(
@@ -2045,7 +2045,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/2202")
+    // A pattern variable from an if whose else returns stays in scope after the if, so the next one needs a distinct name
     @Test
     void flowScopedPatternVariableConflictWithElseReturn() {
         rewriteRun(
@@ -2089,7 +2089,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/1131")
     @Test
     void castDirectlyAfterThrowKeywordWithoutSpace() {
         rewriteRun(
@@ -2115,7 +2115,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/1131")
     @Test
     void castDirectlyAfterReturnKeywordWithoutSpace() {
         rewriteRun(

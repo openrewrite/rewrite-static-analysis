@@ -16,10 +16,24 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.python.Assertions.python;
 import static org.openrewrite.scala.Assertions.scala;
@@ -120,4 +134,160 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
           )
         );
     }
+
+    static Stream<Arguments> floatingRelationalComparisons() {
+        return Stream.of("double", "float", "Double", "Float")
+          .flatMap(type -> Stream.of("<", ">", "<=", ">=")
+            .flatMap(operator -> Stream.of(false, true)
+              .map(reversed -> Arguments.of(type, operator, reversed))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("floatingRelationalComparisons")
+    void preserveFloatingRelationalComparison(String type, String operator, boolean reversed) {
+        String comparison = reversed ? "0 " + operator + " value" : "value " + operator + " 0";
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(0),
+          java(
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return !(%s);
+                  }
+              }
+              """.formatted(type, comparison)
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      "int, <, >=",
+      "long, >, <=",
+      "char, <=, >",
+      "byte, >=, <",
+      "short, <, >=",
+      "Integer, <, >=",
+      "Long, >, <=",
+      "Character, <=, >",
+      "Byte, >=, <",
+      "Short, <, >="
+    })
+    void continueInvertingIntegralComparisons(String type, String beforeOperator, String afterOperator) {
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
+          java(
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return !(value %s 0);
+                  }
+              }
+              """.formatted(type, beforeOperator),
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return value %s 0;
+                  }
+              }
+              """.formatted(type, afterOperator)
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      "double, ==, !=",
+      "float, !=, ==",
+      "Double, ==, !=",
+      "Float, !=, =="
+    })
+    void continueInvertingFloatingEquality(String type, String beforeOperator, String afterOperator) {
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
+          java(
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return !(value %s 0);
+                  }
+              }
+              """.formatted(type, beforeOperator),
+            """
+              class Test {
+                  boolean test(%s value) {
+                      return value %s 0;
+                  }
+              }
+              """.formatted(type, afterOperator)
+          )
+        );
+    }
+
+    @Test
+    void preserveEffectfulFloatingOperand() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int calls;
+                  double next() {
+                      calls++;
+                      return Double.NaN;
+                  }
+                  boolean test() {
+                      return !(next() > 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Double", "Float"})
+    void preserveGenericFloatingBounds(String type) {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  <T extends %s> boolean test(T value) {
+                      return !(value > 0);
+                  }
+              }
+              """.formatted(type)
+          )
+        );
+    }
+
+    static Stream<Arguments> missingOperandTypes() {
+        return Stream.of(false, true)
+          .flatMap(right -> Stream.<JavaType>of(null, JavaType.Unknown.getInstance())
+            .map(type -> Arguments.of(type, right)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("missingOperandTypes")
+    void preserveComparisonWithMissingOperandType(JavaType missingType, boolean right) {
+        ExecutionContext ctx = new InMemoryExecutionContext(t -> {
+            throw new AssertionError(t);
+        });
+        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+          "class Test { boolean test(int left, int right) { return !(left > right); } }")
+          .findFirst().orElseThrow();
+        // Deliberately remove only operand attribution in this visitor contract test.
+        // The RewriteTest cases above retain their normal type validation.
+        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.Binary visitBinary(J.Binary binary, ExecutionContext executionContext) {
+                return right ? binary.withRight(binary.getRight().withType(missingType)) :
+                  binary.withLeft(binary.getLeft().withType(missingType));
+            }
+        }.visit(parsed, ctx);
+        J.CompilationUnit result = (J.CompilationUnit) new BooleanChecksNotInverted()
+          .getVisitor().visit(unattributed, ctx);
+        assertThat(result).isNotNull();
+        assertThat(result.printAll()).isEqualTo(unattributed.printAll());
+    }
+
 }

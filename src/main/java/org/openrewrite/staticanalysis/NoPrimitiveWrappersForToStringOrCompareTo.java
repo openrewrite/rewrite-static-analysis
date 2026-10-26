@@ -38,6 +38,7 @@ import static java.util.Collections.singleton;
 public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     private static final MethodMatcher VALUE_OF_NUMBER_MATCHER = new MethodMatcher("java.lang.Number valueOf(*)", true);
     private static final MethodMatcher VALUE_OF_BOOLEAN_MATCHER = new MethodMatcher("java.lang.Boolean valueOf(*)", true);
+    private static final MethodMatcher FLOAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.lang.Float <constructor>(float)");
 
     private static final MethodMatcher NUMBER_TO_STRING_MATCHER = new MethodMatcher("java.lang.Number toString()", true);
     private static final MethodMatcher BOOLEAN_TO_STRING_MATCHER = new MethodMatcher("java.lang.Boolean toString()", true);
@@ -75,7 +76,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                     if (NUMBER_TO_STRING_MATCHER.matches(mi) || BOOLEAN_TO_STRING_MATCHER.matches(mi)) {
                         Expression arg = null;
                         if (mi.getSelect() instanceof J.NewClass) {
-                            arg = getSingleArg(((J.NewClass) mi.getSelect()).getArguments());
+                            arg = getConstructorArg((J.NewClass) mi.getSelect(), clazz);
                         } else if (mi.getSelect() instanceof J.MethodInvocation) {
                             J.MethodInvocation selectMethod = (J.MethodInvocation) mi.getSelect();
                             if (VALUE_OF_NUMBER_MATCHER.matches(selectMethod) || VALUE_OF_BOOLEAN_MATCHER.matches(selectMethod)) {
@@ -91,7 +92,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                     } else if (NUMBER_COMPARE_TO_MATCHER.matches(mi) || BOOLEAN_COMPARE_TO_MATCHER.matches(mi)) {
                         Expression arg = null;
                         if (mi.getSelect() instanceof J.NewClass) {
-                            arg = getSingleArg(((J.NewClass) mi.getSelect()).getArguments());
+                            arg = getConstructorArg((J.NewClass) mi.getSelect(), clazz);
                         } else if (mi.getSelect() instanceof J.MethodInvocation) {
                             J.MethodInvocation selectMethod = (J.MethodInvocation) mi.getSelect();
                             if (VALUE_OF_NUMBER_MATCHER.matches(selectMethod) || VALUE_OF_BOOLEAN_MATCHER.matches(selectMethod)) {
@@ -108,6 +109,17 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                     }
                 }
                 return mi;
+            }
+
+            private @Nullable Expression getConstructorArg(J.NewClass constructor, JavaType.FullyQualified wrapperType) {
+                // Float(double) narrows its argument before the instance method runs.
+                // Only the attributed float overload accepts the same input as the static methods.
+                if (constructor.getConstructorType() == null ||
+                    TypeUtils.isOfClassType(wrapperType, "java.lang.Float") &&
+                    !FLOAT_CONSTRUCTOR_MATCHER.matches(constructor)) {
+                    return null;
+                }
+                return getSingleArg(constructor.getArguments());
             }
 
             private @Nullable Expression getSingleArg(@Nullable List<Expression> args) {
