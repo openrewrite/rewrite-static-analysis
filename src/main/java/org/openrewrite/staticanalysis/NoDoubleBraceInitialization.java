@@ -95,7 +95,6 @@ public class NoDoubleBraceInitialization extends Recipe {
             if (isSupportedDoubleBraceInitialization(newClass)) {
                 Cursor parentBlockCursor = getCursor().dropParentUntil(J.Block.class::isInstance);
                 J.VariableDeclarations.NamedVariable var = getCursor().firstEnclosing(J.VariableDeclarations.NamedVariable.class);
-                //noinspection ConstantConditions
                 J.Block secondBlock = (J.Block) nc.getBody().getStatements().get(0);
                 List<Statement> initStatements = secondBlock.getStatements();
 
@@ -203,7 +202,6 @@ public class NoDoubleBraceInitialization extends Recipe {
                                 objectListEntry.getValue().stream().map(JRightPadded::build).collect(toList()),
                                 Space.EMPTY
                         );
-                        //noinspection ConstantConditions
                         bl = maybeAutoFormat(bl, bl.withStatements(ListUtils.insertAll(bl.getStatements(), statementIndex + 1, singletonList(initBlock))),
                                 initBlock, ctx, getCursor().getParent(2));
                     }
@@ -212,7 +210,6 @@ public class NoDoubleBraceInitialization extends Recipe {
                 for (Map.Entry<Statement, List<Statement>> objectListEntry : methodInitStatements.entrySet()) {
                     int statementIndex = bl.getStatements().indexOf(objectListEntry.getKey());
                     if (statementIndex > -1) {
-                        //noinspection ConstantConditions
                         bl = maybeAutoFormat(bl, bl.withStatements(ListUtils.insertAll(bl.getStatements(), statementIndex + 1, objectListEntry.getValue())),
                                 objectListEntry.getValue().get(objectListEntry.getValue().size() - 1), ctx, getCursor().getParent());
                     }
@@ -224,7 +221,6 @@ public class NoDoubleBraceInitialization extends Recipe {
 
     private static class AddWarningMessage extends JavaIsoVisitor<String> {
         static <T extends J> T addWarningComment(T nc, String methodName) {
-            //noinspection unchecked
             return (T) new AddWarningMessage().visitNonNull(nc, methodName);
         }
 

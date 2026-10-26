@@ -65,7 +65,6 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 J.Try t = super.visitTry(aTry, ctx);
                 return t.withCatches(ListUtils.map(t.getCatches(), c -> {
                     if (isGenericCatch(c)) {
-                        // Find declared thrown exceptions that are not already specifically caught
                         Set<JavaType> declaredThrown = getDeclaredThrownExceptions(t);
                         declaredThrown.removeAll(getCaughtExceptions(t));
                         if (!declaredThrown.isEmpty() && !containsGenericTypeVariable(declaredThrown)) {
@@ -137,7 +136,6 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 J.Try surroundingTry = getCursor().firstEnclosing(J.Try.class);
                 assert surroundingTry != null;
 
-                // Preserve the existing variable name from the original generic catch block
                 String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
                 J.Try generatedTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
                         .imports(imports)

@@ -725,7 +725,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         }.reduce(lambda.getBody(), new AtomicBoolean()).get();
     }
 
-    // TODO consider moving to TypeUtils
     private static JavaType.@Nullable Method getSamCompatible(@Nullable JavaType type) {
         JavaType.Method sam = null;
         JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);

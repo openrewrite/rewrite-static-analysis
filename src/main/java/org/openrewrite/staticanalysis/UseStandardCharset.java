@@ -73,7 +73,7 @@ public class UseStandardCharset extends Recipe {
                         try {
                             charset = Charset.forName(maybeReplace);
                         } catch (UnsupportedCharsetException ex) {
-                            // This should never happen in practice.
+                            // unsupported by this JVM, so it can't be one of the `StandardCharsets`
                             return method;
                         }
 

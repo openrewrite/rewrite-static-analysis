@@ -39,7 +39,6 @@ public class TypecastParenPad extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        //noinspection NotNullFieldNotInitialized
         return Preconditions.check(
                 new JavaFileChecker<>(),
                 new JavaIsoVisitor<ExecutionContext>() {

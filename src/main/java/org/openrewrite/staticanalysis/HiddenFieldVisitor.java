@@ -51,7 +51,6 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(HiddenFieldStyle.class, (SourceFile)tree, Checkstyle::hiddenFieldStyle);
         }

@@ -86,7 +86,6 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                         if (arg != null && !TypeUtils.isString(arg.getType()) && mi.getSelect() != null) {
                             JavaType.FullyQualified fq = mi.getMethodType().getDeclaringType();
                             mi = mi.withSelect(new J.Identifier(Tree.randomId(), mi.getSelect().getPrefix(), Markers.EMPTY, emptyList(), fq.getClassName(), fq, null));
-                            //noinspection ArraysAsListWithZeroOrOneArgument
                             mi = mi.withArguments(Arrays.asList(arg));
                         }
                     } else if (NUMBER_COMPARE_TO_MATCHER.matches(mi) || BOOLEAN_COMPARE_TO_MATCHER.matches(mi)) {

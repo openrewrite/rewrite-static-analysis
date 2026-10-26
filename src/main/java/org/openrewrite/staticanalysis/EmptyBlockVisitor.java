@@ -57,7 +57,6 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (emptyBlockStyle == null && tree instanceof SourceFile) {
             emptyBlockStyle = Style.from(EmptyBlockStyle.class, (SourceFile)tree, Checkstyle::emptyBlock);
         }
@@ -78,7 +77,6 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             if (isEmptyBlock(nestedBlock) && ((Boolean.TRUE.equals(emptyBlockStyle.getStaticInit()) && nestedBlock.isStatic()) ||
                     (Boolean.TRUE.equals(emptyBlockStyle.getInstanceInit()) && !nestedBlock.isStatic()))) {
                 filtered.set(true);
-                //noinspection DataFlowIssue
                 return null;
             }
 

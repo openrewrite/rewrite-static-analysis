@@ -45,12 +45,10 @@ public class FinalizeLocalVariables extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
-                // if this already has "final", we don't need to bother going any further; we're done
                 if (mv.hasModifier(J.Modifier.Type.Final)) {
                     return mv;
                 }
 
-                // consider uninitialized local variables non-final
                 if (mv.getVariables().stream().anyMatch(nv -> nv.getInitializer() == null)) {
                     return mv;
                 }
@@ -62,7 +60,6 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                // ignore fields (aka "instance variable" or "class variable")
                 if (mv.getVariables().stream().anyMatch(v -> v.isField(getCursor()))) {
                     return mv;
                 }
@@ -99,11 +96,6 @@ public class FinalizeLocalVariables extends Recipe {
 
         J.VariableDeclarations.NamedVariable variable;
 
-        /**
-         * @param j        The subtree to search.
-         * @param variable A {@link J.VariableDeclarations.NamedVariable} to check for any reassignment calls.
-         * @return An {@link AtomicBoolean} that is true if the variable has been reassigned and false otherwise.
-         */
         static AtomicBoolean find(J j, J.VariableDeclarations.NamedVariable variable) {
             return new FindAssignmentReferencesToVariable(variable)
                     .reduce(j, new AtomicBoolean());

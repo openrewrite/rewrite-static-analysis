@@ -54,7 +54,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(FallThroughStyle.class, (SourceFile)tree, Checkstyle::fallThrough);
         }
@@ -128,15 +127,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     private static class FindLastLineBreaksOrFallsThroughComments {
 
-        /**
-         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
-         * A result is added to the set when the last line of the provided {@link J.Case} scope is either an acceptable "break"-able type,
-         * specifically {@link J.Return}, {@link J.Break}, {@link J.Continue}, or {@link J.Throw}, or a "fallthrough" {@link Comment} matching a regular expression.
-         *
-         * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
-         * @param scope           the {@link J.Case} to use as a target.
-         * @return A set representing whether the last {@link Statement} is an acceptable "break"-able type or has a "fallthrough" comment.
-         */
         private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
             return new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).reduce(enclosingSwitch, new HashSet<>());
         }
@@ -269,13 +259,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private static class FindInfiniteLoops {
-        /**
-         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
-         * A result is added to the set when a loop in a {@link J.Case} scope is an infinite loop.
-         *
-         * @param case_ the {@link J.Case} to use as a target.
-         * @return A set representing all {@link Statement} which are infinite loops.
-         */
         public static boolean find(Cursor cursor, J.Case case_) {
             for (Statement statement : case_.getStatements()) {
                 Expression condition = null;

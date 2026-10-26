@@ -67,7 +67,6 @@ public class UnnecessaryCatch extends Recipe {
                 J.Block b = super.visitBlock(block, ctx);
                 return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.Try) {
-                        // if a try has no catches, no finally, and no resources get rid of it and merge its statements into the current block
                         J.Try aTry = (J.Try) statement;
                         if (aTry.getCatches().isEmpty() && aTry.getResources() == null && aTry.getFinally() == null) {
                             return ListUtils.map(aTry.getBody().getStatements(), tryStat -> autoFormat(tryStat, ctx, getCursor()));
@@ -90,7 +89,6 @@ public class UnnecessaryCatch extends Recipe {
                 // An empty `thrownExceptions` is indistinguishable from one that was never populated, so only a
                 // try body that resolves throughout is evidence that a caught exception cannot be thrown.
                 boolean[] incompleteTypeInformation = new boolean[1];
-                //Collect any checked exceptions thrown from the try block.
                 new JavaIsoVisitor<Integer>() {
                     @Override
                     public NewClass visitNewClass(NewClass newClass, Integer integer) {
@@ -158,7 +156,6 @@ public class UnnecessaryCatch extends Recipe {
                     maybeRemoveImport(TypeUtils.asFullyQualified(type));
                 }
 
-                //For any checked exceptions being caught, if the exception is not thrown, remove the catch block.
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
                     J.ControlParentheses<J.VariableDeclarations> parameter = aCatch.getParameter();
                     TypeTree typeExpression = aCatch.getParameter().getTree().getTypeExpression();
@@ -183,15 +180,6 @@ public class UnnecessaryCatch extends Recipe {
                 }));
             }
 
-            /**
-             * Retrieves a set of unique checked exception types declared within the catch blocks
-             * of a given {@link J.Try} statement. This method supports both single and multi-catch
-             * declarations.
-             *
-             * @param aTry The {@link J.Try} statement to analyze.
-             * @return A {@link Set} of {@link JavaType} instances representing the caught checked exceptions.
-             * An empty set is returned if no checked exceptions are found.
-             */
             private Set<JavaType> getUnnecessaryTypes(J.Try aTry, Collection<JavaType> thrownExceptions) {
                 Set<JavaType> caughtExceptions = new HashSet<>();
 
@@ -207,14 +195,13 @@ public class UnnecessaryCatch extends Recipe {
                                 caughtExceptions.add(throwable);
                             }
                         }
-                    } else { // Single catch
+                    } else {
                         if (isCheckedException(type) || isGenericTypeRemovableByOption(type)) {
                             caughtExceptions.add(c.getParameter().getType());
                         }
                     }
                 }
 
-                // Filter out caught exceptions that are necessary
                 Set<JavaType> unnecessaryExceptions = new HashSet<>(caughtExceptions);
                 unnecessaryExceptions.removeAll(thrownExceptions);
 
@@ -258,15 +245,6 @@ public class UnnecessaryCatch extends Recipe {
                 return includeJavaLangThrowable && TypeUtils.isOfClassType(type, JAVA_LANG_THROWABLE);
             }
 
-            /**
-             * Determines if a given {@link JavaType} represents a checked exception.
-             * A checked exception is a subclass of {@code java.lang.Throwable} that is not
-             * a subclass of {@code java.lang.RuntimeException} or {@code java.lang.Error}.
-             * <a href="https://docs.oracle.com/javase/specs/jls/se7/html/jls-11.html#:~:text=The%20checked%20exception%20classes%20are,and%20Error%20and%20its%20subclasses.">Source</a>
-             *
-             * @param type The {@link JavaType} to evaluate.
-             * @return {@code true} if the type is a checked exception; {@code false} otherwise.
-             */
             private boolean isCheckedException(JavaType type) {
                 if (!(type instanceof JavaType.Class)) {
                     return false;

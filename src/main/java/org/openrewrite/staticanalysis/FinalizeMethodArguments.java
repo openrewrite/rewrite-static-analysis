@@ -39,9 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 
-/**
- * Finalize method arguments v2
- */
 public class FinalizeMethodArguments extends Recipe {
 
     @Getter
@@ -110,11 +107,6 @@ public class FinalizeMethodArguments extends Recipe {
 
         J.VariableDeclarations.NamedVariable variable;
 
-        /**
-         * @param subtree  The subtree to search.
-         * @param variable A {@link J.VariableDeclarations.NamedVariable} to check for any reassignment calls.
-         * @return An {@link AtomicBoolean} that is true if the variable has been reassigned and false otherwise.
-         */
         static AtomicBoolean find(J subtree, J.VariableDeclarations.NamedVariable variable) {
             return new FindAssignmentReferencesToVariable(variable)
                     .reduce(subtree, new AtomicBoolean());
@@ -122,7 +114,6 @@ public class FinalizeMethodArguments extends Recipe {
 
         @Override
         public J.Assignment visitAssignment(J.Assignment a, AtomicBoolean hasAssignment) {
-            // Return quickly if the variable has been reassigned before
             if (hasAssignment.get()) {
                 return a;
             }

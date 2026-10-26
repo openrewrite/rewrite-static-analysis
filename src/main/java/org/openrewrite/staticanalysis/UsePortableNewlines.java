@@ -73,7 +73,6 @@ public class UsePortableNewlines extends Recipe {
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        // Handle String.formatted() - format string is the select
                         if (STRING_FORMATTED.matches(method) && method.getSelect() != null) {
                             return method.withSelect(replaceNewlineInLiteral(method.getSelect()));
                         }

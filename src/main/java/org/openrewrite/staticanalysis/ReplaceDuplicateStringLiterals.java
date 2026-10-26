@@ -74,7 +74,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         };
         return Preconditions.check(inIncludedSourceSet, new JavaVisitor<ExecutionContext>() {
             @Override
-            @SuppressWarnings("UnusedAssignment")
             public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 if (classDecl.getType() == null) {
                     return classDecl;
@@ -136,12 +135,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, requireNonNull(getCursor().getParent()));
             }
 
-            /**
-             * Generate a variable name that does not create a name space conflict.
-             * @param name variable name to replace duplicate literals with.
-             * @param variableNames variable names that exist in the compilation unit.
-             * @return unique variable name.
-             */
             private String getNameWithoutShadow(String name, Set<String> variableNames) {
                 String transformedName = transformToVariableName(name);
                 String newName = transformedName;
@@ -213,7 +206,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, integer);
                     Cursor parentScope = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.MethodDeclaration);
                     boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(variable);
-                    // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
+                    // `private static final String`(s) are collected into `fieldValueToFieldName` below, to be reused.
                     if (v.getInitializer() instanceof J.Literal &&
                             (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
                             !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String) &&
@@ -270,9 +263,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         }
     }
 
-    /**
-     * ReplaceStringLiterals in a class with a reference to a `private static final String` with the provided variable name.
-     */
     @EqualsAndHashCode(callSuper = false)
     @Value
     private static class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {

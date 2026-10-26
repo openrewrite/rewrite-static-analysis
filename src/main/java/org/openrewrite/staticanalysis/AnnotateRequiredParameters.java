@@ -73,14 +73,12 @@ public class AnnotateRequiredParameters extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
 
-                // Supporting only public methods atm
                 if (!md.hasModifier(J.Modifier.Type.Public) || md.getBody() == null ||
                         md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty ||
                         md.getMethodType() == null || md.getMethodType().isOverride()) {
                     return md;
                 }
 
-                // Analyze all parameters to find required ones and statements to remove
                 RequiredParameterAnalysis analysis = new RequiredParameterVisitor(getCandidateParameters(md))
                         .reduce(md.getBody(), new RequiredParameterAnalysis());
 
@@ -90,7 +88,6 @@ public class AnnotateRequiredParameters extends Recipe {
 
                 md = addAnnotationsToParameters(md, analysis, ctx);
 
-                // Replace null checks on required parameters with false
                 J.Block body = md.getBody();
                 J.Block replaced = (J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visitNonNull(body, ctx);
                 maybeRemoveImport("java.util.Objects");
@@ -118,11 +115,9 @@ public class AnnotateRequiredParameters extends Recipe {
                         if (containsIdentifierByName(analysis.requiredIdentifiers, identifier) &&
                                 FindAnnotations.find(vd, "@" + fullyQualifiedName).isEmpty()) {
 
-                            // Remove any @Nullable annotation from the same package before adding @NonNull
                             maybeRemoveImport(nullableFqn);
                             vd = (J.VariableDeclarations) new RemoveAnnotationVisitor(new AnnotationMatcher(nullableFqn)).visit(vd, ctx, getCursor());
 
-                            // Add @NonNull annotation
                             J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
                                     .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
@@ -153,10 +148,8 @@ public class AnnotateRequiredParameters extends Recipe {
     }
 
     /**
-     * Gets the method parameters eligible for `@NonNull`, excluding those already annotated with `@Nullable`.
-     * A parameter explicitly marked `@Nullable` signals that the developer intends
-     * to allow nulls; any accompanying null check + throw is therefore intentional
-     * business logic and must not be removed.
+     * Excludes parameters marked `@Nullable`: the developer intends to allow nulls there,
+     * so any null check and throw is intentional business logic that must not be removed.
      */
     private Set<J.Identifier> getCandidateParameters(J.MethodDeclaration md) {
         Set<J.Identifier> candidates = new LinkedHashSet<>();
@@ -181,21 +174,10 @@ public class AnnotateRequiredParameters extends Recipe {
         return candidates;
     }
 
-    /**
-     * Result of analyzing a method body for required parameters.
-     */
     private static class RequiredParameterAnalysis {
         final Set<J.Identifier> requiredIdentifiers = new HashSet<>();
     }
 
-    /**
-     * Visitor that traverses method bodies to identify parameters that are required (non-null).
-     * This visitor looks for:
-     * <ul>
-     *   <li>If statements with null checks that throw exceptions (if (param == null) throw new Exception())</li>
-     *   <li>Objects.requireNonNull calls which implicitly throw NullPointerException</li>
-     * </ul>
-     */
     @RequiredArgsConstructor
     private static class RequiredParameterVisitor extends JavaIsoVisitor<RequiredParameterAnalysis> {
         private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
@@ -204,7 +186,6 @@ public class AnnotateRequiredParameters extends Recipe {
 
         @Override
         public J.If visitIf(J.If iff, RequiredParameterAnalysis analysis) {
-            // Check if the condition contains null checks
             Expression condition = iff.getIfCondition().getTree();
             List<J.Identifier> nullCheckedParams = extractNullCheckedParameters(condition);
 
@@ -226,7 +207,6 @@ public class AnnotateRequiredParameters extends Recipe {
 
         @Override
         public Statement visitStatement(Statement statement, RequiredParameterAnalysis analysis) {
-            // Handle standalone Objects.requireNonNull calls (as expression statements)
             if (statement instanceof J.MethodInvocation) {
                 J.MethodInvocation method = (J.MethodInvocation) statement;
                 if (REQUIRE_NON_NULL.matches(method) && !method.getArguments().isEmpty() &&
@@ -240,16 +220,6 @@ public class AnnotateRequiredParameters extends Recipe {
             return super.visitStatement(statement, analysis);
         }
 
-        /**
-         * Extracts all parameter identifiers from a null check condition.
-         * Handles patterns like:
-         * - param == null
-         * - null == param
-         * - param1 == null || param2 == null (both required)
-         * <p>
-         * Does NOT handle:
-         * - param1 == null && param2 == null (at most one may be null, not both required)
-         */
         private List<J.Identifier> extractNullCheckedParameters(Expression condition) {
             List<J.Identifier> params = new ArrayList<>();
             extractNullCheckedParametersRecursive(condition, params);
@@ -261,14 +231,11 @@ public class AnnotateRequiredParameters extends Recipe {
                 J.Binary binary = (J.Binary) condition;
                 J.Binary.Type operator = binary.getOperator();
 
-                // Only handle OR operator - means any parameter being null throws exception
-                // Do NOT handle AND - "if (a == null && b == null)" means only when BOTH are null is there a problem
+                // not `&&`: "if (a == null && b == null)" only throws when both are null, so neither is required
                 if (operator == J.Binary.Type.Or) {
                     extractNullCheckedParametersRecursive(binary.getLeft(), params);
                     extractNullCheckedParametersRecursive(binary.getRight(), params);
-                }
-                // Check for == null comparisons
-                else if (operator == J.Binary.Type.Equal) {
+                } else if (operator == J.Binary.Type.Equal) {
                     if (J.Literal.isLiteralValue(binary.getLeft(), null) && binary.getRight() instanceof J.Identifier) {
                         params.add((J.Identifier) binary.getRight());
                     } else if (J.Literal.isLiteralValue(binary.getRight(), null) && binary.getLeft() instanceof J.Identifier) {
@@ -278,11 +245,6 @@ public class AnnotateRequiredParameters extends Recipe {
             }
         }
 
-        /**
-         * Returns true when the body throws a JDK exception constructed with no arguments —
-         * a purely defensive check that can be safely replaced by a `@NonNull` annotation.
-         * Custom exception types or non-empty messages are treated as intentional and preserved.
-         */
         private boolean throwsInformationlessException(Statement body) {
             J.Throw thr = findThrow(body);
             if (thr == null || !(thr.getException() instanceof J.NewClass)) {
@@ -315,10 +277,6 @@ public class AnnotateRequiredParameters extends Recipe {
         }
     }
 
-    /**
-     * Visitor that replaces null checks on required parameters with false.
-     * This allows SimplifyConstantIfBranchExecution to clean up the dead code.
-     */
     @RequiredArgsConstructor
     private static class ReplaceNullChecksWithFalse extends JavaVisitor<ExecutionContext> {
         private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
@@ -328,7 +286,6 @@ public class AnnotateRequiredParameters extends Recipe {
         public J visitBinary(J.Binary binary, ExecutionContext ctx) {
             J.Binary b = (J.Binary) super.visitBinary(binary, ctx);
 
-            // Replace "param == null" or "null == param" with false for required parameters
             if (b.getOperator() == J.Binary.Type.Equal) {
                 J.Identifier paramIdentifier = null;
 
@@ -339,7 +296,6 @@ public class AnnotateRequiredParameters extends Recipe {
                 }
 
                 if (containsIdentifierByName(requiredIdentifiers, paramIdentifier)) {
-                    // Replace with false literal
                     return new J.Literal(
                             Tree.randomId(),
                             b.getPrefix(),
@@ -359,18 +315,13 @@ public class AnnotateRequiredParameters extends Recipe {
         public @Nullable J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-            // Remove Objects.requireNonNull calls on required parameters
             if (REQUIRE_NON_NULL.matches(m) &&
                     m.getArguments().get(0) instanceof J.Identifier &&
                     containsIdentifierByName(requiredIdentifiers, (J.Identifier) m.getArguments().get(0))) {
-                // Check if this is a standalone statement (can be removed entirely)
-                // vs part of a larger expression (should be replaced with the argument)
                 Cursor parent = getCursor().getParentTreeCursor();
                 if (parent.getValue() instanceof J.Block) {
-                    // Standalone statement - safe to remove entirely
                     return null;
                 }
-                // Part of a larger expression (e.g., assignment) - replace with the first argument
                 return m.getArguments().get(0).withPrefix(m.getPrefix());
             }
 

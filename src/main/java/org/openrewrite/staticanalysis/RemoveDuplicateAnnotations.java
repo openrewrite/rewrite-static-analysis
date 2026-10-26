@@ -124,7 +124,6 @@ public class RemoveDuplicateAnnotations extends Recipe {
 
             private boolean isRepeatable(JavaType.FullyQualified annotationType) {
                 for (JavaType.FullyQualified metaAnnotation : annotationType.getAnnotations()) {
-                    //noinspection ConstantValue
                     if (metaAnnotation != null && TypeUtils.isOfClassType(metaAnnotation, "java.lang.annotation.Repeatable")) {
                         return true;
                     }

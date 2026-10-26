@@ -675,7 +675,6 @@ public class InstanceOfPatternMatch extends Recipe {
         public String variableName(@Nullable JavaType type) {
             // the instanceof operator only accepts classes (without generics) and arrays
             if (style == Style.EXACT) {
-                //noinspection DataFlowIssue
                 return name;
             }
             if (type instanceof JavaType.FullyQualified) {
