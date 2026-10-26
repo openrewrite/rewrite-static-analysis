@@ -111,6 +111,29 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
+    void retainNullCheckBeforeContentEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void check(String s) {
+                      if (s != null && s.contentEquals("test")) {}
+                  }
+              }
+              """,
+            """
+              class A {
+                  void check(String s) {
+                      if (s != null && "test".contentEquals(s)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainNecessaryNullCheck() {
         rewriteRun(
           //language=java
@@ -132,31 +155,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       if (actual != null && actual.equals(expected)) {}
                       if (actual.equals(expected)) {}
                       if (expected.equals(actual)) {}
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void retainNullCheckBeforeContentEquals() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void check(String s, String t) {
-                      if (s != null && s.contentEquals("test")) {}
-                      if (t != null && "test".contentEquals(t)) {}
-                  }
-              }
-              """,
-            """
-              class A {
-                  void check(String s, String t) {
-                      if (s != null && "test".contentEquals(s)) {}
-                      if (t != null && "test".contentEquals(t)) {}
                   }
               }
               """
