@@ -185,6 +185,26 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
         assertThat(result.printAll()).isEqualTo(unattributed.printAll());
     }
 
+    @ParameterizedTest
+    @MethodSource("missingArgumentTypes")
+    void preserveDoubleConstructorWithMissingReturnType(JavaType missingType) {
+        ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
+        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+          "class T { String text(double value) { return new Float(value).toString(); } " +
+          "int comparison(double value, Float other) { return new Float(value).compareTo(other); } }")
+          .findFirst().orElseThrow();
+        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
+                return newClass.withConstructorType(newClass.getConstructorType().withReturnType(missingType));
+            }
+        }.visit(parsed, ctx);
+        J.CompilationUnit result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
+          .getVisitor().visit(unattributed, ctx);
+        assertThat(result).isNotNull();
+        assertThat(result.printAll()).isEqualTo(unattributed.printAll());
+    }
+
     @Test
     void stillMigrateFloatArgumentsAndWideningConversions() {
         rewriteRun(
