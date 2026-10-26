@@ -30,7 +30,6 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
-@Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
     private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
 

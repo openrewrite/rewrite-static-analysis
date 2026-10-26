@@ -75,7 +75,7 @@ recipeList:
   - org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
-#  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast # still `@Incubating`
+#  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast # has a history of removing casts that are still needed, such as #1104 and #1024
 #  - org.openrewrite.java.RemoveUnusedImports # can remove imports that are still needed where type attribution is incomplete
 #  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables # drops side effects such as `i++`, see B6 in #1116
 #  - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods # private methods can still be called reflectively or by frameworks

@@ -45,7 +45,6 @@ import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
 @EqualsAndHashCode(callSuper = false)
-@Incubating(since = "7.36.0")
 @Value
 public class InstanceOfPatternMatch extends Recipe {
 
