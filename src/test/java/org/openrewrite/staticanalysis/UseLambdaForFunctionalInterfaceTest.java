@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
@@ -217,7 +218,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void gson() {
         rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("gson")),
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "gson-2")),
           //language=java
           java(
             """
