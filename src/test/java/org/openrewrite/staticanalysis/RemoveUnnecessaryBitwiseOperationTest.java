@@ -476,6 +476,8 @@ class RemoveUnnecessaryBitwiseOperationTest implements RewriteTest {
                       int b = (x) | 0;
                       int c = ((x)) & -1;
                       int d = (x + y) | 0;
+                      int e = ((x | 0));
+                      int f = ((x));
                   }
               }
               """,
@@ -486,6 +488,8 @@ class RemoveUnnecessaryBitwiseOperationTest implements RewriteTest {
                       int b = x;
                       int c = x;
                       int d = (x + y);
+                      int e = x;
+                      int f = ((x));
                   }
               }
               """
