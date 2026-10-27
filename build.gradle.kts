@@ -12,6 +12,12 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
+recipeDependencies {
+    testParserClasspath("com.google.code.gson:gson:2.+")
+    testParserClasspath("junit:junit:4.13.2")
+    testParserClasspath("org.testng:testng:7.+")
+}
+
 val provided = configurations.named("provided")
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
@@ -40,14 +46,9 @@ dependencies {
     }
 
     testImplementation("org.openrewrite:rewrite-test")
-    testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("org.junit.platform:junit-platform-launcher")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.testng:testng:7.+")
     testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")
-
-    testImplementation("com.google.code.gson:gson:latest.release")
 
     testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("org.openrewrite:rewrite-java-25")
