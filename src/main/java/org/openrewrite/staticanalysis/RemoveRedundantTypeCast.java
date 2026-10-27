@@ -138,8 +138,9 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
-                } else if (parentValue instanceof J.VariableDeclarations) {
-                    targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
+                } else if (parentValue instanceof J.VariableDeclarations &&
+                        parentTreeCursor.getValue() instanceof J.VariableDeclarations.NamedVariable) {
+                    targetType = ((J.VariableDeclarations.NamedVariable) parentTreeCursor.getValue()).getType();
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
