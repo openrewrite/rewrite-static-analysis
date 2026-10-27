@@ -193,8 +193,11 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
             @Override
             public <T extends J> J visitParentheses(J.Parentheses<T> parens, ExecutionContext ctx) {
                 J visited = super.visitParentheses(parens, ctx);
-                if (!(parens.getTree() instanceof J.Binary || parens.getTree() instanceof J.AssignmentOperation) ||
-                        !(visited instanceof J.Parentheses)) {
+                J tree = parens.getTree();
+                // The outer parentheses of `((x | 0))` once the inner ones are gone
+                boolean emptied = tree instanceof J.Parentheses && visited instanceof J.Parentheses &&
+                        !(((J.Parentheses<?>) visited).getTree() instanceof J.Parentheses);
+                if (!(tree instanceof J.Binary || tree instanceof J.AssignmentOperation || emptied) || !(visited instanceof J.Parentheses)) {
                     return visited;
                 }
                 List<Space> after = new ArrayList<>();
@@ -203,25 +206,6 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
                     return visited;
                 }
                 return unwrapped.withPrefix(separated(unwrapped.getPrefix()));
-            }
-
-            @Override
-            public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
-                J.TypeCast t = (J.TypeCast) super.visitTypeCast(typeCast, ctx);
-                // A parenthesized cast operand is parsed as control parentheses, which visitParentheses never sees
-                if (!(typeCast.getExpression() instanceof J.ControlParentheses) || !(t.getExpression() instanceof J.ControlParentheses)) {
-                    return t;
-                }
-                J original = ((J.ControlParentheses<?>) typeCast.getExpression()).getTree();
-                J.ControlParentheses<?> cp = (J.ControlParentheses<?>) t.getExpression();
-                if (!(original instanceof J.Binary || original instanceof J.AssignmentOperation || original instanceof J.Parentheses) ||
-                        !isPrimary(cp.getTree()) || !relocate(cp.getPadding().getTree().getAfter())) {
-                    return t;
-                }
-                List<Comment> before = new ArrayList<>(cp.getPrefix().getComments());
-                before.addAll(cp.getTree().getPrefix().getComments());
-                Space prefix = prefix(cp.getPrefix().getWhitespace(), before);
-                return t.withExpression(((Expression) cp.getTree()).withPrefix(prefix.isEmpty() ? Space.SINGLE_SPACE : prefix));
             }
 
             // Moves comments that followed the current node to whatever is printed next, or returns false
@@ -260,7 +244,7 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
 
             /**
              * `return(x | 0)` must become `return x`, not `returnx`. The keyword can also sit in front of an
-             * enclosing expression the node starts, as in `return(x | 0) + 1`.
+             * enclosing expression the node starts, as in `return(x | 0) + 1`. A cast is followed by a space too: `(long) x`.
              */
             private Space separated(Space prefix) {
                 if (!prefix.getWhitespace().isEmpty() || !prefix.getComments().isEmpty()) {
@@ -280,7 +264,8 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
                 Object keyword = parent.getValue();
                 // An annotation element's default value is the only expression directly under a method declaration
                 return keyword instanceof J.Return || keyword instanceof J.Yield || keyword instanceof J.Case ||
-                        keyword instanceof J.Assert || keyword instanceof J.MethodDeclaration ? Space.SINGLE_SPACE : prefix;
+                        keyword instanceof J.Assert || keyword instanceof J.MethodDeclaration || keyword instanceof J.TypeCast ?
+                        Space.SINGLE_SPACE : prefix;
             }
         });
     }
