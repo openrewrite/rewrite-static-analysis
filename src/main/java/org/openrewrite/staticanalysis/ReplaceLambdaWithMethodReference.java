@@ -231,13 +231,32 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
                     Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
                             (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
-                            is instanceof J.Lambda);
+                            is == Cursor.ROOT_VALUE);
+                    if (!(owner.getValue() instanceof TypedTree)) {
+                        return l;
+                    }
                     JavaType ownerType = owner.<TypedTree>getValue().getType();
                     JavaType.FullyQualified declaringType = methodType.getDeclaringType();
-                    // When the method belongs to an enclosing (outer) class, qualify `this` as `Outer.this`
-                    Expression thisExpression = ownerType != null && !TypeUtils.isAssignableTo(declaringType, ownerType) ?
-                            JavaElementFactory.newQualifiedThis(declaringType) :
-                            JavaElementFactory.newThis(ownerType);
+                    Expression thisExpression;
+                    if (ownerType == null || TypeUtils.isAssignableTo(declaringType, ownerType)) {
+                        thisExpression = JavaElementFactory.newThis(ownerType);
+                    } else {
+                        // When the method belongs to an enclosing (outer) class (possibly inherited from its
+                        // superclass), qualify `this` with the enclosing class's type rather than `declaringType`
+                        Cursor enclosingOwner = owner.dropParentUntil(is ->
+                                (is instanceof J.ClassDeclaration &&
+                                        TypeUtils.isAssignableTo(declaringType, ((J.ClassDeclaration) is).getType())) ||
+                                (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null &&
+                                        TypeUtils.isAssignableTo(declaringType, ((J.NewClass) is).getType())) ||
+                                is == Cursor.ROOT_VALUE);
+                        if (!(enclosingOwner.getValue() instanceof J.ClassDeclaration)) {
+                            return l;
+                        }
+                        JavaType.FullyQualified enclosingType = TypeUtils.asFullyQualified(
+                                enclosingOwner.<J.ClassDeclaration>getValue().getType());
+                        thisExpression = JavaElementFactory.newQualifiedThis(
+                                enclosingType != null ? enclosingType : declaringType);
+                    }
                     return JavaElementFactory.newInstanceMethodReference(
                             thisExpression,
                             methodType,
