@@ -30,6 +30,43 @@ class MoveConditionsToWhileTest implements RewriteTest {
         spec.recipe(new MoveConditionsToWhile());
     }
 
+    @Test
+    void keepUnrelatedBooleanExpressions() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  boolean unrelated(boolean b) {
+                      return !!b;
+                  }
+
+                  void foo(int counter) {
+                      while (true) {
+                          if (counter >= 5) {
+                              break;
+                          }
+                          counter++;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean unrelated(boolean b) {
+                      return !!b;
+                  }
+
+                  void foo(int counter) {
+                      while (counter < 5) {
+                          counter++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void basicTransformation() {

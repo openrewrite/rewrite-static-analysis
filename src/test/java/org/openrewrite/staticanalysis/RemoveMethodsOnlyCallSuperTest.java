@@ -30,6 +30,43 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
         spec.recipe(new RemoveMethodsOnlyCallSuper());
     }
 
+    @Test
+    void removeOnlyTheImportsOfTheRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Parent {
+                  void foo(List<String> list) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Child extends Parent {
+                  @Override
+                  void foo(List<String> list) {
+                      super.foo(list);
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void removeVoidMethodOnlyCallingSuper() {

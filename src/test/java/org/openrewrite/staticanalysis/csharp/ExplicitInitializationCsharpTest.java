@@ -30,7 +30,7 @@ import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.staticanalysis.csharp.JavaToCsharp.toCsRecipe;
 
 @EnabledIf("isCsharpRuntimeAvailable")
-class ExplicitInitializationVisitorCsharpTest implements RewriteTest {
+class ExplicitInitializationCsharpTest implements RewriteTest {
 
     static boolean isCsharpRuntimeAvailable() {
         return Files.exists(Path.of(System.getProperty("user.home"), ".dotnet/tools/.store/openrewrite.csharp"));

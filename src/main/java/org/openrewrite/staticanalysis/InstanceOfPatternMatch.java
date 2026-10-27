@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -44,11 +45,10 @@ import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
 @EqualsAndHashCode(callSuper = false)
-@Incubating(since = "7.36.0")
 @Value
 public class InstanceOfPatternMatch extends Recipe {
 
-    String displayName = "Changes code to use Java 17's `instanceof` pattern matching";
+    String displayName = "Change code to use Java 17's `instanceof` pattern matching";
 
     String description = "Adds pattern variables to `instanceof` expressions wherever " +
                "the same (side effect free) expression is referenced in a " +
@@ -298,7 +298,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     .stream()
                     .filter(e -> e.getValue() == instanceOf)
                     .findFirst()
-                    .map(e -> e.getKey().getType().equals(typeCast.getType()))
+                    .map(e -> TypeUtils.isOfType(e.getKey().getType(), typeCast.getType()))
                     .orElse(true);
         }
 
@@ -545,9 +545,8 @@ public class InstanceOfPatternMatch extends Recipe {
                 if (next < statements.size() && original.getId().equals(statements.get(next).getId())) {
                     if (pending != null) {
                         Statement statement = statements.get(next);
-                        List<Comment> comments = new ArrayList<>(pending.getComments());
-                        comments.addAll(statement.getComments());
-                        statements.set(next, statement.withPrefix(pending.withComments(comments)));
+                        statements.set(next, statement.withPrefix(pending.withComments(
+                                ListUtils.concatAll(pending.getComments(), statement.getComments()))));
                         pending = null;
                     }
                     next++;
@@ -555,21 +554,15 @@ public class InstanceOfPatternMatch extends Recipe {
                     if (pending == null) {
                         pending = original.getPrefix();
                     } else {
-                        List<Comment> comments = new ArrayList<>(pending.getComments());
-                        comments.addAll(original.getComments());
-                        pending = pending.withComments(comments);
+                        pending = pending.withComments(ListUtils.concatAll(pending.getComments(), original.getComments()));
                     }
                 }
             }
             if (pending != null) {
-                List<Comment> comments = new ArrayList<>(pending.getComments());
-                if (b.getEnd().getComments().isEmpty()) {
-                    int last = comments.size() - 1;
-                    comments.set(last, comments.get(last).withSuffix(b.getEnd().getWhitespace()));
-                } else {
-                    comments.addAll(b.getEnd().getComments());
-                }
-                b = b.withEnd(pending.withComments(comments));
+                Space end = b.getEnd();
+                b = b.withEnd(pending.withComments(end.getComments().isEmpty() ?
+                        ListUtils.mapLast(pending.getComments(), c -> c.withSuffix(end.getWhitespace())) :
+                        ListUtils.concatAll(pending.getComments(), end.getComments())));
             }
             return b.withStatements(statements);
         }
@@ -682,7 +675,6 @@ public class InstanceOfPatternMatch extends Recipe {
         public String variableName(@Nullable JavaType type) {
             // the instanceof operator only accepts classes (without generics) and arrays
             if (style == Style.EXACT) {
-                //noinspection DataFlowIssue
                 return name;
             }
             if (type instanceof JavaType.FullyQualified) {

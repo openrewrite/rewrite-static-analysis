@@ -56,9 +56,9 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
+            public J.ForLoop visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 Statement init = forLoop.getControl().getInit().get(0);
                 if (init instanceof J.VariableDeclarations) {
                     J.VariableDeclarations initVars = (J.VariableDeclarations) init;
@@ -82,7 +82,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
                             for (J.VariableDeclarations.NamedVariable initVar : initVars.getVariables()) {
                                 if (initVar.getSimpleName().equals(unaryTarget)) {
                                     J.ForLoop f = forLoop.withControl(forLoop.getControl().withUpdate(ListUtils.insertInOrder(
-                                            ListUtils.map(forLoop.getControl().getUpdate(), u -> u instanceof J.Empty ? null : u),
+                                            ListUtils.filter(forLoop.getControl().getUpdate(), u -> !(u instanceof J.Empty)),
                                             unary.withPrefix(Space.format(" ")),
                                             Comparator.comparing(s -> s.printTrimmed(getCursor()), Comparator.naturalOrder())
                                     )));

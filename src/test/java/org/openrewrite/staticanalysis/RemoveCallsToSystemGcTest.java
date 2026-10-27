@@ -29,6 +29,52 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
         spec.recipe(new RemoveCallsToSystemGc());
     }
 
+    @Test
+    void cleanUpOnlyWhatTheRemovalEmptied() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void unrelated(boolean b) {
+                      synchronized (this) {
+                      }
+                      if (b) {
+                      }
+                  }
+
+                  void m(boolean low, java.util.Iterator<String> it) {
+                      if (low) {
+                          System.gc();
+                      }
+                      if (it.hasNext()) {
+                          Runtime.getRuntime().gc();
+                      }
+                      {
+                          System.gc();
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void unrelated(boolean b) {
+                      synchronized (this) {
+                      }
+                      if (b) {
+                      }
+                  }
+
+                  void m(boolean low, java.util.Iterator<String> it) {
+                      if (it.hasNext()) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void noGc() {
@@ -58,6 +104,40 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
 
                   public static void main(String[] args) {
                       gc();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A {
+                  void m(boolean low, boolean d, List<String> c) {
+                      if (low) System.gc();
+                      c.clear();
+                      if (d) System.gc(); else c.clear();
+                      while (d) Runtime.getRuntime().gc();
+                      Runnable r = () -> System.gc();
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A {
+                  void m(boolean low, boolean d, List<String> c) {
+                      c.clear();
+                      if (d) {} else c.clear();
+                      while (d) {}
+                      Runnable r = () -> {};
                   }
               }
               """

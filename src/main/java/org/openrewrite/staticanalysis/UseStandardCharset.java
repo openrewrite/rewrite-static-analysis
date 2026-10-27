@@ -24,7 +24,7 @@ import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -37,16 +37,16 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class UseStandardCharset extends Recipe {
+    private static final MethodMatcher CHARSET_FOR_NAME = new MethodMatcher("java.nio.charset.Charset forName(java.lang.String)");
 
     @Getter
-    final String displayName = "Use `StandardCharset` constants";
+    final String displayName = "Use `StandardCharsets` constants";
 
     @Getter
     final String description = "Replaces `Charset.forName(java.lang.String)` with the " +
-            "equivalent `StandardCharset` constant. Using the predefined constants " +
-            "is both compile-time safe and avoids the need to handle " +
-            "`UnsupportedEncodingException` for charsets that are guaranteed to " +
-            "exist on every JVM.";
+            "equivalent `StandardCharsets` constant. Using the predefined constants " +
+            "is compile-time safe and avoids looking up by name the charsets that " +
+            "are guaranteed to exist on every JVM.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4719");
@@ -56,9 +56,7 @@ public class UseStandardCharset extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.nio.charset.Charset", false), new JavaVisitor<ExecutionContext>() {
-            final MethodMatcher CHARSET_FOR_NAME = new MethodMatcher("java.nio.charset.Charset forName(java.lang.String)");
-
+        return Preconditions.check(new UsesMethod<>(CHARSET_FOR_NAME), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
@@ -75,7 +73,7 @@ public class UseStandardCharset extends Recipe {
                         try {
                             charset = Charset.forName(maybeReplace);
                         } catch (UnsupportedCharsetException ex) {
-                            // This should never happen in practice.
+                            // unsupported by this JVM, so it can't be one of the `StandardCharsets`
                             return method;
                         }
 

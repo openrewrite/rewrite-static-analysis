@@ -17,15 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
-@Incubating(since = "7.6.0")
+import static java.util.Collections.singleton;
+
 public class HiddenField extends Recipe {
     @Getter
     final String displayName = "Hidden field";
@@ -37,7 +35,7 @@ public class HiddenField extends Recipe {
             "one, leading to confusing bugs.";
 
     @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1117", "RSPEC-S2387"));
+    final Set<String> tags = singleton("RSPEC-S1117");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

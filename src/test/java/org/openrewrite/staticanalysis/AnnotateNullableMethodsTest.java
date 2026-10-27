@@ -681,4 +681,24 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotChangeTypescriptMethodReturningNull() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+            class B {}
+            class A {
+              public typed(): B | null {
+                  return null;
+              }
+              public untyped() {
+                  return null;
+              }
+            }
+            """
+          )
+        );
+    }
 }

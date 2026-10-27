@@ -24,9 +24,12 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -43,6 +46,9 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S3626");
 
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
@@ -50,10 +56,22 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if (TypeUtils.asPrimitive(m.getType()) == JavaType.Primitive.Void && m.getBody() != null) {
-                    return m.withBody(m.getBody().withStatements(ListUtils.mapLast(m.getBody().getStatements(),
-                            this::maybeRemoveReturn)));
+                    return m.withBody(trimBlock(m.getBody()));
                 }
                 return m;
+            }
+
+            private J.Block trimBlock(J.Block block) {
+                List<Statement> statements = block.getStatements();
+                if (statements.isEmpty()) {
+                    return block;
+                }
+                Statement last = statements.get(statements.size() - 1);
+                Statement trimmed = maybeRemoveReturn(last);
+                if (trimmed == null) {
+                    return removeLastStatement(block);
+                }
+                return trimmed == last ? block : block.withStatements(ListUtils.mapLast(statements, s -> trimmed));
             }
 
             private @Nullable Statement maybeRemoveReturn(Statement s) {
@@ -61,8 +79,7 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                     return null;
                 }
                 if (s instanceof J.Block) {
-                    J.Block block = (J.Block) s;
-                    return block.withStatements(ListUtils.mapLast(block.getStatements(), this::maybeRemoveReturn));
+                    return trimBlock((J.Block) s);
                 }
                 if (s instanceof J.If) {
                     J.If ifStatement = (J.If) s;
@@ -84,5 +101,25 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                 return s;
             }
         };
+    }
+
+    /**
+     * Removes the last statement of a block, keeping the comments before it at the end of the block.
+     */
+    static J.Block removeLastStatement(J.Block block) {
+        List<Statement> statements = block.getStatements();
+        if (statements.isEmpty()) {
+            return block;
+        }
+        Space prefix = statements.get(statements.size() - 1).getPrefix();
+        J.Block b = block.withStatements(ListUtils.mapLast(statements, s -> null));
+        if (prefix.getComments().isEmpty()) {
+            return b;
+        }
+        Space end = block.getEnd();
+        // A comment that trailed the removed statement keeps the line break and indent that preceded the statement
+        return b.withEnd(prefix.withComments(end.getComments().isEmpty() ?
+                ListUtils.mapLast(prefix.getComments(), c -> c.withSuffix(end.getWhitespace())) :
+                ListUtils.concatAll(prefix.getComments(), end.getComments())));
     }
 }

@@ -22,16 +22,18 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.Collections.singletonList;
 
 public class UnwrapElseAfterReturn extends Recipe {
 
@@ -47,62 +49,65 @@ public class UnwrapElseAfterReturn extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> javaVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-                J.Block b = visitAndCast(block, ctx, super::visitBlock);
-                AtomicReference<@Nullable Space> endWhitespace = new AtomicReference<>(null);
+                J.Block b = super.visitBlock(block, ctx);
+                AtomicReference<@Nullable Space> blockEnd = new AtomicReference<>(null);
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
                         if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.If) {
-                                // Else-if chain: find and unwrap the innermost else
                                 J.If innermost = findInnermostIfWithElse((J.If) elsePart);
                                 if (innermost != null &&
                                         innermost.getElsePart() != null &&
                                         endsWithReturnOrThrow(innermost.getThenPart()) &&
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
-                                    // Unwrap the innermost else
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
-                                    return flatten(innermost, innermostElseBody, endWhitespace, modifiedChain);
+                                    return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
                                 }
                             } else {
-                                // Plain else block: unwrap directly
                                 J.If newIf = ifStatement.withElsePart(null);
-                                return flatten(ifStatement, elsePart, endWhitespace, newIf);
+                                return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
                         }
                     }
                     return statement;
                 }));
 
-                Space end = endWhitespace.get();
-                if (end != null) {
-                    List<Comment> mergedComments = ListUtils.concatAll(end.getComments(), b.getEnd().getComments());
-                    alteredBlock = alteredBlock.withEnd(b.getEnd().withComments(mergedComments).withWhitespace(end.getWhitespace()));
-                }
-
-                return maybeAutoFormat(b, alteredBlock, ctx);
+                Space end = blockEnd.get();
+                return end == null ? alteredBlock : alteredBlock.withEnd(end);
             }
 
-            private List<Statement> flatten(J.If tailIf, Statement tailElse, AtomicReference<@Nullable Space> endWhitespace, J.If ifWithoutElse) {
+            private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,
+                                            AtomicReference<@Nullable Space> blockEnd, J.If ifWithoutElse) {
+                Space elsePrefix = tailIf.getElsePart().getPrefix();
+                String ifWhitespace = blockIf.getPrefix().getWhitespace();
+                String statementIndent = ifWhitespace.substring(Math.max(0, ifWhitespace.lastIndexOf('\n')));
+                List<Statement> unwrapped;
+                List<Comment> leadingComments;
                 if (tailElse instanceof J.Block) {
-                    J.Block elseBlock = (J.Block) tailElse;
-                    endWhitespace.set(elseBlock.getEnd());
-                    return ListUtils.concat(ifWithoutElse, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
-                        List<Comment> elseComments = elseBlock.getPrefix().getComments();
-                        List<Comment> stmtComments = elseStmt.getPrefix().getComments();
-                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
-                            return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
-                        }
-                        String whitespace = tailIf.getElsePart().getPrefix().getWhitespace();
-                        return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
-                    }));
+                    J.Block elseBlock = ShiftFormat.indent(tailElse, getCursor(), -1);
+                    unwrapped = elseBlock.getStatements();
+                    leadingComments = ListUtils.concatAll(elsePrefix.getComments(), elseBlock.getPrefix().getComments());
+                    Space elseEnd = elseBlock.getEnd();
+                    if (!elseEnd.getComments().isEmpty()) {
+                        blockEnd.set(end.getComments().isEmpty() ? elseEnd : Space.build(elseEnd.getWhitespace(), ListUtils.concatAll(
+                                ListUtils.mapLast(elseEnd.getComments(), c -> c.withSuffix(statementIndent)), end.getComments())));
+                    }
+                } else {
+                    unwrapped = singletonList(ShiftFormat.indent(tailElse, getCursor(), -1));
+                    leadingComments = elsePrefix.getComments();
                 }
-                return Arrays.asList(ifWithoutElse, tailElse.withPrefix(tailIf.getElsePart().getPrefix()));
+                return ListUtils.concat(ifWithoutElse, ListUtils.mapFirst(unwrapped, first -> {
+                    Space prefix = first.getPrefix();
+                    String whitespace = !elsePrefix.getComments().isEmpty() ? elsePrefix.getWhitespace() :
+                            prefix.getWhitespace().contains("\n") ? prefix.getWhitespace() : statementIndent;
+                    return first.withPrefix(Space.build(whitespace, ListUtils.concatAll(leadingComments, prefix.getComments())));
+                }));
             }
 
             private J.@Nullable If findInnermostIfWithElse(J.If ifStatement) {
@@ -125,17 +130,14 @@ public class UnwrapElseAfterReturn extends Recipe {
                 if (elseBody instanceof J.If) {
                     J.If innerIf = (J.If) elseBody;
                     if (innerIf.getElsePart() != null && !(innerIf.getElsePart().getBody() instanceof J.If)) {
-                        // This is the innermost if with a non-if else, remove its else
                         return ifStatement.withElsePart(
                                 ifStatement.getElsePart().withBody(innerIf.withElsePart(null))
                         );
                     }
-                    // Recurse deeper into the chain
                     return ifStatement.withElsePart(
                             ifStatement.getElsePart().withBody(removeInnermostElse(innerIf))
                     );
                 }
-                // Direct else (not else-if), remove it
                 return ifStatement.withElsePart(null);
             }
 

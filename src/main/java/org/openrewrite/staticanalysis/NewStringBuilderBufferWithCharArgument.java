@@ -60,9 +60,11 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                         nc = nc.withArguments(ListUtils.mapFirst(nc.getArguments(), arg -> {
                             if (arg instanceof J.Literal) {
                                 J.Literal l = (J.Literal) arg;
-                                l = l.withType(JavaType.buildType("String"));
+                                l = l.withType(JavaType.Primitive.String).withValue(String.valueOf(l.getValue()));
                                 if (l.getValueSource() != null) {
-                                    l = l.withValueSource(l.getValueSource().replace("'", "\""));
+                                    // the character as written, which a string holds as is, except a double quote
+                                    String character = l.getValueSource().substring(1, l.getValueSource().length() - 1);
+                                    l = l.withValueSource("\"" + ("\"".equals(character) ? "\\\"" : character) + "\"");
                                 }
                                 return l;
                             }

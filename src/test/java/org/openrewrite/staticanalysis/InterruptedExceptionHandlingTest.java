@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -223,6 +225,86 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
                           if (e instanceof InterruptedException) {
                               Thread.currentThread().interrupt();
                           }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @EnabledForJreRange(min = JRE.JAVA_25)
+    @Test
+    void multiCatchWithUnnamedVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.file.ClosedWatchServiceException;
+              import java.nio.file.WatchService;
+
+              class Test {
+                  void foo(WatchService watcher) {
+                      try {
+                          watcher.take();
+                      } catch (InterruptedException | ClosedWatchServiceException _) {
+                          return;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.nio.file.ClosedWatchServiceException;
+              import java.nio.file.WatchService;
+
+              class Test {
+                  void foo(WatchService watcher) {
+                      try {
+                          watcher.take();
+                      } catch (InterruptedException | ClosedWatchServiceException e) {
+                          if (e instanceof InterruptedException) {
+                              Thread.currentThread().interrupt();
+                          }
+                          return;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @EnabledForJreRange(min = JRE.JAVA_25)
+    @Test
+    void multiCatchWithUnnamedVariableAvoidsNameClash() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Test {
+                  void foo(String e) {
+                      try {
+                          Thread.sleep(1000);
+                      } catch (IOException | InterruptedException _) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Test {
+                  void foo(String e) {
+                      try {
+                          Thread.sleep(1000);
+                      } catch (IOException | InterruptedException e1) {
+                          if (e1 instanceof InterruptedException) {
+                              Thread.currentThread().interrupt();
+                          }
+                          System.out.println(e);
                       }
                   }
               }

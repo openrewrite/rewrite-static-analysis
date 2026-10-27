@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -30,6 +31,31 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     public void defaults(RecipeSpec spec) {
         spec.recipe(new RemoveUnusedPrivateMethods())
           .parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-params"));
+    }
+
+    @Test
+    void removeOnlyTheImportsOfTheRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Test {
+                  private Map<String, String> unused() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -103,122 +129,6 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("MissingSerialAnnotation")
-    @Test
-    void doNotRemoveCustomizedSerialization() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private void writeObject(java.io.ObjectOutputStream out) {}
-                  private Object writeReplace() {}
-                  private void readObject(java.io.ObjectInputStream in) {}
-                  private void readObjectNoData() {}
-                  private Object readResolve() {}
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotRemoveMethodsWithAnnotations() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.junit.jupiter.params.provider.MethodSource;
-              import java.util.stream.Stream;
-
-              class Test {
-                  @MethodSource("sourceExample")
-                  void test(String input) {
-                  }
-                  private Stream<Object> sourceExample() {
-                      return null;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/877")
-    @Test
-    void privateMethodCalledWithRawCollectionArguments() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Collection;
-              import java.util.Map;
-              import java.util.Set;
-
-              class Main {
-                  Main(Map templates) {
-                      compileTemplates(templates.keySet(), templates.values());
-                  }
-
-                  private Set<String> compileTemplates(
-                          final Set<String> compiledParam, final Collection<String> toCheck) {
-                      return compiledParam;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/877")
-    @Test
-    void privateMethodCalledWithParameterizedMapArguments() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Collection;
-              import java.util.Map;
-              import java.util.Set;
-
-              class Main {
-                  Main(Map<String, String> templates) {
-                      compileTemplates(templates.keySet(), templates.values());
-                  }
-
-                  private Set<String> compileTemplates(
-                          final Set<String> compiledParam, final Collection<String> toCheck) {
-                      return compiledParam;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/1536")
-    @Test
-    void privateMethodWithBoundedGenericTypes() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class TestClass {
-                  void method() {
-                      checkMethodInUse("String", "String");
-                  }
-
-                  private static void checkMethodInUse(String arg0, String arg1) {
-                  }
-
-                  private static <T> void checkMethodInUse(String arg0, T arg1) {
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void removeMethodsOnNestedClass() {
         rewriteRun(
@@ -258,58 +168,177 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
-    @Test
-    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.stream.Stream;
+    @Nested
+    class NoChange {
+        @SuppressWarnings("MissingSerialAnnotation")
+        @Test
+        void doNotRemoveCustomizedSerialization() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private void writeObject(java.io.ObjectOutputStream out) {}
+                      private Object writeReplace() {}
+                      private void readObject(java.io.ObjectInputStream in) {}
+                      private void readObjectNoData() {}
+                      private Object readResolve() {}
+                  }
+                  """
+              )
+            );
+        }
 
-              @SuppressWarnings("unused")
-              class Test {
-                  void test(String input) {
-                  }
-                  private Stream<Object> unused() {
-                      return null;
-                  }
-                  private Stream<Object> anotherUnused() {
-                      return null;
-                  }
-              }
-              """
-          )
-        );
-    }
+        @Test
+        void doNotRemoveMethodsWithAnnotations() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.junit.jupiter.params.provider.MethodSource;
+                  import java.util.stream.Stream;
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
-    @Test
-    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.stream.Stream;
-
-              @SuppressWarnings("unused")
-              class Test {
-                  void test(String input) {
+                  class Test {
+                      @MethodSource("sourceExample")
+                      void test(String input) {
+                      }
+                      private Stream<Object> sourceExample() {
+                          return null;
+                      }
                   }
-                  private Stream<Object> unused() {
-                      return null;
-                  }
+                  """
+              )
+            );
+        }
 
-                  class InnerTest {
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/877")
+        @Test
+        void privateMethodCalledWithRawCollectionArguments() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collection;
+                  import java.util.Map;
+                  import java.util.Set;
+
+                  class Main {
+                      Main(Map templates) {
+                          compileTemplates(templates.keySet(), templates.values());
+                      }
+
+                      private Set<String> compileTemplates(
+                              final Set<String> compiledParam, final Collection<String> toCheck) {
+                          return compiledParam;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/877")
+        @Test
+        void privateMethodCalledWithParameterizedMapArguments() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collection;
+                  import java.util.Map;
+                  import java.util.Set;
+
+                  class Main {
+                      Main(Map<String, String> templates) {
+                          compileTemplates(templates.keySet(), templates.values());
+                      }
+
+                      private Set<String> compileTemplates(
+                              final Set<String> compiledParam, final Collection<String> toCheck) {
+                          return compiledParam;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/1536")
+        @Test
+        void privateMethodWithBoundedGenericTypes() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class TestClass {
+                      void method() {
+                          checkMethodInUse("String", "String");
+                      }
+
+                      private static void checkMethodInUse(String arg0, String arg1) {
+                      }
+
+                      private static <T> void checkMethodInUse(String arg0, T arg1) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/294")
+        @Test
+        void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.stream.Stream;
+
+                  @SuppressWarnings("unused")
+                  class Test {
                       void test(String input) {
                       }
                       private Stream<Object> unused() {
                           return null;
                       }
+                      private Stream<Object> anotherUnused() {
+                          return null;
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/294")
+        @Test
+        void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.stream.Stream;
+
+                  @SuppressWarnings("unused")
+                  class Test {
+                      void test(String input) {
+                      }
+                      private Stream<Object> unused() {
+                          return null;
+                      }
+
+                      class InnerTest {
+                          void test(String input) {
+                          }
+                          private Stream<Object> unused() {
+                              return null;
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

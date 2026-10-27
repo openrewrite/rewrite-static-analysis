@@ -40,7 +40,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
     @Getter
     final String description = "String concatenation within calls to `StringBuilder.append()` " +
-            "causes unnecessary memory allocation. Except for concatenations of String " +
+            "causes unnecessary memory allocation, except for concatenations of `String` " +
             "literals, which are joined together at compile time. Replaces inefficient " +
             "concatenations with chained calls to `StringBuilder.append()`. " +
             "Using `+` inside `append()` defeats the purpose of the `StringBuilder`, " +
@@ -75,7 +75,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                         return m;
                     }
 
-                    // group expressions
                     List<Expression> groups = new ArrayList<>();
                     List<Expression> group = new ArrayList<>();
                     boolean appendToString = false;
@@ -109,7 +108,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                     J.MethodInvocation chainedMethods = m.withArguments(singletonList(groups.get(0)));
                     for (int i = 1; i < groups.size(); i++) {
-                        chainedMethods = chainedMethods.withSelect(chainedMethods)
+                        chainedMethods = chainedMethods.withSelect(chainedMethods.withId(Tree.randomId()))
                                 .withArguments(singletonList(groups.get(i).unwrap()))
                                 .withPrefix(Space.EMPTY);
                     }
@@ -122,9 +121,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         }));
     }
 
-    /**
-     * Concat two literals to an expression with '+' and surrounded with single space.
-     */
     public static J.Binary concatAdditionBinary(Expression left, Expression right) {
         Space rightPrefix = right.getPrefix().isEmpty() ? Space.SINGLE_SPACE : right.getPrefix();
         return new J.Binary(
@@ -138,9 +134,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         );
     }
 
-    /**
-     * Concat expressions to an expression with '+' connected.
-     */
     public static @Nullable Expression additiveExpression(Expression... expressions) {
         Expression expression = null;
         for (Expression element : expressions) {
@@ -155,9 +148,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         return additiveExpression(expressions.toArray(new Expression[0]));
     }
 
-    /**
-     * Concat an additive expression in a group and add to groups
-     */
     private static void addToGroups(List<Expression> group, List<Expression> groups) {
         if (!group.isEmpty()) {
             groups.add(additiveExpression(group));

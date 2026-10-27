@@ -19,7 +19,7 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -48,11 +48,11 @@ public class RemoveDuplicateConditions extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J visitIf(J.If if_, ExecutionContext ctx) {
-                J.If if__ = (J.If) super.visitIf(if_, ctx);
+            public J.If visitIf(J.If if_, ExecutionContext ctx) {
+                J.If if__ = super.visitIf(if_, ctx);
 
                 if (if__.getElsePart() == null) {
                     return if__;
@@ -91,7 +91,7 @@ public class RemoveDuplicateConditions extends Recipe {
                 for (int i = conditions.size() - 1; i >= 1; i--) {
                     for (int j = 0; j < i; j++) {
                         if (SemanticallyEqual.areEqual(conditions.get(i), conditions.get(j))) {
-                            result = removeBranch(result, ifNodes.get(i));
+                            result = rebuildChain(result, ifNodes.get(i));
                             changed = true;
                             break;
                         }
@@ -101,18 +101,7 @@ public class RemoveDuplicateConditions extends Recipe {
                 return changed ? result : if__;
             }
 
-            private J.If removeBranch(J.If root, J.If toRemove) {
-                // Walk the chain and skip the duplicate branch
-                return rebuildChain(root, toRemove);
-            }
-
             private J.If rebuildChain(J.If current, J.If toRemove) {
-                if (current == toRemove) {
-                    // Skip this branch: connect its else to the previous branch
-                    // This case is handled by the caller
-                    return current;
-                }
-
                 if (current.getElsePart() == null) {
                     return current;
                 }

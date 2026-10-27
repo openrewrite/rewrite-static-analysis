@@ -27,7 +27,10 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
@@ -65,6 +68,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             "the returned copy. Calls expected to throw, Mockito stubbing and verification, calls on the current " +
             "instance in custom AssertJ assertion constructors, and code under " +
             "`@SuppressWarnings(\"CheckReturnValue\")` are not marked.";
+
+    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S2201", "RSPEC-S2970"));
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {

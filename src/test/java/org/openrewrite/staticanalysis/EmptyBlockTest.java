@@ -96,23 +96,39 @@ class EmptyBlockTest implements RewriteTest {
 
     @SuppressWarnings("EmptySynchronizedStatement")
     @Test
-    void emptySynchronized() {
+    void unchangedEmptySynchronized() {
         rewriteRun(
           //language=java
           java(
             """
-              public class A {
-                  {
-                      final Object o = new Object();
-                      synchronized(o) {
+              class A {
+                  void foo(Object lock) {
+                      synchronized (lock) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptySwitchKeepsSelectorSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(java.util.function.IntSupplier sel) {
+                      switch (sel.getAsInt()) {
                       }
                   }
               }
               """,
             """
-              public class A {
-                  {
-                      final Object o = new Object();
+              class A {
+                  void foo(java.util.function.IntSupplier sel) {
+                      sel.getAsInt();
                   }
               }
               """
@@ -141,6 +157,142 @@ class EmptyBlockTest implements RewriteTest {
               public class A {
                   {
                       final String fileName = "fileName";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Runnable r) {
+                      // release
+                      try {
+                      } finally {
+                          r.run();
+                          r.run();
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Runnable r) {
+                      // release
+                      r.run();
+                      r.run();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyDeclarationsInBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Runnable r) {
+                      try {
+                      } finally {
+                          Runnable s = r;
+                          s.run();
+                      }
+                      Runnable s = r;
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Runnable r) {
+                      {
+                          Runnable s = r;
+                          s.run();
+                      }
+                      Runnable s = r;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyFormattingAndNestedFixes() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(java.util.function.BooleanSupplier b) {
+                      try {
+                      } finally {
+                          if (b.getAsBoolean()) {
+                          }
+                          System.out.println(new int[]{1,2});
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(java.util.function.BooleanSupplier b) {
+                      b.getAsBoolean();
+                      System.out.println(new int[]{1,2});
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyPatternVariablesAndCommentsInBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object o, Runnable r) {
+                      try {
+                      } finally {
+                          if (!(o instanceof String s)) {
+                              throw new IllegalStateException();
+                          }
+                          System.out.println(s);
+                      }
+                      String s = "";
+                      try {
+                      } finally {
+                          r.run();
+                          // released
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Object o, Runnable r) {
+                      {
+                          if (!(o instanceof String s)) {
+                              throw new IllegalStateException();
+                          }
+                          System.out.println(s);
+                      }
+                      String s = "";
+                      {
+                          r.run();
+                          // released
+                      }
                   }
               }
               """
@@ -320,6 +472,82 @@ class EmptyBlockTest implements RewriteTest {
                       n /= sideEffect();
                       new A();
                       boolSideEffect();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotExtractConditionallyEvaluatedSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.regex.Matcher;
+
+              class A {
+                  void foo(Matcher m, boolean b, int[] arr, java.util.function.IntSupplier i) {
+                      if (m.find() && m.group(1) != null) {
+                      }
+                      if (b || m.find()) {
+                      }
+                      if (b ? m.find() : m.hitEnd()) {
+                      }
+                      if (arr[i.getAsInt()] == 0) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void extractSideEffectsFromShortCircuitLeftOperand() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.regex.Matcher;
+
+              class A {
+                  void foo(Matcher m, boolean b) {
+                      if (m.find() && b) {
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.regex.Matcher;
+
+              class A {
+                  void foo(Matcher m, boolean b) {
+                      m.find();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInvertFloatingPointComparison() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(double d, Float f) {
+                      if (d > 0) {
+                      } else {
+                          throw new IllegalArgumentException();
+                      }
+                      if (f <= 1) {
+                      } else {
+                          throw new IllegalArgumentException();
+                      }
                   }
               }
               """

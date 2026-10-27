@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavadocVisitor;
@@ -31,21 +33,25 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
+
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     private static final MethodMatcher RUNTIME_EXEC_CMD = new MethodMatcher("java.lang.Runtime exec(String)");
     private static final MethodMatcher RUNTIME_EXEC_CMD_ENVP = new MethodMatcher("java.lang.Runtime exec(String, String[])");
     private static final MethodMatcher RUNTIME_EXEC_CMD_ENVP_FILE = new MethodMatcher("java.lang.Runtime exec(String, String[], java.io.File)");
 
-    @Getter
-    final String displayName = "Replace deprecated `Runtime#exec()` methods";
+    String displayName = "Replace deprecated `Runtime#exec()` methods";
 
-    @Getter
-    final String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-            "after Java 18 and is no longer recommended for use by the Java documentation.";
+    String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
+            "since Java 18 and is no longer recommended for use by the Java documentation.";
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(3);
+    Set<String> tags = singleton("RSPEC-S1874");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -84,46 +90,27 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     }
 
                     updateCursor(m);
+                    Expression arg0 = m.getArguments().get(0);
+                    Cursor cursor = new Cursor(getCursor(), arg0);
+                    Expression newArg0;
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
-                        JavaTemplate template = JavaTemplate.builder(templateCode).build();
-
-                        List<Expression> args = m.getArguments();
-                        Cursor cursor = new Cursor(getCursor(), args.get(0));
-                        args.set(0, template.apply(cursor, args.get(0).getCoordinates().replace()));
-
-                        if (m.getMethodType() != null) {
-                            List<JavaType> parameterTypes = m.getMethodType().getParameterTypes();
-                            parameterTypes.set(0, JavaType.ShallowClass.build("java.lang.String[]"));
-
-                            return m.withArguments(args)
-                                    .withMethodType(m.getMethodType().withParameterTypes(parameterTypes));
-                        }
+                        newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
                     } else {
                         // replace argument to 'command.split(" ")'
-                        List<Expression> args = m.getArguments();
-                        boolean needWrap = false;
-                        Expression arg0 = args.get(0);
-                        if (!(arg0 instanceof J.Identifier) &&
-                            !(arg0 instanceof J.Literal) &&
-                            !(arg0 instanceof J.MethodInvocation)) {
-                            needWrap = true;
-                        }
-
+                        boolean needWrap = !(arg0 instanceof J.Identifier) &&
+                                           !(arg0 instanceof J.Literal) &&
+                                           !(arg0 instanceof J.MethodInvocation);
                         String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        JavaTemplate template = JavaTemplate.builder(code).contextSensitive().build();
-                        Cursor cursor = new Cursor(getCursor(), args.get(0));
-                        arg0 = template.apply(cursor, args.get(0).getCoordinates().replace(), args.get(0));
-                        args.set(0, arg0);
+                        newArg0 = JavaTemplate.builder(code).contextSensitive().build()
+                                .apply(cursor, arg0.getCoordinates().replace(), arg0);
+                    }
 
-                        if (m.getMethodType() != null) {
-                            List<JavaType> parameterTypes = m.getMethodType().getParameterTypes();
-                            parameterTypes.set(0, JavaType.ShallowClass.build("java.lang.String[]"));
-
-                            return m.withArguments(args).withMethodType(m.getMethodType().withParameterTypes(parameterTypes));
-                        }
-                        return m;
+                    if (m.getMethodType() != null) {
+                        return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
+                                .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
+                                        m.getMethodType().getParameterTypes(), t -> JavaType.ShallowClass.build("java.lang.String[]"))));
                     }
                 }
 

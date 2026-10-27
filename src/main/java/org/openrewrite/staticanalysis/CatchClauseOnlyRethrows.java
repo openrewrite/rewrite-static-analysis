@@ -75,6 +75,9 @@ public class CatchClauseOnlyRethrows extends Recipe {
                                 return aCatch;
                             }
                         }
+                        for (JavaType caught : getJavaTypes(aCatch)) {
+                            maybeRemoveImport(TypeUtils.asFullyQualified(caught));
+                        }
                         return null;
                     }
                     return aCatch;
@@ -116,7 +119,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 JavaType catchParameterType = aCatch.getParameter().getType();
                 if (!(catchParameterType instanceof JavaType.MultiCatch)) {
                     JavaType.FullyQualified catchType = TypeUtils.asFullyQualified(catchParameterType);
-                    if (catchType == null || !catchType.equals(exception.getType())) {
+                    if (catchType == null || !TypeUtils.isOfType(catchType, exception.getType())) {
                         return false;
                     }
                 }

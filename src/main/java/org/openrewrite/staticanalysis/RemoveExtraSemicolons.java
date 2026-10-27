@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -25,6 +26,7 @@ import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -35,10 +37,10 @@ public class RemoveExtraSemicolons extends Recipe {
     final String displayName = "Remove extra semicolons";
 
     @Getter
-    final String description = "Removes not needed semicolons. Semicolons are considered not needed:\n" +
-            " * Optional semicolons at the end of try-with-resources,\n" +
+    final String description = "Removes unnecessary semicolons. Semicolons are considered unnecessary:\n" +
+            " * at the end of try-with-resources,\n" +
             " * after the last enum value if no field or method is defined,\n" +
-            " * no statement between two semicolon.\n\n" +
+            " * when there is no statement between two semicolons.\n\n" +
             "Stray semicolons are typically typos or remnants of refactoring and can mislead " +
             "readers into thinking a statement is present.";
 
@@ -51,7 +53,7 @@ public class RemoveExtraSemicolons extends Recipe {
     @Override
     @SuppressWarnings("ConstantConditions")
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
 
             // Typically it is not possible to get semicolons in the whitespace part of comments without parser bugs
             // But since trailing semicolons on import statements is not valid java the LST format doesn't accommodate that
@@ -107,7 +109,7 @@ public class RemoveExtraSemicolons extends Recipe {
                 }
                 return e;
             }
-        };
+        });
     }
 
     private Optional<Statement> nextNonEmptyAggregatedWithComments(Statement current, Iterator<Statement> iterator) {

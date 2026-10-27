@@ -15,12 +15,15 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
   "ConstantConditions",
@@ -35,6 +38,37 @@ class StringLiteralEqualityTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new StringLiteralEquality());
+    }
+
+    @Test
+    void keepUnrelatedEqualsCalls() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean unrelated(String s) {
+                      return s.equals("x");
+                  }
+
+                  boolean method(String s) {
+                      return s == "y";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean unrelated(String s) {
+                      return s.equals("x");
+                  }
+
+                  boolean method(String s) {
+                      return "y".equals(s);
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -169,5 +203,44 @@ class StringLiteralEqualityTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Kotlin {
+        // Don't change for Kotlin because In Kotlin, `==` means structural equality and it's redundant to call equals().
+        @Test
+        void doNotChangeForKotlin() {
+            rewriteRun(
+              kotlin(
+                """
+                  class MqttRegex() {
+                      val str: java.lang.String = java.lang.String("123")
+                      fun processToken(token: String?) {
+                          if (token == null || "" == token.trim { it <= ' ' }) {
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Groovy {
+        // Don't change for Groovy because in Groovy, `==` means structural equality and it's redundant to call equals().
+        @Test
+        void doNotChangeForGroovy() {
+            rewriteRun(
+              groovy(
+                """
+                  def foo(String token) {
+                      if (token == "Foo" ) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

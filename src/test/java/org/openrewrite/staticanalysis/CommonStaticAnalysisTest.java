@@ -13,33 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.staticanalysis.kotlin;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.staticanalysis.StringLiteralEquality;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.java.Assertions.java;
 
-class StringLiteralEqualityTest implements RewriteTest {
+class CommonStaticAnalysisTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new StringLiteralEquality());
+        spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis");
     }
 
-    // Don't change for Kotlin because In Kotlin, `==` means structural equality and it's redundant to call equals().
+    @DocumentExample
     @Test
-    void doNotChangeForKotlin() {
+    void indexOfOnList() {
         rewriteRun(
-          kotlin(
+          //language=java
+          java(
             """
-              class MqttRegex() {
-                  val str: java.lang.String = java.lang.String("123")
-                  fun processToken(token: String?) {
-                      if (token == null || "" == token.trim { it <= ' ' }) {
+              import java.util.List;
+
+              class Test {
+                  static boolean hasIndex(List<String> strList, String str) {
+                      if (strList.indexOf(str) > 0) {
                       }
+                      return strList.indexOf(str) > 0;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  static boolean hasIndex(List<String> strList, String str) {
+                      strList.indexOf(str);
+                      return strList.indexOf(str) >= 1;
                   }
               }
               """

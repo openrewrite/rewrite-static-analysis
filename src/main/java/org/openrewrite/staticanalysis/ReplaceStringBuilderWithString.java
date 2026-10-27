@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
@@ -24,29 +26,33 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.reverse;
+import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceStringBuilderWithString extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(..)");
     private static final MethodMatcher STRING_BUILDER_APPEND_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(char[])");
+    private static final MethodMatcher STRING_BUILDER_APPEND_KOTLIN_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(kotlin.CharArray)");
+    private static final MethodMatcher STRING_BUILDER_CAPACITY = new MethodMatcher("java.lang.StringBuilder <constructor>(int)");
     private static final MethodMatcher STRING_BUILDER_TO_STRING = new MethodMatcher("java.lang.StringBuilder toString()");
 
-    @Getter
-    final String displayName = "Replace `StringBuilder#append` with `String`";
+    String displayName = "Replace `StringBuilder#append` with `String`";
 
-    @Getter
-    final String description = "Replace `StringBuilder.append()` with String if you are only concatenating a small number of strings " +
+    String description = "Replace `StringBuilder.append()` with `String` concatenation if you are only concatenating a small number of strings " +
             "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
-            "expressions into a single String object, which can be more efficient than using StringBuilder.";
+            "expressions into a single `String` object, which can be more efficient than using `StringBuilder`.";
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -61,9 +67,11 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (!isFlattenable || arguments.isEmpty()) {
                         return m;
                     }
+                    SourceFile sourceFile = getCursor().firstEnclosingOrThrow(SourceFile.class);
+                    boolean kotlin = new KotlinFileChecker<ExecutionContext>().visit(sourceFile, ctx) != sourceFile;
 
                     reverse(arguments);
-                    arguments = adjustExpressions(method, arguments);
+                    arguments = adjustExpressions(method, arguments, kotlin);
 
                     Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments);
                     if (additive == null) {
@@ -92,37 +100,44 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 return ((J.MethodInvocation) parent.getValue()).getSelect() == method;
             }
 
-            private J.Literal toStringLiteral(J.Literal input) {
-                if (input.getType() == JavaType.Primitive.String) {
-                    return input;
+            private J.@Nullable Literal toStringLiteral(J.Literal input) {
+                if (input.getValue() == null) {
+                    return null;
                 }
-
-                // Handle character literals by stripping single quotes and wrapping in double quotes
+                String value = String.valueOf(input.getValue());
+                String valueSource;
                 if (input.getType() == JavaType.Primitive.Char) {
                     String charSource = input.getValueSource();
-                    if (charSource != null && charSource.length() >= 2 &&
-                        charSource.startsWith("'") && charSource.endsWith("'")) {
-                        String charContent = charSource.substring(1, charSource.length() - 1);
-                        String stringValue = input.getValue() != null ? String.valueOf(input.getValue()) : charContent;
-                        String valueSource = "\"" + charContent + "\"";
-                        return input
-                                .withType(JavaType.Primitive.String)
-                                .withValue(stringValue)
-                                .withValueSource(valueSource);
+                    if (charSource == null || charSource.length() < 3) {
+                        return null;
                     }
+                    valueSource = "\"".equals(value) ? "\\\"" : "'".equals(value) ? "'" : charSource.substring(1, charSource.length() - 1);
+                } else {
+                    valueSource = value;
                 }
-
-                String value = input.getValueSource();
-                return new J.Literal(randomId(), Space.EMPTY, Markers.EMPTY, value,
-                        "\"" + value + "\"", null, JavaType.Primitive.String);
+                return new J.Literal(randomId(), input.getPrefix(), input.getMarkers(), value,
+                        "\"" + valueSource + "\"", null, JavaType.Primitive.String);
             }
 
-            private List<Expression> adjustExpressions(J.MethodInvocation method, List<Expression> arguments) {
+            private List<Expression> adjustExpressions(J.MethodInvocation method, List<Expression> arguments, boolean kotlin) {
                 return ListUtils.map(arguments, (i, arg) -> {
                     if (i == 0) {
                         if (!TypeUtils.isString(arg.getType())) {
-                            if (arg instanceof J.Literal) {
-                                return toStringLiteral((J.Literal) arg);
+                            J.Literal literal = arg instanceof J.Literal ? toStringLiteral((J.Literal) arg) : null;
+                            if (literal != null) {
+                                return literal;
+                            }
+                            if (kotlin) {
+                                Expression select = arg instanceof J.Identifier || arg instanceof J.FieldAccess || arg instanceof J.MethodInvocation || arg instanceof J.Literal || arg instanceof J.Parentheses ?
+                                        arg.withPrefix(Space.EMPTY) :
+                                        new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(arg.withPrefix(Space.EMPTY)));
+                                JavaType.FullyQualified declaringType = TypeUtils.asFullyQualified(arg.getType());
+                                JavaType.Method toString = method.getMethodType() == null ? null : method.getMethodType()
+                                        .withDeclaringType(declaringType == null ? JavaType.ShallowClass.build("java.lang.Object") : declaringType);
+                                return new J.MethodInvocation(randomId(), arg.getPrefix(), Markers.EMPTY, JRightPadded.build(select), null,
+                                        new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "toString", toString, null),
+                                        JContainer.build(Space.EMPTY, singletonList(JRightPadded.build(new J.Empty(randomId(), Space.EMPTY, Markers.EMPTY))), Markers.EMPTY),
+                                        toString);
                             }
                             return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), method.getCoordinates().replace(), arg)
                                     .withPrefix(arg.getPrefix());
@@ -161,6 +176,9 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     Expression arg = args.get(0);
                     JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
                     Space prefix = jrp == null ? arg.getPrefix() : jrp.getAfter();
+                    if (STRING_BUILDER_APPEND_KOTLIN_CHAR_ARRAY.matches(selectMethod)) {
+                        return false;
+                    }
                     if (STRING_BUILDER_APPEND_CHAR_ARRAY.matches(selectMethod)) {
                         // `append(char[])` appends the characters of the array, whereas string concatenation would
                         // render the array's identity instead. `String.valueOf(char[])` is selected here, which keeps
@@ -176,6 +194,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     J.NewClass nc = (J.NewClass) select;
                     if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
                         arguments.add(nc.getArguments().get(0));
+                    } else if (!(nc.getArguments().get(0) instanceof J.Empty) && !STRING_BUILDER_CAPACITY.matches(nc)) {
+                        return false;
                     } else if (!arguments.isEmpty()) {
                         Expression lastArgument = arguments.get(arguments.size() - 1);
                         Space formattedPrefix = lastArgument.getComments().isEmpty() ? Space.EMPTY : lastArgument.getPrefix();

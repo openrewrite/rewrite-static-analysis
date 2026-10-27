@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -48,36 +49,31 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
-                List<JLeftPadded<Space>> dimensions = getCursor().pollMessage("VAR_DIMENSIONS");
-                if (dimensions != null && varDecls.getTypeExpression() != null) {
-                    // Build array type by wrapping the type expression
-                    TypeTree typeExpression = varDecls.getTypeExpression();
-                    JavaType type = varDecls.getType();
-                    for (JLeftPadded<Space> dim : dimensions) {
-                        type = new JavaType.Array(null, type, null);
-                        typeExpression = new J.ArrayType(
-                                Tree.randomId(),
-                                Space.EMPTY,
-                                Markers.EMPTY,
-                                typeExpression,
-                                null,
-                                dim,
-                                type
-                        );
-                    }
-                    varDecls = varDecls.withTypeExpression(typeExpression);
+                if (varDecls.getTypeExpression() == null || varDecls.getVariables().isEmpty()) {
+                    return varDecls;
                 }
-                return varDecls;
-            }
-
-            @Override
-            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
-                J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
-                if (!nv.getDimensionsAfterName().isEmpty()) {
-                    getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance).putMessage("VAR_DIMENSIONS", nv.getDimensionsAfterName());
-                    nv = nv.withDimensionsAfterName(emptyList());
+                List<JLeftPadded<Space>> dimensions = varDecls.getVariables().get(0).getDimensionsAfterName();
+                if (dimensions.isEmpty() ||
+                    varDecls.getVariables().stream().anyMatch(nv -> nv.getDimensionsAfterName().size() != dimensions.size())) {
+                    return varDecls;
                 }
-                return nv;
+                TypeTree typeExpression = varDecls.getTypeExpression();
+                JavaType type = varDecls.getType();
+                for (JLeftPadded<Space> dim : dimensions) {
+                    type = new JavaType.Array(null, type, null);
+                    typeExpression = new J.ArrayType(
+                            Tree.randomId(),
+                            Space.EMPTY,
+                            Markers.EMPTY,
+                            typeExpression,
+                            null,
+                            dim,
+                            type
+                    );
+                }
+                return varDecls
+                        .withTypeExpression(typeExpression)
+                        .withVariables(ListUtils.map(varDecls.getVariables(), nv -> nv.withDimensionsAfterName(emptyList())));
             }
         });
     }

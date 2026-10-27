@@ -16,12 +16,14 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
@@ -38,13 +40,12 @@ public class MoveConditionsToWhile extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitWhileLoop(J.WhileLoop whileLoop, ExecutionContext ctx) {
-                J.WhileLoop wl = (J.WhileLoop) super.visitWhileLoop(whileLoop, ctx);
+            public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, ExecutionContext ctx) {
+                J.WhileLoop wl = super.visitWhileLoop(whileLoop, ctx);
 
-                if (!(wl.getCondition().getTree() instanceof J.Literal) ||
-                        !J.Literal.isLiteralValue(wl.getCondition().getTree(), true) ||
+                if (!J.Literal.isLiteralValue(wl.getCondition().getTree(), true) ||
                         !(wl.getBody() instanceof J.Block)) {
                     return wl;
                 }
@@ -79,13 +80,15 @@ public class MoveConditionsToWhile extends Recipe {
                     return wl;
                 }
 
-                doAfterVisit(new SimplifyBooleanExpressionVisitor());
-                return JavaTemplate.apply(
+                J.WhileLoop result = JavaTemplate.apply(
                         "while (!(#{any()})) #{}",
                         getCursor(),
                         wl.getCoordinates().replace(),
                         ifStatement.getIfCondition().getTree(),
                         ((J.Block) wl.getBody()).withStatements(statements.subList(1, statements.size())));
+                //noinspection unchecked
+                return result.withCondition((J.ControlParentheses<Expression>) new SimplifyBooleanExpressionVisitor()
+                        .visitNonNull(result.getCondition(), ctx, new Cursor(getCursor().getParentOrThrow(), result)));
             }
         };
     }

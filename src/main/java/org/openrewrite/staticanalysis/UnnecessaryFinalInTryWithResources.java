@@ -22,14 +22,11 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 public class UnnecessaryFinalInTryWithResources extends Recipe {
 
@@ -73,7 +70,7 @@ public class UnnecessaryFinalInTryWithResources extends Recipe {
                 Space carried = accumulated;
 
                 J.VariableDeclarations updated = vd.withModifiers(
-                        ListUtils.map(vd.getModifiers(), m -> isBareFinal(m) ? null : m));
+                        ListUtils.filter(vd.getModifiers(), m -> !isBareFinal(m)));
 
                 // Hand the carried comments, and the gap `final` left behind, to the next token along.
                 if (updated.getTypeExpression() != null) {
@@ -104,12 +101,9 @@ public class UnnecessaryFinalInTryWithResources extends Recipe {
         if (first.getComments().isEmpty()) {
             return Space.build(first.getWhitespace() + second.getWhitespace(), second.getComments());
         }
-        List<Comment> comments = new ArrayList<>(first.getComments());
-        int last = comments.size() - 1;
-        comments.set(last, comments.get(last).withSuffix(
-                tighten(comments.get(last).getSuffix() + second.getWhitespace())));
-        comments.addAll(second.getComments());
-        return Space.build(first.getWhitespace(), comments);
+        return Space.build(first.getWhitespace(), ListUtils.concatAll(
+                ListUtils.mapLast(first.getComments(), c -> c.withSuffix(tighten(c.getSuffix() + second.getWhitespace()))),
+                second.getComments()));
     }
 
     private static Space reflow(Space space, boolean leadsDeclaration) {

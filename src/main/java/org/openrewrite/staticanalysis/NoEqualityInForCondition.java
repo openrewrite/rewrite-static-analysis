@@ -20,8 +20,8 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
@@ -48,58 +48,30 @@ public class NoEqualityInForCondition extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> javaVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
+            public J.ForLoop.Control visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
                 if (control.getCondition() instanceof J.Binary) {
                     J.Binary condition = (J.Binary) control.getCondition();
 
-                    if (isNumericalType(condition) &&
+                    if (condition.getOperator() == J.Binary.Type.NotEqual &&
+                            isNumericalType(condition) &&
                             control.getUpdate().size() == 1 &&
                             control.getUpdate().get(0) instanceof J.Unary) {
                         J.Unary update = (J.Unary) control.getUpdate().get(0);
-                        if (updatedExpressionInConditional(update.getExpression(), condition)) {
-                            if (condition.getOperator() == J.Binary.Type.NotEqual) {
-                                switch (update.getOperator()) {
-                                    case PreIncrement:
-                                    case PostIncrement:
-                                        return control.withCondition(condition.withOperator(J.Binary.Type.LessThan));
-                                    case PreDecrement:
-                                    case PostDecrement:
-                                        return control.withCondition(condition.withOperator(J.Binary.Type.GreaterThan));
-                                }
-                            }
+                        J.Unary.Type op = update.getOperator();
+                        boolean increment = op == J.Unary.Type.PreIncrement || op == J.Unary.Type.PostIncrement;
+                        boolean decrement = op == J.Unary.Type.PreDecrement || op == J.Unary.Type.PostDecrement;
+                        boolean onLeft = SemanticallyEqual.areEqual(update.getExpression(), condition.getLeft());
+                        if ((increment || decrement) &&
+                                (onLeft || SemanticallyEqual.areEqual(update.getExpression(), condition.getRight()))) {
+                            return control.withCondition(condition.withOperator(
+                                    increment == onLeft ? J.Binary.Type.LessThan : J.Binary.Type.GreaterThan));
                         }
-
                     }
                 }
 
                 return super.visitForControl(control, ctx);
-            }
-
-            private boolean updatedExpressionInConditional(Expression updatedExpression, J.Binary condition) {
-                final String simpleName;
-                if (updatedExpression instanceof J.Identifier) {
-                    simpleName = ((J.Identifier) updatedExpression).getSimpleName();
-                } else if (updatedExpression instanceof J.FieldAccess) {
-                    simpleName = ((J.FieldAccess) updatedExpression).getSimpleName();
-                } else {
-                    return false;
-                }
-
-                if (condition.getLeft() instanceof J.Identifier) {
-                    return simpleName.equals(((J.Identifier) condition.getLeft()).getSimpleName());
-                }
-                if (condition.getLeft() instanceof J.FieldAccess) {
-                    return simpleName.equals(((J.FieldAccess) condition.getLeft()).getSimpleName());
-                }
-                if (condition.getRight() instanceof J.Identifier) {
-                    return simpleName.equals(((J.Identifier) condition.getRight()).getSimpleName());
-                }
-                if (condition.getRight() instanceof J.FieldAccess) {
-                    return simpleName.equals(((J.FieldAccess) condition.getRight()).getSimpleName());
-                }
-                return false;
             }
 
             private boolean isNumericalType(J.Binary condition) {

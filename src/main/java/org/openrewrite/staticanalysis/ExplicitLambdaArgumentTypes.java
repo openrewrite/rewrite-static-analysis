@@ -29,13 +29,11 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 
 public class ExplicitLambdaArgumentTypes extends Recipe {
     @Getter
@@ -44,7 +42,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
     @Getter
     final String description = "Adds explicit types on lambda arguments, which are otherwise optional. This can make the code clearer and easier to read. " +
             "This does not add explicit types on arguments when the lambda has one or two parameters and does not have a block body, as things are considered more readable in those cases. " +
-            "For example, `stream.map((a, b) -> a.length);` will not have explicit types added.";
+            "For example, `(a, b) -> a.length() - b.length()` will not have explicit types added.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2211");
@@ -79,7 +77,6 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             }
 
             private J.VariableDeclarations maybeAddTypeExpression(J.VariableDeclarations multiVariable) {
-                // if the type expression is null, it implies the types on the lambda arguments are implicit.
                 if (multiVariable.getTypeExpression() == null) {
                     J.VariableDeclarations.NamedVariable nv = multiVariable.getVariables().get(0);
                     TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY, newRecursionGuard());
@@ -105,7 +102,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             }
 
             private Set<JavaType> newRecursionGuard() {
-                return Collections.newSetFromMap(new IdentityHashMap<>());
+                return newSetFromMap(new IdentityHashMap<>());
             }
 
             private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space, Set<JavaType> recursionGuard) {
@@ -147,8 +144,6 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     if (!fq.getTypeParameters().isEmpty()) {
                         JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters(), recursionGuard);
                         if (typeParameters == null) {
-                            //If there is a problem resolving one of the type parameters, then do not return a type
-                            //expression for the fully-qualified type.
                             return null;
                         }
                         return new J.ParameterizedType(
@@ -166,19 +161,16 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 }
                 if (type instanceof JavaType.Array) {
                     JavaType.Array arrayType = (JavaType.Array) type;
-                    // Get the base element type
                     JavaType elemType = arrayType.getElemType();
                     while (elemType instanceof JavaType.Array) {
                         elemType = ((JavaType.Array) elemType).getElemType();
                     }
 
-                    // Build the base type expression
                     TypeTree result = buildTypeTree(elemType, space, recursionGuard);
                     if (result == null) {
                         return null;
                     }
 
-                    // Count dimensions and build array type
                     JavaType currentType = type;
                     while (currentType instanceof JavaType.Array) {
                         result = new J.ArrayType(

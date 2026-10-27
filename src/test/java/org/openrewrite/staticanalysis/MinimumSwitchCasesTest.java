@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -22,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
@@ -889,7 +891,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label is a statically imported String constant from a nested class
     @Test
     void switchOnStringWithStaticConstant() {
         rewriteRun(
@@ -940,7 +942,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label is a statically imported int constant from a nested class
     @Test
     void switchOnIntWithStaticConstant() {
         rewriteRun(
@@ -991,7 +993,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label from a nested enum must be qualified with its outer class in the resulting if
     @Test
     void switchOnEnumWithNestedClass() {
         rewriteRun(
@@ -1325,7 +1327,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
     @Test
     void skipsTransformationWhenTypeInfoMissing() {
         // When type info is missing (e.g., incomplete classpath), the recipe should NOT transform
@@ -1333,7 +1334,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         // Without this check, the recipe would produce broken code like `if (x == YES)` instead of
         // `if (x == Dialog.PredefinedButton.YES)`.
         rewriteRun(
-          spec -> spec.typeValidationOptions(org.openrewrite.test.TypeValidation.none()),
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
           //language=java
           java(
             """
@@ -1380,5 +1381,92 @@ class MinimumSwitchCasesTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Groovy {
+        @DocumentExample
+        @Test
+        void twoCases() {
+            rewriteRun(
+              //language=groovy
+              groovy(
+                """
+                  def s = "prod"
+                  switch(s) {
+                      case "prod":
+                          println("prod")
+                          break
+                      default:
+                          println("default")
+                          break
+                  }
+                  """,
+                """
+                  def s = "prod"
+                  if ("prod".equals(s)) {
+                      println("prod")
+                  } else {
+                      println("default")
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2566")
+        @SuppressWarnings("GrMethodMayBeStatic")
+        @Test
+        void nonIdentifierEnum() {
+            rewriteRun(
+              //language=groovy
+              groovy(
+                """
+                  import java.nio.file.*
+                  class Test {
+                      void test(OpenOption o) {
+                          switch(o) {
+                              case StandardOpenOption.READ:
+                                  System.out.println("read")
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.nio.file.*
+                  class Test {
+                      void test(OpenOption o) {
+                          if (o == StandardOpenOption.READ) {
+                              System.out.println("read")
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void threeCases() {
+            rewriteRun(
+              //language=groovy
+              groovy(
+                """
+                  def s = "prod"
+                  switch(s) {
+                      case "prod":
+                          println("prod")
+                          break
+                      case "test":
+                          println("test")
+                          break
+                      default:
+                          println("default")
+                          break
+                  }
+                  """
+              )
+            );
+        }
     }
 }

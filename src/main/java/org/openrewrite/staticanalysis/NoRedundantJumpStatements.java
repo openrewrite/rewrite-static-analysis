@@ -19,14 +19,15 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.InvertCondition;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Loop;
+import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -37,7 +38,7 @@ public class NoRedundantJumpStatements extends Recipe {
     final String displayName = "Jump statements should not be redundant";
 
     @Getter
-    final String description = "Jump statements such as return and continue let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
+    final String description = "Jump statements such as `return` and `continue` let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3626");
@@ -53,11 +54,12 @@ public class NoRedundantJumpStatements extends Recipe {
             public J.If visitIf(J.If iff, ExecutionContext ctx) {
                 J.If i = super.visitIf(iff, ctx);
 
-                boolean thenIsOnlyContinue = i.getThenPart() instanceof J.Continue;
-                if (i.getThenPart() instanceof J.Block) {
-                    J.Block then = (J.Block) i.getThenPart();
-                    thenIsOnlyContinue = then.getStatements().size() == 1 && then.getStatements().get(0) instanceof J.Continue;
+                Statement then = i.getThenPart();
+                if (then instanceof J.Block && ((J.Block) then).getStatements().size() == 1) {
+                    then = ((J.Block) then).getStatements().get(0);
                 }
+                // A labelled continue can target an outer loop, so only an unlabelled one is redundant here
+                boolean thenIsOnlyContinue = then instanceof J.Continue && ((J.Continue) then).getLabel() == null;
 
                 if (getCursor().getParentOrThrow().getParentOrThrow().getValue() instanceof J.Block) {
                     J enclosing = getCursor().dropParentUntil(J.Block.class::isInstance)
@@ -90,8 +92,11 @@ public class NoRedundantJumpStatements extends Recipe {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method methodType = m.getMethodType();
                 if (m.getBody() != null && methodType != null && JavaType.Primitive.Void == methodType.getReturnType()) {
-                    return m.withBody(m.getBody().withStatements(ListUtils.mapLast(m.getBody().getStatements(),
-                            s -> s instanceof J.Return && ((J.Return) s).getExpression() == null ? null : s)));
+                    List<Statement> statements = m.getBody().getStatements();
+                    Statement last = statements.isEmpty() ? null : statements.get(statements.size() - 1);
+                    if (last instanceof J.Return && ((J.Return) last).getExpression() == null) {
+                        return m.withBody(UnnecessaryReturnAsLastStatement.removeLastStatement(m.getBody()));
+                    }
                 }
 
                 return m;

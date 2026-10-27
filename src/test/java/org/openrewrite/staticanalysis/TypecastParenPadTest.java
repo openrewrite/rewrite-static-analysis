@@ -62,6 +62,29 @@ class TypecastParenPadTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepFormattingOfCastExpression() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Object m(Object o) {
+                      return ( String )String.valueOf( o==null ? 1 : 2 );
+                  }
+              }
+              """,
+            """
+              class A {
+                  Object m(Object o) {
+                      return (String) String.valueOf( o==null ? 1 : 2 );
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/561")
     @Test
     void noChangeForGroovy() {

@@ -35,9 +35,9 @@ public class WhileInsteadOfFor extends Recipe {
     final String displayName = "Prefer `while` over `for` loops";
 
     @Getter
-    final String description = "When only the condition expression is defined in a for " +
+    final String description = "When only the condition expression is defined in a `for` " +
             "loop, and the initialization and increment expressions are missing, " +
-            "a while loop should be used instead to increase readability. A `for` " +
+            "a `while` loop should be used instead to increase readability. A `for` " +
             "loop with empty init and update sections signals iteration mechanics " +
             "that do not exist, whereas `while` clearly communicates a simple " +
             "conditional loop.";

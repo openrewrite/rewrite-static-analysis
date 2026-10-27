@@ -224,7 +224,6 @@ public class UnnecessaryThrows extends Recipe {
                     }
                 }
 
-                //Collect all checked exceptions.
                 Set<JavaType.FullyQualified> candidates = new TreeSet<>(Comparator.comparing(JavaType.FullyQualified::getFullyQualifiedName));
 
                 if (method.getThrows() != null) {
@@ -242,16 +241,13 @@ public class UnnecessaryThrows extends Recipe {
                     return emptySet();
                 }
 
-                //noinspection ConstantConditions
                 if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
                         method.isAbstract() || method.hasModifier(Static) ||
                         method.hasModifier(Private) ||
                         method.hasModifier(Final)) {
-                    //Consider all checked exceptions as candidates if the type/method are final or the method is private or static.
                     return candidates;
                 }
 
-                //Remove any candidates that are defined in an overridden method.
                 Optional<JavaType.Method> superMethod = TypeUtils.findOverriddenMethod(method.getMethodType());
                 if (superMethod.isPresent()) {
                     JavaType.Method baseMethod = superMethod.get();
@@ -283,7 +279,6 @@ public class UnnecessaryThrows extends Recipe {
                 }
 
                 if (!candidates.isEmpty()) {
-                    //Remove any candidates that are defined in Javadocs for the method.
                     new JavaVisitor<Set<JavaType.FullyQualified>>() {
                         @Override
                         protected JavadocVisitor<Set<JavaType.FullyQualified>> getJavadocVisitor() {
@@ -346,7 +341,6 @@ public class UnnecessaryThrows extends Recipe {
             // the tag block, so collapse any trailing empty lines back onto the closing delimiter.
             trimTrailingBlankLines(newBody);
             if (newBody.isEmpty() || RemoveJavaDocAuthorTag.isBlank(getCursor(), newBody)) {
-                //noinspection DataFlowIssue
                 return null;
             }
             return javadoc.withBody(newBody);

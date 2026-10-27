@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -41,6 +41,41 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseLambdaForFunctionalInterface());
+    }
+
+    @Test
+    void removeOnlyTheImportsOfTheReplacedClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+              import java.util.function.Function;
+
+              class Test {
+                  Integer lengthOf(Map<String, Integer> lengths, String key) {
+                      return lengths.computeIfAbsent(key, new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String s) {
+                              return s.length();
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Test {
+                  Integer lengthOf(Map<String, Integer> lengths, String key) {
+                      return lengths.computeIfAbsent(key, s -> s.length());
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -75,7 +110,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void castingAmbiguity() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
           java(
             """
@@ -183,8 +217,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void gson() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface())
-            .parser(JavaParser.fromJavaVersion().classpath("gson")),
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("gson")),
           //language=java
           java(
             """
@@ -372,7 +405,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void usedAsStatementWithNonInferrableType() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
           java(
             """
@@ -390,7 +422,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
+    @ExpectedToFail("Any `this` blocks the conversion, even a qualified `Test.this` that means the same inside a lambda")
     @Test
     void useLambdaThenSimplifyFurther() {
         rewriteRun(
@@ -881,7 +913,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-app/issues/17")
+    // Anonymous class passed to a generic constructor needs a cast on the lambda to keep type inference working
     @Test
     void lambdaWithComplexTypeInference() {
         rewriteRun(

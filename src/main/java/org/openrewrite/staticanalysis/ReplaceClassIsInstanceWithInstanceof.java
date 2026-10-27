@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -28,7 +29,6 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.FieldAccess;
-import org.openrewrite.java.tree.J.Identifier;
 import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
@@ -38,35 +38,30 @@ import java.util.function.Function;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     private static final MethodMatcher ISINSTANCE_MATCHER = new MethodMatcher("java.lang.Class isInstance(..)");
 
-    @Getter
-    final String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
+    String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
 
-    @Getter
-    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by " +
+    String description = "There should be no `A.class.isInstance(a)`, it should be replaced by " +
             "`a instanceof A`. Using `instanceof` enables the compiler to catch type " +
             "incompatibilities at compile time rather than silently passing at runtime, " +
             "which helps detect dead code early.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S6202");
+    Set<String> tags = singleton("RSPEC-S6202");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        // use JavaVisitor instead of JavaIsoVisitor because we changed the type of LST
         return Preconditions.check(new UsesMethod<>(ISINSTANCE_MATCHER), new JavaVisitor<ExecutionContext>() {
 
             @Override
             public J visitMethodInvocation(MethodInvocation method, ExecutionContext ctx) {
-                // make sure we find the right method and the left part is something like "SomeClass.class"
                 if (ISINSTANCE_MATCHER.matches(method) && isObjectClass(method.getSelect())) {
-                    // for code like "A.class.isInstance(a)", select is "String.class", name is "isInstance", argument is "a"
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
-                    // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
                     JavaCoordinates coordinates = method.getCoordinates().replace();
                     J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
@@ -91,10 +86,8 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
             private boolean isObjectClass(@Nullable Expression expression) {
                 if (expression instanceof J.FieldAccess) {
                     J.FieldAccess fieldAccess = (J.FieldAccess) expression;
-                    if ("class".equals(fieldAccess.getName().getSimpleName()) && fieldAccess.getTarget() instanceof Identifier) {
-                        Identifier identifier = (Identifier) fieldAccess.getTarget();
-                        return identifier.getType() instanceof JavaType.Class;
-                    }
+                    return "class".equals(fieldAccess.getName().getSimpleName()) &&
+                            fieldAccess.getTarget().getType() instanceof JavaType.Class;
                 }
                 return false;
             }

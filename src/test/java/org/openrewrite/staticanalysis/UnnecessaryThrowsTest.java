@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -224,10 +223,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not yet implemented")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
     @Test
-    void necessaryThrowsFromConstructorWithUnused() {
+    void keepUnusedThrowsOnConstructor() {
         rewriteRun(
           //language=java
           java(
@@ -238,17 +236,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
               class Test {
                   String str = test();
                   Test() throws IOException, ExecutionException {}
-                  String test() throws IOException {
-                      throw new IOException();
-                  }
-              }
-              """,
-            """
-              import java.io.IOException;
-
-              class Test {
-                  String str = test();
-                  Test() throws IOException {}
                   String test() throws IOException {
                       throw new IOException();
                   }

@@ -15,9 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -35,23 +37,21 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceLambdaWithMethodReference extends Recipe {
 
-    @Getter
-    final String displayName = "Use method references in lambda";
+    String displayName = "Use method references in lambda";
 
-    @Getter
-    final String description = "Replaces the single statement lambdas `o -> o instanceOf X`, " +
+    String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
             "`o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, " +
             "`o -> o == null` with the equivalent method reference. Method references are often " +
             "more concise and readable than their lambda equivalents, making the code's intent " +
             "clearer at a glance.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1612");
+    Set<String> tags = singleton("RSPEC-S1612");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -107,7 +107,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     JavaType.Class classType = getClassType(originalType);
                     if (classType != null) {
                         J.FieldAccess classLiteral = newClassLiteral(classType, originalType, j);
-                        //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
                         if (isInstanceMethod.isPresent()) {
@@ -132,7 +131,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         JavaType.Class classType = getClassType(((Expression) tree).getType());
                         if (classType != null) {
                             J.FieldAccess classLiteral = newClassLiteral(classType, ((Expression) tree).getType(), tree);
-                            //noinspection DataFlowIssue
                             JavaType.FullyQualified fullClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                             Optional<JavaType.Method> castMethod = fullClassType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {
@@ -252,11 +250,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         }
 
         private boolean insideAnonymousInnerClass() {
-            // Check if we're inside an anonymous inner class
             Cursor current = getCursor();
             while (current != null) {
                 if (current.getValue() instanceof J.ClassDeclaration) {
-                    // We've reached a regular class declaration, stop looking
                     return false;
                 }
                 if (current.getValue() instanceof J.NewClass &&
@@ -297,13 +293,13 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return false;
             }
             boolean static_ = methodType.hasFlags(Flag.Static);
-            List<Expression> methodArgs = getMethodArguments(method);
+            List<Expression> methodArgs = ListUtils.filter(method.getArguments(), a -> !(a instanceof J.Empty));
             List<J.VariableDeclarations.NamedVariable> lambdaParameters = getLambdaParameters(lambda);
             if (methodArgs.isEmpty() && lambdaParameters.isEmpty()) {
                 return true;
             }
             if (!static_ && methodSelectMatchesFirstLambdaParameter(method, lambda)) {
-                methodArgs.add(0, ((J.MethodInvocation) method).getSelect());
+                methodArgs = ListUtils.concat(((J.MethodInvocation) method).getSelect(), methodArgs);
             }
             if (methodArgs.size() != lambdaParameters.size()) {
                 return false;
@@ -319,32 +315,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
             }
             return true;
-        }
-
-        private static List<Expression> getMethodArguments(MethodCall method) {
-            List<Expression> list = new ArrayList<>();
-            if (method instanceof J.MethodInvocation) {
-                // avoid additional `ArrayList` allocation by using `JContainer#getElements()`
-                for (Expression a : ((J.MethodInvocation) method).getPadding().getArguments().getElements()) {
-                    if (!(a instanceof J.Empty)) {
-                        list.add(a);
-                    }
-                }
-            } else if (method instanceof J.NewClass) {
-                // avoid additional `ArrayList` allocation by using `JContainer#getElements()`
-                for (Expression a : ((J.NewClass) method).getPadding().getArguments().getElements()) {
-                    if (!(a instanceof J.Empty)) {
-                        list.add(a);
-                    }
-                }
-            } else {
-                for (Expression a : method.getArguments()) {
-                    if (!(a instanceof J.Empty)) {
-                        list.add(a);
-                    }
-                }
-            }
-            return list;
         }
 
         private static List<J.VariableDeclarations.NamedVariable> getLambdaParameters(J.Lambda lambda) {
@@ -398,10 +368,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
          * where fold is generic and foo is overloaded.
          */
         private boolean isLambdaInGenericAndOverloadedContext() {
-            // Walk up the cursor tree to find enclosing method invocations
             Cursor cursor = getCursor();
 
-            // Find the first method invocation that the lambda is an argument to
             Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
             if (!(parent.getValue() instanceof J.MethodInvocation)) {
                 return false;
@@ -409,8 +377,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             J.MethodInvocation innerMethod = parent.getValue();
 
-            // Now check if there's an enclosing overloaded method where innerMethod is an argument
-            // Start from the parent of the first method invocation
             Cursor grandparent = parent.getParent();
             if (grandparent == null) {
                 return false;
@@ -423,7 +389,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             J.MethodInvocation outerMethod = grandparent.getValue();
 
-            // Check that innerMethod is actually an ARGUMENT to outerMethod, not just chained
+            // an argument to outerMethod, not just chained onto it
             boolean isInnerMethodAnArgument = outerMethod.getArguments().stream()
                     .anyMatch(arg -> arg == innerMethod);
 
@@ -436,13 +402,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return false;
             }
 
-            // Check if the outer method is overloaded
             long overloadCount = outerType.getDeclaringType().getMethods().stream()
                     .filter(m -> m.getName().equals(outerType.getName()) && !m.isConstructor())
                     .count();
 
-            // If we have nested method calls where the outer one is overloaded,
-            // be conservative and don't transform to avoid breaking type inference
             return overloadCount > 1;
         }
     }

@@ -23,6 +23,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -59,8 +60,8 @@ public class DeclarationSiteTypeVariance extends Recipe {
 
     String displayName = "Properly use declaration-site type variance";
 
-    String description = "Currently, Java requires use-site type variance, so if someone has `Function<IN, OUT>` method parameter, it should rather be `Function<? super IN, ? extends OUT>`. " +
-               "Unfortunately, it is not easy to notice that `? super` and `? extends` is missing, so this recipe adds it where that would improve the situation.";
+    String description = "Java requires use-site type variance, so a `Function<IN, OUT>` method parameter should rather be `Function<? super IN, ? extends OUT>`. " +
+               "It is easy to miss that `? super` and `? extends` are absent, so this recipe adds them where that improves the situation.";
 
     @Override
     public Validated<Object> validate() {
@@ -84,7 +85,11 @@ public class DeclarationSiteTypeVariance extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         List<VariantTypeSpec> variantTypeSpecs = variantTypes.stream().map(VariantTypeSpec::build).collect(toList());
-        return new JavaIsoVisitor<ExecutionContext>() {
+        @SuppressWarnings("unchecked")
+        TreeVisitor<?, ExecutionContext>[] usesVariantType = variantTypeSpecs.stream()
+                .map(spec -> new UsesType<>(spec.getFullyQualifiedName(), false))
+                .toArray(TreeVisitor[]::new);
+        return Preconditions.check(Preconditions.or(usesVariantType), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
@@ -147,7 +152,7 @@ public class DeclarationSiteTypeVariance extends Recipe {
                     );
                 }));
             }
-        };
+        });
     }
 
     @Value

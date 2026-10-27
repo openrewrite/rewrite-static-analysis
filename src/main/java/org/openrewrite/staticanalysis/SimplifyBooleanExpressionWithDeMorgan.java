@@ -15,42 +15,36 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.ParenthesizeVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
-import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
 
-    @Getter
-    final String displayName = "Simplify boolean expressions using De Morgan's laws";
+    String displayName = "Simplify boolean expressions using De Morgan's laws";
 
-    @Getter
-    final String description = "Applies De Morgan's laws to simplify boolean expressions with negation. " +
+    String description = "Applies De Morgan's laws to simplify boolean expressions with negation. " +
             "Transforms `!(a && b)` to `!a || !b` and `!(a || b)` to `!a && !b`. " +
             "Distributing negations inward eliminates the outer `!` and makes each individual " +
             "condition's polarity immediately visible, which aids comprehension.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1125");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -88,10 +82,9 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                             return unary.withExpression(parenthesesBinary.withTree(visitedBinary));
                         }
                         Space prefix = unary.getPrefix();
-                        List<Comment> comments = new ArrayList<>(prefix.getComments());
-                        comments.addAll(parenthesesBinary.getComments());
-                        comments.addAll(binary.getComments());
-                        prefix = prefix.withComments(comments);
+                        prefix = prefix.withComments(ListUtils.concatAll(
+                                ListUtils.concatAll(prefix.getComments(), parenthesesBinary.getComments()),
+                                binary.getComments()));
                         getCursor().getParent().putMessage("MIGHT_NEED_PARENTHESES", true);
                         return binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
                     }

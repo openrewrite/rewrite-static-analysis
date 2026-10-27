@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -43,7 +45,7 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(EQUALS_MATCHER), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary bi = (J.Binary) super.visitBinary(binary, ctx);
@@ -54,29 +56,25 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
                 Expression left = bi.getLeft();
                 Expression right = bi.getRight();
 
-                // Check if we have a pattern: (expr != null) && ("literal".equals(expr))
+                // expr != null && "literal".equals(expr)
                 if (left instanceof J.Binary && right instanceof J.MethodInvocation) {
                     J.Binary nullCheck = (J.Binary) left;
                     J.MethodInvocation equalsCall = (J.MethodInvocation) right;
 
                     if (isRedundantNullCheck(nullCheck, equalsCall)) {
-                        // Return just the equals call
                         return equalsCall.withPrefix(bi.getPrefix());
                     }
                 }
 
-                // Check if we have chained patterns like:
-                // (... && expr != null) && ("literal".equals(expr))
+                // ... && expr != null && "literal".equals(expr)
                 if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.And &&
                         right instanceof J.MethodInvocation) {
                     J.Binary leftBinary = (J.Binary) left;
                     J.MethodInvocation equalsCall = (J.MethodInvocation) right;
 
-                    // Check if the rightmost part of left is a null check for the same expression
                     Expression rightmostOfLeft = leftBinary.getRight();
                     if (rightmostOfLeft instanceof J.Binary &&
                             isRedundantNullCheck((J.Binary) rightmostOfLeft, equalsCall)) {
-                        // Remove the null check from the left side
                         return bi.withLeft(leftBinary.getLeft()).withRight(equalsCall);
                     }
                 }
@@ -89,24 +87,20 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
                     return false;
                 }
 
-                // Check if the method call is equals() on a literal string
                 if (!EQUALS_MATCHER.matches(equalsCall)) {
                     return false;
                 }
 
-                // Check if the receiver is a literal string
                 Expression receiver = equalsCall.getSelect();
                 if (!(receiver instanceof J.Literal) || !(((J.Literal) receiver).getValue() instanceof String)) {
                     return false;
                 }
 
-                // Get the argument passed to equals()
                 if (equalsCall.getArguments().size() != 1) {
                     return false;
                 }
                 Expression equalsArg = equalsCall.getArguments().get(0);
 
-                // Check if the null check is for the same variable as the equals argument
                 if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
                     return SemanticallyEqual.areEqual(nullCheck.getRight(), equalsArg);
                 }
@@ -115,6 +109,6 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
                 }
                 return false;
             }
-        };
+        });
     }
 }

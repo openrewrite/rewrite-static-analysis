@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class MoveFieldAnnotationToType extends Recipe {
 
     @Option(displayName = "Annotation type",
-            description = "The type of annotation to move.",
+            description = "The type of annotation to move. Defaults to `org.openrewrite..*`.",
             example = "org.openrewrite..*",
             required = false)
     @Nullable
@@ -45,7 +45,8 @@ public class MoveFieldAnnotationToType extends Recipe {
                "type are better applied to the type, because similar annotations " +
                "may be more restrictive, leading to compile errors like " +
                "'scoping construct cannot be annotated with type-use annotation' " +
-               "when migrating later.";
+               "when migrating later. Applies to fields, local variables, method parameters " +
+               "and method return types.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -72,7 +73,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (matchingAnnotation.get() != null) {
-                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(at.getTypeExpression(), matchingAnnotation.get());
                         at = at.withTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -99,7 +99,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (mv.getTypeExpression() != null && matchingAnnotation.get() != null) {
-                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(mv.getTypeExpression(), matchingAnnotation.get());
                         mv = mv.withTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -126,7 +125,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (md.getReturnTypeExpression() != null && matchingAnnotation.get() != null) {
-                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(md.getReturnTypeExpression(), matchingAnnotation.get());
                         md = md.withReturnTypeExpression(te);
                         // auto format should handle this, but evidently doesn't

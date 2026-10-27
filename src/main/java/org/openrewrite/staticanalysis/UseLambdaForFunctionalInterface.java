@@ -21,17 +21,18 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -45,7 +46,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             "code duplication, and achieve better performance in some cases.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S1604");
+    final Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1604", "RSPEC-S9357"));
 
     transient AnonymousFunctionalInterfaceImplementations report = new AnonymousFunctionalInterfaceImplementations(this);
 
@@ -138,13 +139,10 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 lambda = (J.Lambda) new UnnecessaryParenthesesVisitor<>()
                         .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
 
-                J.Block lambdaBody = methodDeclaration.getBody();
-                assert lambdaBody != null;
-
-                lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
+                lambda = lambda.withBody(requireNonNull(methodDeclaration.getBody()).withPrefix(Space.format(" ")));
 
                 lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-                doAfterVisit(new RemoveUnusedImports().getVisitor());
+                ReferencedImports.namesReferencedBy(n).forEach(this::maybeRemoveImport);
 
                 return autoFormat(maybeAddCast(lambda, n), ctx);
             }
@@ -335,20 +333,13 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
         });
 
-        return new TreeVisitor<Tree, ExecutionContext>() {
-            @Override
-            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
-                return sourceFile instanceof JavaSourceFile;
-            }
-
+        return Preconditions.check(new JavaFileChecker<>(), new TreeVisitor<Tree, ExecutionContext>() {
             @Override
             public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    new ReportVisitor().visit(tree, ctx);
-                }
+                new ReportVisitor().visit(tree, ctx);
                 return convert.visit(tree, ctx);
             }
-        };
+        });
     }
 
     /**
@@ -487,8 +478,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
      * them, so the reason reported is the one that actually stopped it.
      */
     private static @Nullable String conversionBlocker(J.NewClass n, Cursor cursor) {
-        J.Block body = n.getBody();
-        assert body != null && n.getClazz() != null;
+        J.Block body = requireNonNull(n.getBody());
+        TypeTree clazz = requireNonNull(n.getClazz());
 
         if (enclosedByEnum(cursor)) {
             return "declared inside an enum";
@@ -496,7 +487,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (body.getStatements().size() != 1 || !(body.getStatements().get(0) instanceof J.MethodDeclaration)) {
             return "declares more than the interface method";
         }
-        JavaType.Method sam = getSamCompatible(TypeUtils.asFullyQualified(n.getClazz().getType()));
+        JavaType.Method sam = getSamCompatible(TypeUtils.asFullyQualified(clazz.getType()));
         if (sam == null) {
             // Reporting recognises inherited SAMs and interfaces that also redeclare an `Object` method,
             // but the rewrite only handles a single abstract method declared on the interface itself.
@@ -515,7 +506,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             return "initializes a field from an uninitialized field";
         }
 
-        JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
+        JavaType.FullyQualified type = TypeUtils.asFullyQualified(clazz.getType());
         JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
         if (anonymousClass == null || type == null ||
             anonymousClass.getInterfaces().stream()
@@ -556,7 +547,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     private static boolean usesThis(Cursor cursor) {
         J.NewClass n = cursor.getValue();
-        assert n.getBody() != null;
         AtomicBoolean hasThis = new AtomicBoolean(false);
         new JavaVisitor<Integer>() {
             @Override
@@ -612,7 +602,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     private static boolean fieldInitializerReferencingUninitializedField(Cursor cursor) {
         J.NewClass n = cursor.getValue();
-        assert n.getBody() != null;
         Cursor parent = cursor.dropParentUntil(is -> is instanceof J.VariableDeclarations.NamedVariable || is instanceof SourceFile);
         Object parentValue = parent.getValue();
         if (!(parentValue instanceof J.VariableDeclarations.NamedVariable)) {
@@ -640,7 +629,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 if (ident.getFieldType() != null && ident.getFieldType().hasFlags(Flag.Final) &&
                     !ident.getFieldType().hasFlags(Flag.HasInit) &&
-                    owner.equals(ident.getFieldType().getOwner())) {
+                    TypeUtils.isOfType(owner, ident.getFieldType().getOwner())) {
                     referencesUninitializedFinalField.set(true);
                 }
                 return super.visitIdentifier(ident, integer);
@@ -652,7 +641,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     // if the contents of the cursor value shadow a local variable in its containing name scope
     private static boolean shadowsLocalVariable(Cursor cursor) {
         J.NewClass n = cursor.getValue();
-        assert n.getBody() != null;
         AtomicBoolean hasShadow = new AtomicBoolean(false);
 
         List<String> localVariables = new ArrayList<>();
@@ -666,9 +654,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (nameScope instanceof J.MethodDeclaration) {
             J.MethodDeclaration m = (J.MethodDeclaration) nameScope;
             localVariables.addAll(parameterNames(m));
-            J.ClassDeclaration c = cursor.firstEnclosing(J.ClassDeclaration.class);
-            assert c != null;
-            localVariables.addAll(classFields(c));
+            localVariables.addAll(classFields(cursor.firstEnclosingOrThrow(J.ClassDeclaration.class)));
         } else {
             J.ClassDeclaration c = (J.ClassDeclaration) nameScope;
             localVariables.addAll(classFields(c));
@@ -717,8 +703,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {
-        AtomicBoolean atomicBoolean = new AtomicBoolean();
-        new JavaVisitor<AtomicBoolean>() {
+        return new JavaVisitor<AtomicBoolean>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, AtomicBoolean atomicBoolean) {
                 if (method.getMethodType() != null &&
@@ -730,11 +715,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 return super.visitMethodInvocation(method, atomicBoolean);
             }
-        }.visit(lambda.getBody(), atomicBoolean);
-        return atomicBoolean.get();
+        }.reduce(lambda.getBody(), new AtomicBoolean()).get();
     }
 
-    // TODO consider moving to TypeUtils
     private static JavaType.@Nullable Method getSamCompatible(@Nullable JavaType type) {
         JavaType.Method sam = null;
         JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);

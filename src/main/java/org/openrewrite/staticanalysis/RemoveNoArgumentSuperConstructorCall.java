@@ -30,10 +30,7 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
-
-import static java.util.Collections.singleton;
 
 public class RemoveNoArgumentSuperConstructorCall extends Recipe {
     @Getter
@@ -43,9 +40,6 @@ public class RemoveNoArgumentSuperConstructorCall extends Recipe {
     final String description = "The compiler inserts a call to the no argument constructor of the super class " +
             "when a constructor does not start with an explicit `this()` or `super(..)` call, " +
             "which makes writing out `super();` redundant.";
-
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S3253");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

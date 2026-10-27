@@ -39,9 +39,9 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
 
     final String displayName = "Map values should not be replaced unconditionally";
 
-    final String description = "When `map.put(key, value)` is called twice in a row with the same key, " +
-            "the first call is dead code because its value is immediately overwritten. " +
-            "Remove the first call to make the intent clear.";
+    final String description = "When `map.put(key, value)` is called twice in a row with the same key, or the same array element " +
+            "or Python `dict` entry is assigned twice in a row, the first write is dead code because its value " +
+            "is immediately overwritten. Remove the first write to make the intent clear.";
 
     final Set<String> tags = singleton("RSPEC-S4143");
 
@@ -81,7 +81,6 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
                     if (SemanticallyEqual.areEqual(key, nextKey) &&
                         SemanticallyEqual.areEqual(receiver, nextReceiver) &&
                         !discardsSideEffects(stmt)) {
-                        //noinspection DataFlowIssue
                         return null;
                     }
                     return stmt;

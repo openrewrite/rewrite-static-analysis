@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 
@@ -25,7 +24,6 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.0.0")
 public class HideUtilityClassConstructor extends Recipe {
 
     @Getter

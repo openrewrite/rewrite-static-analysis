@@ -19,18 +19,17 @@ import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.groovy.tree.G;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.*;
-import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 public class UseCollectionInterfaces extends Recipe {
@@ -92,28 +91,12 @@ public class UseCollectionInterfaces extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
-                // TODO: proper Groovy support requires some extra work
-                return super.isAcceptable(sourceFile, ctx) && !(sourceFile instanceof G.CompilationUnit);
-            }
-
+        // TODO: proper Groovy support requires some extra work
+        return Preconditions.check(Preconditions.not(new GroovyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-
-                    if (new InterfaceIncompatibleMethodDetector().reduce(tree, new AtomicBoolean(false)).get()) {
-                        return cu;
-                    }
-
-                    for (JavaType type : cu.getTypesInUse().getTypesInUse()) {
-                        JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
-                        if (fq != null && rspecRulesReplaceTypeMap.containsKey(fq.getFullyQualifiedName())) {
-                            return super.visit(cu, ctx);
-                        }
-                    }
+                if (tree instanceof JavaSourceFile && new InterfaceIncompatibleMethodDetector().reduce(tree, new AtomicBoolean(false)).get()) {
+                    return (JavaSourceFile) tree;
                 }
                 return super.visit(tree, ctx);
             }
@@ -168,7 +151,13 @@ public class UseCollectionInterfaces extends Recipe {
                             maybeRemoveImport(originalType);
                             maybeAddImport(newType);
 
-                            m = m.withReturnTypeExpression(getTypeTree(m.getReturnTypeExpression(), newType));
+                            TypeTree returnTypeExpression = getTypeTree(m.getReturnTypeExpression(), newType);
+                            m = m.withReturnTypeExpression(returnTypeExpression);
+                            JavaType.Method methodType = m.getMethodType();
+                            if (methodType != null) {
+                                methodType = methodType.withReturnType(returnTypeExpression.getType());
+                                m = m.withMethodType(methodType).withName(m.getName().withType(methodType));
+                            }
                         }
                     }
                 }
@@ -194,7 +183,7 @@ public class UseCollectionInterfaces extends Recipe {
                         mv = mv.withTypeExpression(getTypeTree(mv.getTypeExpression(), newType));
                         mv = mv.withVariables(ListUtils.map(mv.getVariables(), var -> {
                             JavaType.FullyQualified varType = TypeUtils.asFullyQualified(var.getType());
-                            if (varType != null && !varType.equals(newType)) {
+                            if (varType != null && !TypeUtils.isOfType(varType, newType)) {
                                 return var.withType(newType).withName(var.getName().withType(newType));
                             }
                             return var;
@@ -269,7 +258,7 @@ public class UseCollectionInterfaces extends Recipe {
                         .withType(javaType != null ? javaType.withType(newType) :
                                 new JavaType.Parameterized(null, newType, null));
             }
-        };
+        });
     }
 
     private static class InterfaceIncompatibleMethodDetector extends JavaIsoVisitor<AtomicBoolean> {

@@ -29,10 +29,9 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -41,8 +40,7 @@ public class StaticAccessViaInstance extends Recipe {
     String displayName = "Static members should be accessed via the class name";
     String description = "Accessing static fields or calling static methods on an instance reference is misleading. " +
             "Static members should be accessed using the declaring class name instead.";
-    Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S2209", "RSPEC-S3252"));
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Set<String> tags = singleton("RSPEC-S2209");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

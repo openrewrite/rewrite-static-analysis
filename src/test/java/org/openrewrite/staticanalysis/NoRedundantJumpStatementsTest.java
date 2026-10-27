@@ -17,20 +17,26 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"UnnecessaryContinue", "UnnecessaryReturnStatement"})
 class NoRedundantJumpStatementsTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new NoRedundantJumpStatements());
+    }
 
     @DocumentExample
     @Test
     void noRedundantJumpStatements() {
         rewriteRun(
-          spec -> spec.recipe(new NoRedundantJumpStatements()),
           //language=java
           java(
             """
@@ -67,10 +73,104 @@ class NoRedundantJumpStatementsTest implements RewriteTest {
     }
 
     @Test
+    void doNotRemoveLabelledContinue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[][] rows, boolean stop) {
+                      outer:
+                      for (int[] row : rows) {
+                          for (int cell : row) {
+                              if (stop) {
+                                  continue outer;
+                              } else {
+                                  System.out.println(cell);
+                              }
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveLabelledContinueWithoutBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[][] rows, boolean stop) {
+                      outer:
+                      for (int[] row : rows) {
+                          for (int cell : row) {
+                              if (stop) continue outer;
+                              else System.out.println(cell);
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveLabelledContinueInKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(rows: List<List<Int>>, stop: Boolean) {
+                  outer@ for (row in rows) {
+                      for (cell in row) {
+                          if (stop) {
+                              continue@outer
+                          } else {
+                              println(cell)
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCommentsOfRemovedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      System.out.println();
+                      // nothing left to do
+                      return;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      System.out.println();
+                      // nothing left to do
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotRemoveGoReturnWithExpression() {
         assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
         rewriteRun(
-          spec -> spec.recipe(new NoRedundantJumpStatements()),
           go(
             """
               package main

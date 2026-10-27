@@ -58,6 +58,33 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
     }
 
     @Test
+    void keepFormattingOfMethodBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import javax.annotation.CheckForNull;
+              import javax.annotation.Nullable;
+              class A {
+                  @CheckForNull public int getCount(@Nullable int val) {
+                      @Nullable int x=val;
+                      return x;
+                  }
+              }
+              """,
+            """
+              class A {
+                  public int getCount(int val) {
+                      int x=val;
+                      return x;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void nullableOnNonPrimitive() {
         rewriteRun(
           //language=java

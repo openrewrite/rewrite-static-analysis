@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,48 +17,43 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeQualityValidation;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
-class CommonStaticAnalysisIssuesPerformanceTest implements RewriteTest {
+class InlineDeprecatedMethodsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis");
-//          .afterRecipe(run -> {
-//              System.out.println(run.getStats().printAsMermaidGantt(1e6));
-//              System.out.println("\n");
-//              System.out.println(run.getStats().printAsCsv());
-//          });
+        spec
+          .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
+          // Without `classpathFromResources` on `InlineMethodCalls`, the template can't attribute the new constructor call
+          .recipeQualityValidation(RecipeQualityValidation.all().types(TypeValidation.all().constructorInvocations(false)))
+          .recipeFromResources("org.openrewrite.recipe.rewrite-static-analysis.InlineDeprecatedMethods");
     }
 
     @DocumentExample
     @Test
-    void indexOfOnList() {
+    void inlineDeprecatedRemoveUnusedLocalVariablesConstructor() {
         rewriteRun(
           //language=java
           java(
             """
-              import java.util.List;
+              import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
 
               class Test {
-                  static boolean hasIndex(List<String> strList, String str) {
-                      if (strList.indexOf(str) > 0) {
-                      }
-                      return strList.indexOf(str) > 0;
-                  }
+                  RemoveUnusedLocalVariables recipe = new RemoveUnusedLocalVariables(new String[]{"ignored"}, true);
               }
               """,
             """
-              import java.util.List;
+              import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
 
               class Test {
-                  static boolean hasIndex(List<String> strList, String str) {
-                      strList.indexOf(str);
-                      return strList.indexOf(str) >= 1;
-                  }
+                  RemoveUnusedLocalVariables recipe = new RemoveUnusedLocalVariables(new String[]{"ignored"}, null, true);
               }
               """
           )

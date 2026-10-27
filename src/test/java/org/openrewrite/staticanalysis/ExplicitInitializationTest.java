@@ -17,12 +17,15 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 
@@ -87,6 +90,105 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @ParameterizedTest
+    @ValueSource(strings = {"4294967296L", "0x1_0000_0000L", "0xffff_ffff_0000_0000L", "0x8000_0000_0000_0000L"})
+    void preserveNonZeroLongLiteralsWithZeroLowWord(String literal) {
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
+          //language=java
+          java(
+            """
+              class Test {
+                  private long value = %s;
+                  private long zero = 0L;
+
+                  long value() {
+                      return value;
+                  }
+              }
+              """.formatted(literal),
+            """
+              class Test {
+                  private long value = %s;
+                  private long zero;
+
+                  long value() {
+                      return value;
+                  }
+              }
+              """.formatted(literal)
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void preserveNonZeroLongInAnonymousClass() {
+        rewriteRun(
+          spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
+          //language=java
+          java(
+            """
+              class Test {
+                  Object value = new Object() {
+                      private long mask = 0x1_0000_0000L;
+                      private long zero = 0L;
+                  };
+              }
+              """,
+            """
+              class Test {
+                  Object value = new Object() {
+                      private long mask = 0x1_0000_0000L;
+                      private long zero;
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeIntegralZeroLiterals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  long decimal = 0L;
+                  long hex = 0x0L;
+                  int integer = 0;
+                  short small = 0;
+              }
+              """,
+            """
+              class Test {
+                  long decimal;
+                  long hex;
+                  int integer;
+                  short small;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ignoreFinalLongFields() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private final long zero = 0L;
+                  private final long mask = 0x1_0000_0000L;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void ignoreLombokDefaultBuilder() {
         rewriteRun(
@@ -98,6 +200,10 @@ class ExplicitInitializationTest implements RewriteTest {
               class Test {
                   @Builder.Default
                   private boolean b = false;
+                  @Builder.Default
+                  private long zero = 0L;
+                  @Builder.Default
+                  private long mask = 0x1_0000_0000L;
               }
               """
           )
@@ -130,6 +236,8 @@ class ExplicitInitializationTest implements RewriteTest {
               @Value
               class Test {
                   boolean b = false;
+                  long zero = 0L;
+                  long mask = 0x1_0000_0000L;
               }
               """
           )
@@ -288,6 +396,67 @@ class ExplicitInitializationTest implements RewriteTest {
                     private isShuttingDown = false;
                     private count = 0;
                     private name = null;
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    @SuppressWarnings("GroovyUnusedAssignment")
+    class Groovy {
+        @Issue("https://github.com/openrewrite/rewrite/issues/1272")
+        @Test
+        void gTypes() {
+            rewriteRun(
+              groovy("int a = 0")
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/1272")
+        @Test
+        void removeExplicitInitialization() {
+            rewriteRun(
+              groovy(
+                """
+                  class Test {
+                      private int a = 0
+                      private long b = 0L
+                      private short c = 0
+                      private int d = 1
+                      private long e = 2L
+                      private int f
+
+                      private boolean h = false
+                      private boolean i = true
+
+                      private Object j = new Object()
+                      private Object k = null
+
+                      int[] l = null
+
+                      private final Long n = null
+                  }
+                  """,
+                """
+                  class Test {
+                      private int a
+                      private long b
+                      private short c
+                      private int d = 1
+                      private long e = 2L
+                      private int f
+
+                      private boolean h
+                      private boolean i = true
+
+                      private Object j = new Object()
+                      private Object k
+
+                      int[] l
+
+                      private final Long n = null
                   }
                   """
               )

@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +41,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
     String displayName = "Replace `Optional#isPresent()` with `Optional#ifPresent()`";
 
-    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. Please note that this recipe is only suitable for if-blocks that lack an Else-block and have a single condition applied.";
+    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. This recipe only applies to `if` statements without an `else` branch and with a single condition.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -67,18 +68,11 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            /* skip if `if-else` part is present */
             if (_if.getElsePart() != null) {
                 return _if;
             }
 
-            /* check if parent is else-if */
             if (getCursor().getParentTreeCursor().getValue() instanceof J.If.Else) {
-                return _if;
-            }
-
-            /* handle J.If ancestors */
-            if (!(_if.getIfCondition().getTree() instanceof J.MethodInvocation) || !OPTIONAL_IS_PRESENT.matches((J.MethodInvocation) _if.getIfCondition().getTree())) {
                 return _if;
             }
 
@@ -87,7 +81,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            /* replace if block with Optional#ifPresent and lambda expression */
             J.Identifier optionalVariable = (J.Identifier) select;
             String methodSelector = optionalVariable.getSimpleName();
 
@@ -109,7 +102,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                             _if.getThenPart()
                     );
 
-            /* replace Optional#get to lambda parameter */
             J.Identifier lambdaParameterIdentifier =
                     ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
                             .getParameters().getParameters().get(0)).getVariables().get(0).getName();
@@ -126,7 +118,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                         return id;
                     }
 
-                    if (lambdaAccessibleVariables.stream().noneMatch(v -> id.getFieldType().equals(v.getFieldType()) &&
+                    if (lambdaAccessibleVariables.stream().noneMatch(v -> TypeUtils.isOfType(id.getFieldType(), v.getFieldType()) &&
                                                                           v.getSimpleName().equals(id.getSimpleName()))) {
                         convertible.set(false);
                     }
@@ -239,12 +231,11 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
         @Override
         public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-            /* Only replace method invocations that has same method selector as present in if condition */
             if (OPTIONAL_GET.matches(mi) && mi.getSelect() instanceof J.Identifier) {
                 J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();
                 if (methodSelector.getSimpleName().equals(selectToBeReplaced.getSimpleName()) &&
                         methodSelector.getFieldType() != null &&
-                        methodSelector.getFieldType().equals(selectToBeReplaced.getFieldType())) {
+                        TypeUtils.isOfType(methodSelector.getFieldType(), selectToBeReplaced.getFieldType())) {
                     return lambdaParameterIdentifier.withPrefix(method.getPrefix());
                 }
             }

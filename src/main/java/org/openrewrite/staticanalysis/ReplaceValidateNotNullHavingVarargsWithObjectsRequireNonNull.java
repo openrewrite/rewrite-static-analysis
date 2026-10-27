@@ -15,40 +15,41 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.util.List;
-import java.util.stream.Stream;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.nCopies;
-import static java.util.stream.Collectors.toList;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extends Recipe {
     private static final MethodMatcher VALIDATE_NOTNULL = new MethodMatcher("org.apache.commons.lang3.Validate notNull(Object, String, Object[])");
 
-    @Getter
-    final String displayName = "Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
+    String displayName = "Replace varargs `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
 
-    @Getter
-    final String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`.";
+    String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`, " +
+            "or with `Objects.requireNonNull(Object, Supplier<String>)` to format the message lazily when format arguments are passed.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(VALIDATE_NOTNULL), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(VALIDATE_NOTNULL), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                 if (!VALIDATE_NOTNULL.matches(mi)) {
                     return mi;
                 }
@@ -74,16 +75,14 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 }
 
                 // Retain comments and whitespace around lambda arguments
-                Expression arg0 = arguments.get(0);
-                arguments.remove(0);
                 J.Lambda lambda = (J.Lambda) mi.getArguments().get(1);
                 J.MethodInvocation stringFormatMi = (J.MethodInvocation) lambda.getBody();
 
                 stringFormatMi = stringFormatMi.withArguments(
-                        ListUtils.map(stringFormatMi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a).getPrefix())));
+                        ListUtils.map(stringFormatMi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a + 1).getPrefix())));
 
                 lambda = maybeAutoFormat(lambda, lambda.withBody(stringFormatMi), ctx, getCursor());
-                return maybeAutoFormat(mi, mi.withArguments(Stream.of(arg0, lambda).collect(toList())), ctx);
+                return maybeAutoFormat(mi, mi.withArguments(asList(arguments.get(0), lambda)), ctx);
             }
         });
     }

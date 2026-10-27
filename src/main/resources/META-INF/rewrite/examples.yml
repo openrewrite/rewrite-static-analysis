@@ -183,7 +183,7 @@ examples:
       class Test {
           public void process(String value) {
               if (value == null) {
-                  throw new IllegalArgumentException("value cannot be null");
+                  throw new IllegalArgumentException();
               }
               System.out.println(value);
           }
@@ -560,7 +560,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CommonStaticAnalysis
 examples:
-- description: '`CommonStaticAnalysisIssuesPerformanceTest#indexOfOnList`'
+- description: '`CommonStaticAnalysisTest#indexOfOnList`'
   sources:
   - before: |
       import java.util.List;
@@ -644,7 +644,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CovariantEquals
 examples:
-- description: '`CovariantEqualsTest#replaceWithNonCovariantEquals`'
+- description: '`CovariantEqualsTest#addEqualsObjectDelegatingToCovariantEquals`'
   sources:
   - before: |
       class Test {
@@ -653,17 +653,28 @@ examples:
           public boolean equals(Test tee) {
               return n == tee.n;
           }
+
+          @Override
+          public int hashCode() {
+              return n;
+          }
       }
     after: |
       class Test {
           int n;
 
+          public boolean equals(Test tee) {
+              return n == tee.n;
+          }
+
           @Override
           public boolean equals(Object obj) {
-              if (obj == this) return true;
-              if (obj == null || getClass() != obj.getClass()) return false;
-              Test tee = (Test) obj;
-              return n == tee.n;
+              return obj instanceof Test && equals((Test) obj);
+          }
+
+          @Override
+          public int hashCode() {
+              return n;
           }
       }
     language: java
@@ -876,7 +887,7 @@ examples:
           private final Long n = null;
       }
     language: java
-- description: '`ExplicitInitializationVisitorCsharpTest#removeExplicitInitialization`'
+- description: '`ExplicitInitializationCsharpTest#removeExplicitInitialization`'
   sources:
   - before: |
       class A {
@@ -1205,7 +1216,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
 examples:
-- description: '`ExternalizableHasNoArgConstructorTest#needsNoArgsConstructor`'
+- description: '`ExternalizableHasNoArgsConstructorTest#needsNoArgsConstructor`'
   sources:
   - before: |
       import java.io.Externalizable;
@@ -1373,6 +1384,54 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindIgnoredCheckReturnValue
+examples:
+- description: '`FindIgnoredCheckReturnValueTest#ignoredResultOfAnnotatedClass`'
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      import com.example.Point;
+      class Test {
+          Point move(Point p) {
+              p.withX(1);
+              p.validate();
+              p.print();
+              return p.withX(2);
+          }
+      }
+    after: |
+      import com.example.Point;
+      class Test {
+          Point move(Point p) {
+              /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/p.withX(1);
+              p.validate();
+              p.print();
+              return p.withX(2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindMainWithThrowsClause
+examples:
+- description: '`FindMainWithThrowsClauseTest#flagsMainWithThrowsException`'
+  sources:
+  - before: |
+      class A {
+          public static void main(String[] args) throws Exception {
+              System.out.println("hello");
+          }
+      }
+    after: |
+      class A {
+          /*~~(`main` declares `throws`; uncaught exceptions propagate to the JVM's default handler. Handle them explicitly and exit with a meaningful code.)~~>*/public static void main(String[] args) throws Exception {
+              System.out.println("hello");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FindMissingJavadocOnPublicMethods
 examples:
 - description: '`FindMissingJavadocOnPublicMethodsTest#dataTableRecordsUndocumentedMethod`'
@@ -1423,22 +1482,132 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindNonCaseLabelsInSwitch
+examples:
+- description: '`FindNonCaseLabelsInSwitchTest#labelNamedLikeEnumConstantWithoutCase`'
+  sources:
+  - before: |
+      class Test {
+          enum Day { MONDAY, TUESDAY, WEDNESDAY }
+
+          void test(Day day) {
+              switch (day) {
+                  case MONDAY:
+                  case TUESDAY:
+                  WEDNESDAY:
+                      System.out.println(day);
+                      break;
+              }
+          }
+      }
+    after: |
+      class Test {
+          enum Day { MONDAY, TUESDAY, WEDNESDAY }
+
+          void test(Day day) {
+              switch (day) {
+                  case MONDAY:
+                  case TUESDAY:
+                  /*~~(`WEDNESDAY` is a statement label, not a `case`, so `WEDNESDAY` never matches. Add the missing `case` keyword.)~~>*/WEDNESDAY:
+                      System.out.println(day);
+                      break;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindSystemAndRuntimeExitCalls
+examples:
+- description: '`FindSystemAndRuntimeExitCallsTest#flagsSystemExit`'
+  sources:
+  - before: |
+      class A {
+          void bail() {
+              System.exit(1);
+          }
+      }
+    after: |
+      class A {
+          void bail() {
+              /*~~(JVM exit call; terminating from application code bypasses normal shutdown.)~~>*/System.exit(1);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindThreadGroupUsages
+examples:
+- description: '`FindThreadGroupUsagesTest#flagsThreadGroupConstruction`'
+  sources:
+  - before: |
+      class A {
+          void go() {
+              ThreadGroup group = new ThreadGroup("workers");
+              Thread t = new Thread(group, () -> {});
+              t.start();
+          }
+      }
+    after: |
+      class A {
+          void go() {
+              ThreadGroup group = /*~~(`ThreadGroup` is superseded by `java.util.concurrent.ExecutorService`.)~~>*/new ThreadGroup("workers");
+              Thread t = new Thread(group, () -> {});
+              t.start();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindWaitWithMultipleLocksHeld
+examples:
+- description: '`FindWaitWithMultipleLocksHeldTest#findsWaitInsideTwoNestedSynchronizedBlocks`'
+  sources:
+  - before: |
+      class A {
+          private final Object outer = new Object();
+          private final Object inner = new Object();
+
+          void await() throws InterruptedException {
+              synchronized (outer) {
+                  synchronized (inner) {
+                      inner.wait();
+                  }
+              }
+          }
+      }
+    after: |
+      class A {
+          private final Object outer = new Object();
+          private final Object inner = new Object();
+
+          void await() throws InterruptedException {
+              synchronized (outer) {
+                  synchronized (inner) {
+                      /*~~(`wait()` called while holding multiple monitors. Only the receiver's monitor is released; other held monitors continue to block their waiters and can deadlock.)~~>*/inner.wait();
+                  }
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FixStringFormatExpressions
 examples:
-- description: '`FixStringFormatExpressionsTest#newLineFormat`'
+- description: '`FixStringFormatExpressionsTest#trimUnusedArguments`'
   sources:
   - before: |
       class T {
           static {
-              String s = String.format("hello world\n%s", "again");
-              String s2 = "hello world\n%s".formatted("again");
+              String s = String.format("count: %d, %d, %d, %d", 1, 3, 2, 4, 5);
+              String f = "count: %d, %d, %d, %d".formatted(1, 3, 2, 4, 5);
           }
       }
     after: |
       class T {
           static {
-              String s = String.format("hello world%n%s", "again");
-              String s2 = "hello world%n%s".formatted("again");
+              String s = String.format("count: %d, %d, %d, %d", 1, 3, 2, 4);
+              String f = "count: %d, %d, %d, %d".formatted(1, 3, 2, 4);
           }
       }
     language: java
@@ -1777,6 +1946,29 @@ examples:
                       return isEmpty();
                   }
               }.test();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.IsEmptyCallOnMaps
+examples:
+- description: '`IsEmptyCallOnMapsTest#mapWithNullGuard`'
+  sources:
+  - before: |
+      import java.util.Map;
+
+      class Test {
+          boolean empty(Map<String, String> map) {
+              return map == null || map.size() == 0;
+          }
+      }
+    after: |
+      import java.util.Map;
+
+      class Test {
+          boolean empty(Map<String, String> map) {
+              return map == null || map.isEmpty();
           }
       }
     language: java
@@ -3173,6 +3365,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnnecessaryBitwiseOperation
+examples:
+- description: '`RemoveUnnecessaryBitwiseOperationTest#removeIdentityOperations`'
+  sources:
+  - before: |
+      class Test {
+          void test(int x) {
+              int a = x & -1;
+              int b = -1 & x;
+              int c = x | 0;
+              int d = 0 | x;
+              int e = x ^ 0;
+              int f = 0 ^ x;
+          }
+      }
+    after: |
+      class Test {
+          void test(int x) {
+              int a = x;
+              int b = x;
+              int c = x;
+              int d = x;
+              int e = x;
+              int f = x;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnneededAssertion
 examples:
 - description: '`RemoveUnneededAssertionTest#assertTrue`'
@@ -3770,37 +3991,6 @@ examples:
           }
       }
     language: java
-- description: '`ReplaceLambdaWithMethodReferenceTest#toQualifiedMethodReference`'
-  sources:
-  - before: |
-      fun main() {
-          val pets = listOf(Cat(), Dog())
-          pets.forEach { it.move() }
-      }
-    after: |
-      fun main() {
-          val pets = listOf(Cat(), Dog())
-          pets.forEach ( Pet::move )
-      }
-    language: kotlin
-  - before: |
-      interface Pet {
-          fun move() {
-          }
-      }
-
-      class Cat : Pet {
-          override fun move() {
-              println("Cat is moving")
-          }
-      }
-
-      class Dog : Pet {
-          override fun move() {
-              println("Dog is moving")
-          }
-      }
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent
@@ -4740,6 +4930,35 @@ examples:
 
           Object o() {
               return this.<String>test();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryFinalInTryWithResources
+examples:
+- description: '`UnnecessaryFinalInTryWithResourcesTest#removeFinalModifier`'
+  sources:
+  - before: |
+      import java.io.ByteArrayInputStream;
+      import java.io.IOException;
+
+      class Test {
+          void method() throws IOException {
+              try (final var input = new ByteArrayInputStream(new byte[0])) {
+                  int x = input.read();
+              }
+          }
+      }
+    after: |
+      import java.io.ByteArrayInputStream;
+      import java.io.IOException;
+
+      class Test {
+          void method() throws IOException {
+              try (var input = new ByteArrayInputStream(new byte[0])) {
+                  int x = input.read();
+              }
           }
       }
     language: java

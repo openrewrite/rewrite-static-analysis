@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -497,7 +496,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/moderneinc/customer-requests/issues/2370")
+        // Explicit type argument on a generic static method call passed as an argument to another generic method
         @Test
         void retainsExplicitTypeOnStaticMethodWithoutTypeBoundParameters() {
             rewriteRun(
@@ -552,7 +551,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Nested
-    class kotlinTest {
+    class Kotlin {
         @Test
         void doNotChangeIfHasNotTypeInference() {
             rewriteRun(
@@ -565,18 +564,13 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @ExpectedToFail("Not matching yet")
         @Test
-        void changeIfHasTypeInference() {
+        void doNotChangeEvenIfHasTypeInference() {
             rewriteRun(
               kotlin(
                 """
                   val foo = listOf<String>("a", "b")
                   var bar = mutableMapOf<String, Int>("a" to 1)
-                  """,
-                """
-                  val foo = listOf("a", "b")
-                  var bar = mutableMapOf("a" to 1)
                   """
               )
             );

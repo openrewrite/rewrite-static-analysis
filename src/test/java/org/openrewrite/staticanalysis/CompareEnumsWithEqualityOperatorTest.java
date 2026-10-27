@@ -136,7 +136,7 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/28")
+    // Enum constant equals() call as the right operand of &&
     @Test
     void equals() {
         rewriteRun(
@@ -169,7 +169,7 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           ));
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/28")
+    // Negated enum constant equals() call as the right operand of &&
     @Test
     void notEquals() {
         rewriteRun(
@@ -221,7 +221,7 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/190")
+    // Enum equals() calls inside a negated, parenthesized || expression
     @SuppressWarnings("StatementWithEmptyBody")
     @Test
     void changeEnumInsideBooleanExpression() {

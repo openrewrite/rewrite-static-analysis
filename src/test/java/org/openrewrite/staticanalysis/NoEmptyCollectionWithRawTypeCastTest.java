@@ -19,25 +19,27 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.java.Assertions.java;
 
-class OperatorWrapKotlinTest implements RewriteTest {
+class NoEmptyCollectionWithRawTypeCastTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new OperatorWrap(null));
+        spec.recipe(new NoEmptyCollectionWithRawType());
     }
 
     @Test
-    void doesNotMoveBinaryOperatorToNewLineInKotlin() {
-        // In Kotlin a newline ends an expression, so a leading binary operator is parsed as a unary
-        // operator on a new statement. Moving `+` to the start of the next line breaks the code.
+    void retainParameterizedListCast() {
         rewriteRun(
-          kotlin(
+          java(
             """
-              fun method(): String {
-                  val s = "aaa" + "b" +
-                      "c"
-                  return s
+              import java.util.Collections;
+              import java.util.List;
+
+              class A {
+                  @SuppressWarnings("unchecked")
+                  List<String> values() {
+                      return (List<String>) Collections.EMPTY_LIST;
+                  }
               }
               """
           )

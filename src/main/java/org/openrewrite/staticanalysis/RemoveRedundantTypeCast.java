@@ -30,7 +30,6 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
-@Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
     private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
 
@@ -137,10 +136,11 @@ public class RemoveRedundantTypeCast extends Recipe {
                 }
 
                 JavaType targetType = null;
-                if (castType.equals(expressionType)) {
+                if (TypeUtils.isOfType(castType, expressionType)) {
                     targetType = castType;
-                } else if (parentValue instanceof J.VariableDeclarations) {
-                    targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
+                } else if (parentValue instanceof J.VariableDeclarations &&
+                        parentTreeCursor.getValue() instanceof J.VariableDeclarations.NamedVariable) {
+                    targetType = ((J.VariableDeclarations.NamedVariable) parentTreeCursor.getValue()).getType();
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
@@ -148,7 +148,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
-                            if (arg == typeCast) {
+                            if (arg.unwrap() == typeCast) {
                                 // Preserve a semantically significant cast at the varargs position: a `null`
                                 // literal (array vs. single null element) or an array cast to a non-array type
                                 // (e.g. `(Object)`, marking the array as a single element rather than spread).
@@ -160,15 +160,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                                                         !(castType instanceof JavaType.Array))) {
                                     return visited;
                                 }
-                                targetType = getParameterType(methodType, i);
+                                targetType = getParameterType(methodType, i, castType);
                                 break;
                             }
                         }
                     }
-                    if (TypeUtils.isAssignableTo(castType, expressionType)) {
+                    // Not an argument, so the cast selects the receiver type (e.g. `((Bar) getChildBar()).getName()`).
+                    // An argument keeps the declared parameter type, against which a raw cast can be load-bearing.
+                    if (targetType == null && TypeUtils.isAssignableTo(castType, expressionType)) {
                         targetType = castType;
                     }
-                } else if (parentValue instanceof J.Return && expressionIsTypeCast((J.Return) parentValue, typeCast)) {
+                } else if (parentValue instanceof J.Return && Expression.unwrap(((J.Return) parentValue).getExpression()) == typeCast) {
                     parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
                                                           is instanceof J.MethodDeclaration ||
                                                           is instanceof J.ClassDeclaration ||
@@ -202,7 +204,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 // the cast might be necessary to control generic type inference
                 if (parentValue instanceof J.MethodInvocation &&
                         TypeUtils.isAssignableTo(castType, expressionType) &&
-                        !castType.equals(expressionType)) {
+                        !TypeUtils.isOfType(castType, expressionType)) {
                     // Check if the method returns a generic type
                     JavaType.Method methodType = ((J.MethodInvocation) parentValue).getMethodType();
                     if (methodType != null && methodType.getReturnType() instanceof JavaType.Parameterized) {
@@ -333,28 +335,12 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return false;
             }
 
-            private JavaType getParameterType(JavaType.Method method, int arg) {
+            private JavaType getParameterType(JavaType.Method method, int arg, JavaType argType) {
                 List<JavaType> parameterTypes = method.getParameterTypes();
-                if (parameterTypes.size() > arg) {
-                    return parameterTypes.get(arg);
-                }
-                // varargs?
-                JavaType type = parameterTypes.get(parameterTypes.size() - 1);
-                return type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
-            }
-
-            private boolean expressionIsTypeCast(J.Return return_, J.TypeCast typeCast) {
-                if (return_.getExpression() instanceof J.Parentheses<?>) {
-                    return expressionIsTypeCast((J.Parentheses<?>) return_.getExpression(), typeCast);
-                }
-                return return_.getExpression() == typeCast;
-            }
-
-            private boolean expressionIsTypeCast(J.Parentheses<?> parentheses, J.TypeCast typeCast) {
-                if (parentheses.getTree() instanceof J.Parentheses) {
-                    return expressionIsTypeCast((J.Parentheses<?> ) parentheses.getTree(), typeCast);
-                }
-               return parentheses.getTree() == typeCast;
+                int last = parameterTypes.size() - 1;
+                JavaType type = parameterTypes.get(Math.min(arg, last));
+                boolean varargsElement = arg > last || arg == last && !(argType instanceof JavaType.Array);
+                return varargsElement && type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
         });
     }
