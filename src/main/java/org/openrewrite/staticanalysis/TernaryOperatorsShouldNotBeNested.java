@@ -241,7 +241,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return false;
             }
             J.Identifier foundVar = (J.Identifier) found;
-            return Objects.equals(foundVar.getFieldType(), switchVar.getFieldType());
+            return TypeUtils.isOfType(foundVar.getFieldType(), switchVar.getFieldType());
         }
 
         private J.SwitchExpression toSwitch(final J.Identifier switchVar, final List<J.Ternary> nestList, @Nullable JavaType type) {

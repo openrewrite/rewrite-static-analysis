@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,7 +118,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                         return id;
                     }
 
-                    if (lambdaAccessibleVariables.stream().noneMatch(v -> id.getFieldType().equals(v.getFieldType()) &&
+                    if (lambdaAccessibleVariables.stream().noneMatch(v -> TypeUtils.isOfType(id.getFieldType(), v.getFieldType()) &&
                                                                           v.getSimpleName().equals(id.getSimpleName()))) {
                         convertible.set(false);
                     }
@@ -234,7 +235,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();
                 if (methodSelector.getSimpleName().equals(selectToBeReplaced.getSimpleName()) &&
                         methodSelector.getFieldType() != null &&
-                        methodSelector.getFieldType().equals(selectToBeReplaced.getFieldType())) {
+                        TypeUtils.isOfType(methodSelector.getFieldType(), selectToBeReplaced.getFieldType())) {
                     return lambdaParameterIdentifier.withPrefix(method.getPrefix());
                 }
             }

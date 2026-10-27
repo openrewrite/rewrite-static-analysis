@@ -253,7 +253,7 @@ public class UseMapEntrySetIteration extends Recipe {
     }
 
     private static boolean references(@Nullable Expression expression, JavaType.Variable variable) {
-        return expression instanceof J.Identifier && Objects.equals(variable, ((J.Identifier) expression).getFieldType());
+        return expression instanceof J.Identifier && TypeUtils.isOfType(variable, ((J.Identifier) expression).getFieldType());
     }
 
     /**
