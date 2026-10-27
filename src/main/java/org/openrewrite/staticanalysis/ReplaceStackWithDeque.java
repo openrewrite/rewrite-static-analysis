@@ -92,7 +92,15 @@ public class ReplaceStackWithDeque extends Recipe {
                     }
                 };
 
-                if (FindLocalFlowPaths.noneMatch(getCursor(), returned)) {
+                boolean returnedSomewhere;
+                try {
+                    returnedSomewhere = !FindLocalFlowPaths.noneMatch(getCursor(), returned);
+                } catch (RuntimeException e) {
+                    // rewrite-analysis 2.39.0, its last release, cannot follow some flows, as through an anonymous
+                    // class with several returning methods: a Stack whose flow it cannot follow is left as it is.
+                    returnedSomewhere = true;
+                }
+                if (!returnedSomewhere) {
                     v = v.withInitializer(initializer);
                     getCursor().putMessageOnFirstEnclosing(J.VariableDeclarations.class, "replace", true);
                 }
