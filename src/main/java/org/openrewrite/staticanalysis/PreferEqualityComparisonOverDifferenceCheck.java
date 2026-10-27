@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 
 public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
 
@@ -55,6 +56,11 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
                         right instanceof J.Literal && ((J.Literal) right).getValue() instanceof Number &&
                         ((Number) ((J.Literal) right).getValue()).doubleValue() == 0.0) {
                     J.Binary subtraction = (J.Binary) left;
+                    if ((operator == J.Binary.Type.Equal || operator == J.Binary.Type.NotEqual) &&
+                            !(subtraction.getLeft().getType() instanceof JavaType.Primitive) &&
+                            !(subtraction.getRight().getType() instanceof JavaType.Primitive)) {
+                        return binary;
+                    }
                     return maybeAutoFormat(binary, binary.withLeft(subtraction.getLeft()).withRight(subtraction.getRight()), ctx);
                 }
                 return binary;
