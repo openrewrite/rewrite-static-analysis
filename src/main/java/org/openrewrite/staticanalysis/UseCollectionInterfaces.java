@@ -183,7 +183,7 @@ public class UseCollectionInterfaces extends Recipe {
                         mv = mv.withTypeExpression(getTypeTree(mv.getTypeExpression(), newType));
                         mv = mv.withVariables(ListUtils.map(mv.getVariables(), var -> {
                             JavaType.FullyQualified varType = TypeUtils.asFullyQualified(var.getType());
-                            if (varType != null && !varType.equals(newType)) {
+                            if (varType != null && !TypeUtils.isOfType(varType, newType)) {
                                 return var.withType(newType).withName(var.getName().withType(newType));
                             }
                             return var;

@@ -629,7 +629,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 if (ident.getFieldType() != null && ident.getFieldType().hasFlags(Flag.Final) &&
                     !ident.getFieldType().hasFlags(Flag.HasInit) &&
-                    owner.equals(ident.getFieldType().getOwner())) {
+                    TypeUtils.isOfType(owner, ident.getFieldType().getOwner())) {
                     referencesUninitializedFinalField.set(true);
                 }
                 return super.visitIdentifier(ident, integer);
