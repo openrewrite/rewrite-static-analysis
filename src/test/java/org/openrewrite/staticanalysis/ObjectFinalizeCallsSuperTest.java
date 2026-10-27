@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -64,8 +63,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Widens neither throws clause, and the second cycle inserts a duplicate super.finalize() into the subclass; needs hierarchy-aware handling")
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/969")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/993")
     @Test
     void addsSuperFinalizeAndWidensThrowsAcrossClassHierarchy() {
         rewriteRun(
@@ -95,6 +93,145 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
               class B extends A {
                   @Override
                   protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/993")
+    @Test
+    void widensThrowsOfSubclassInAnotherSourceFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class A {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class B extends A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class B extends A {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/993")
+    @Test
+    void widensThrowsThroughThreeLevels() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+
+              class B extends A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+
+              class C extends B {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class A {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+
+              class B extends A {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+
+              class C extends B {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/993")
+    @Test
+    void keepsSubclassThrowsNarrowWhenParentCatchesThrowable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                      try {
+                          super.finalize();
+                      } catch (Throwable ignored) {
+                      }
+                  }
+              }
+
+              class B extends A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                      try {
+                          super.finalize();
+                      } catch (Throwable ignored) {
+                      }
+                  }
+              }
+
+              class B extends A {
+                  @Override
+                  protected void finalize() {
                       super.finalize();
                   }
               }
