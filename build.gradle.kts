@@ -21,7 +21,6 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
     // Limit transitive dependencies for downstream projects like rewrite-spring
