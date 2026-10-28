@@ -64,7 +64,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                 if (ISINSTANCE_MATCHER.matches(method) && isObjectClass(method.getSelect()) && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
-                    // `instanceof` is a compile error where `isInstance` just returns false
+                    // `instanceof` is a compile error (JLS 15.20.2) where `isInstance` just returns false
                     if (cannotBeInstanceOf(objectExpression.getType(), (JavaType.FullyQualified) fieldAccessPart.getTarget().getType())) {
                         return super.visitMethodInvocation(method, ctx);
                     }
@@ -100,12 +100,6 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
         });
     }
 
-    /**
-     * Whether {@code expr instanceof Target} is a compile error, as it is when the operand is a primitive or its
-     * type can't be cast to the target (JLS 15.20.2). Unknown types are not treated as incompatible.
-     *
-     * @see <a href="https://github.com/openrewrite/rewrite-static-analysis/issues/1116">C12 of #1116</a>
-     */
     private static boolean cannotBeInstanceOf(@Nullable JavaType type, JavaType.FullyQualified target) {
         if (type instanceof JavaType.Primitive) {
             // String literals and `null` are typed as primitives too, and both are fine as `instanceof` operands
@@ -139,7 +133,6 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
             return false;
         }
         if (!typeIsInterface && !targetIsInterface) {
-            // Neither class extends the other
             return true;
         }
         // Only a subclass could implement the interface, and a final class has none
