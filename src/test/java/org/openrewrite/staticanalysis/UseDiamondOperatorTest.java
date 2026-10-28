@@ -488,8 +488,7 @@ class UseDiamondOperatorTest implements RewriteTest {
                       }
                   };
 
-                  void assign() {
-                      Consumer<?> c;
+                  void assign(Consumer<?> c, Consumer<? extends CharSequence> e, List<?> l) {
                       c = new Consumer<String>() {
                           @Override
                           public void accept(String s) {
@@ -497,7 +496,6 @@ class UseDiamondOperatorTest implements RewriteTest {
                       };
 
                       // `new Consumer<>() {...}` would infer `Consumer<CharSequence>`
-                      Consumer<? extends CharSequence> e;
                       e = new Consumer<String>() {
                           @Override
                           public void accept(String s) {
@@ -505,7 +503,6 @@ class UseDiamondOperatorTest implements RewriteTest {
                       };
 
                       // Not an anonymous class, so the diamond is still fine
-                      List<?> l;
                       l = new ArrayList<String>();
                   }
 
@@ -531,8 +528,7 @@ class UseDiamondOperatorTest implements RewriteTest {
                       }
                   };
 
-                  void assign() {
-                      Consumer<?> c;
+                  void assign(Consumer<?> c, Consumer<? extends CharSequence> e, List<?> l) {
                       c = new Consumer<String>() {
                           @Override
                           public void accept(String s) {
@@ -540,7 +536,6 @@ class UseDiamondOperatorTest implements RewriteTest {
                       };
 
                       // `new Consumer<>() {...}` would infer `Consumer<CharSequence>`
-                      Consumer<? extends CharSequence> e;
                       e = new Consumer<String>() {
                           @Override
                           public void accept(String s) {
@@ -548,7 +543,6 @@ class UseDiamondOperatorTest implements RewriteTest {
                       };
 
                       // Not an anonymous class, so the diamond is still fine
-                      List<?> l;
                       l = new ArrayList<>();
                   }
 
