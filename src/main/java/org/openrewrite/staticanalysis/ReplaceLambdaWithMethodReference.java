@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 @EqualsAndHashCode(callSuper = false)
@@ -229,33 +230,25 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         return newInstanceMethodReference(select, methodType, lambda.getType()).withPrefix(lambda.getPrefix());
                     }
 
-                    Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
-                            (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
-                            is == Cursor.ROOT_VALUE);
-                    if (!(owner.getValue() instanceof TypedTree)) {
+                    // Anonymous classes were excluded above, so the innermost class declaration owns `this`
+                    J.ClassDeclaration owner = getCursor().firstEnclosing(J.ClassDeclaration.class);
+                    if (owner == null) {
                         return l;
                     }
-                    JavaType ownerType = owner.<TypedTree>getValue().getType();
                     JavaType.FullyQualified declaringType = methodType.getDeclaringType();
                     Expression thisExpression;
-                    if (ownerType == null || TypeUtils.isAssignableTo(declaringType, ownerType)) {
-                        thisExpression = JavaElementFactory.newThis(ownerType);
+                    if (owner.getType() == null || TypeUtils.isAssignableTo(declaringType, owner.getType())) {
+                        thisExpression = JavaElementFactory.newThis(owner.getType());
                     } else {
-                        // When the method belongs to an enclosing (outer) class (possibly inherited from its
-                        // superclass), qualify `this` with the enclosing class's type rather than `declaringType`
-                        Cursor enclosingOwner = owner.dropParentUntil(is ->
-                                (is instanceof J.ClassDeclaration &&
-                                        TypeUtils.isAssignableTo(declaringType, ((J.ClassDeclaration) is).getType())) ||
-                                (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null &&
-                                        TypeUtils.isAssignableTo(declaringType, ((J.NewClass) is).getType())) ||
-                                is == Cursor.ROOT_VALUE);
-                        if (!(enclosingOwner.getValue() instanceof J.ClassDeclaration)) {
+                        // Qualify `this` with the enclosing class that inherits the method, which may not be its declaring
+                        // type; an anonymous class in between cannot be named, so leave the lambda as it is
+                        Cursor enclosing = getCursor().dropParentUntil(is -> is == Cursor.ROOT_VALUE ||
+                                (is instanceof J.ClassDeclaration || is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) &&
+                                TypeUtils.isAssignableTo(declaringType, ((TypedTree) is).getType()));
+                        if (!(enclosing.getValue() instanceof J.ClassDeclaration)) {
                             return l;
                         }
-                        JavaType.FullyQualified enclosingType = TypeUtils.asFullyQualified(
-                                enclosingOwner.<J.ClassDeclaration>getValue().getType());
-                        thisExpression = JavaElementFactory.newQualifiedThis(
-                                enclosingType != null ? enclosingType : declaringType);
+                        thisExpression = JavaElementFactory.newQualifiedThis(requireNonNull(enclosing.<J.ClassDeclaration>getValue().getType()));
                     }
                     return JavaElementFactory.newInstanceMethodReference(
                             thisExpression,
