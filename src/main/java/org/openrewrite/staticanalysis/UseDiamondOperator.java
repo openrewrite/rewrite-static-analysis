@@ -228,7 +228,8 @@ public class UseDiamondOperator extends Recipe {
                 if (newClassType.getTypeParameters() != null) {
                     if (paramTypes.size() != newClassType.getTypeParameters().size() ||
                             hasAnnotations(newClassType) ||
-                            breaksNestedTypeInference(newClass)) {
+                            breaksNestedTypeInference(newClass) ||
+                            isAnonymousClassWithWildcardTarget(paramTypes, newClass)) {
                         return newClass;
                     }
                     for (int i = 0; i < paramTypes.size(); i++) {
@@ -243,6 +244,26 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
             return newClass;
+        }
+
+        /**
+         * With a wildcard target such as {@code Consumer<?>}, an anonymous {@code new Consumer<>() {...}} has its
+         * type argument inferred from the wildcard's bound ({@code Object} here), so the methods it declares for the
+         * explicit type argument no longer override anything and the class stops compiling.
+         *
+         * @see <a href="https://github.com/openrewrite/rewrite-static-analysis/issues/1116">C10 of #1116</a>
+         */
+        private static boolean isAnonymousClassWithWildcardTarget(List<JavaType> targetTypes, J.NewClass newClass) {
+            if (newClass.getBody() == null) {
+                return false;
+            }
+            for (JavaType targetType : targetTypes) {
+                if (targetType instanceof JavaType.GenericTypeVariable &&
+                        "?".equals(((JavaType.GenericTypeVariable) targetType).getName())) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**
