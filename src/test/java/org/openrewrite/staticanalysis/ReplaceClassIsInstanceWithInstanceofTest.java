@@ -65,8 +65,10 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
           //language=java
           java(
             """
+              import java.util.List;
+
               class A<N extends Number> {
-                  void foo(String s, Object o, int i, int[] arr, Number num, N n) {
+                  void foo(String s, Object o, int i, int[] arr, Number num, N n, List<? extends Number> nums) {
                       boolean b;
                       // Unrelated classes
                       b = Integer.class.isInstance(s);
@@ -78,8 +80,9 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
                       b = Runnable.class.isInstance(s);
                       // An array is only an `Object`, `Cloneable` or `Serializable`
                       b = String.class.isInstance(arr);
-                      // A type variable is checked against its bound
+                      // A type variable or wildcard capture is checked against its bound
                       b = String.class.isInstance(n);
+                      b = String.class.isInstance(nums.get(0));
                   }
               }
               """
@@ -99,7 +102,7 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
               import java.util.List;
 
               class A<T, N extends Number> {
-                  void foo(Number num, List<?> list, CharSequence cs, Runnable r, Integer boxed, T t, N n, int[] arr) {
+                  void foo(Number num, List<?> list, CharSequence cs, Runnable r, Integer boxed, T t, N n, int[] arr, List<? super Integer> ints) {
                       boolean b;
                       b = Runnable.class.isInstance(num);
                       b = ArrayList.class.isInstance(list);
@@ -110,6 +113,7 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
                       b = String.class.isInstance(t);
                       b = Integer.class.isInstance(n);
                       b = Serializable.class.isInstance(arr);
+                      b = String.class.isInstance(ints.get(0));
                   }
               }
               """,
@@ -119,7 +123,7 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
               import java.util.List;
 
               class A<T, N extends Number> {
-                  void foo(Number num, List<?> list, CharSequence cs, Runnable r, Integer boxed, T t, N n, int[] arr) {
+                  void foo(Number num, List<?> list, CharSequence cs, Runnable r, Integer boxed, T t, N n, int[] arr, List<? super Integer> ints) {
                       boolean b;
                       b = num instanceof Runnable;
                       b = list instanceof ArrayList;
@@ -130,6 +134,7 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
                       b = t instanceof String;
                       b = n instanceof Integer;
                       b = arr instanceof Serializable;
+                      b = ints.get(0) instanceof String;
                   }
               }
               """
