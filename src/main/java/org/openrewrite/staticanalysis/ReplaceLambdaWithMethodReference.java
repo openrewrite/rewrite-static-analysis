@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 @EqualsAndHashCode(callSuper = false)
@@ -229,15 +230,26 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         return newInstanceMethodReference(select, methodType, lambda.getType()).withPrefix(lambda.getPrefix());
                     }
 
-                    Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
-                            (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
-                            is instanceof J.Lambda);
-                    JavaType ownerType = owner.<TypedTree>getValue().getType();
-                    JavaType.FullyQualified declaringType = methodType.getDeclaringType();
-                    // When the method belongs to an enclosing (outer) class, qualify `this` as `Outer.this`
-                    Expression thisExpression = ownerType != null && !TypeUtils.isAssignableTo(declaringType, ownerType) ?
-                            JavaElementFactory.newQualifiedThis(declaringType) :
-                            JavaElementFactory.newThis(ownerType);
+                    // Anonymous classes were excluded above, so the innermost class declaration owns `this`
+                    J.ClassDeclaration owner = getCursor().firstEnclosing(J.ClassDeclaration.class);
+                    if (owner == null) {
+                        return l;
+                    }
+                    String declaringType = methodType.getDeclaringType().getFullyQualifiedName();
+                    Expression thisExpression;
+                    if (owner.getType() == null || TypeUtils.isAssignableTo(declaringType, owner.getType())) {
+                        thisExpression = JavaElementFactory.newThis(owner.getType());
+                    } else {
+                        // Qualify `this` with the enclosing class that inherits the method, which may not be its declaring
+                        // type; an anonymous class in between cannot be named, so leave the lambda as it is
+                        Cursor enclosing = getCursor().dropParentUntil(is -> is == Cursor.ROOT_VALUE ||
+                                (is instanceof J.ClassDeclaration || is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) &&
+                                TypeUtils.isAssignableTo(declaringType, ((TypedTree) is).getType()));
+                        if (!(enclosing.getValue() instanceof J.ClassDeclaration)) {
+                            return l;
+                        }
+                        thisExpression = JavaElementFactory.newQualifiedThis(requireNonNull(enclosing.<J.ClassDeclaration>getValue().getType()));
+                    }
                     return JavaElementFactory.newInstanceMethodReference(
                             thisExpression,
                             methodType,

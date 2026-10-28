@@ -728,6 +728,107 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void nestedLambdaCallsOwnAndInheritedMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  void log(String s) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A extends Base {
+                  void own(String s) {}
+
+                  void run(List<List<String>> ls) {
+                      ls.forEach(l -> l.forEach(s -> log(s)));
+                      ls.forEach(l -> l.forEach(s -> own(s)));
+                  }
+
+                  class Inner {
+                      void caller(List<List<String>> ls) {
+                          ls.forEach(l -> l.forEach(s -> log(s)));
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A extends Base {
+                  void own(String s) {}
+
+                  void run(List<List<String>> ls) {
+                      ls.forEach(l -> l.forEach(this::log));
+                      ls.forEach(l -> l.forEach(this::own));
+                  }
+
+                  class Inner {
+                      void caller(List<List<String>> ls) {
+                          ls.forEach(l -> l.forEach(A.this::log));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inheritedMethodOfGenericSuperclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base<T> {
+                  void log(T t) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A extends Base<String> {
+                  void run(List<String> l) {
+                      l.forEach(s -> log(s));
+                  }
+
+                  class Inner {
+                      void caller(List<String> l) {
+                          l.forEach(s -> log(s));
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A extends Base<String> {
+                  void run(List<String> l) {
+                      l.forEach(this::log);
+                  }
+
+                  class Inner {
+                      void caller(List<String> l) {
+                          l.forEach(A.this::log);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void functionReference() {
         rewriteRun(
@@ -1991,6 +2092,35 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
                       private Converter<K> keyConverter = o -> (K) o;
                       private Converter<V> valConverter = o -> (V) o;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+        @Test
+        void doNotReplaceWhenEnclosingOwnerIsAnonymousClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class Base {
+                      void log(String s) {}
+                  }
+
+                  class A extends Base {
+                      void m(List<String> l) {
+                          new Base() {
+                              class Local {
+                                  void f() {
+                                      l.forEach(s -> log(s));
+                                  }
+                              }
+                          };
+                      }
                   }
                   """
               )
