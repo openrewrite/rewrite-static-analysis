@@ -235,7 +235,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (owner == null) {
                         return l;
                     }
-                    JavaType.FullyQualified declaringType = methodType.getDeclaringType();
+                    String declaringType = methodType.getDeclaringType().getFullyQualifiedName();
                     Expression thisExpression;
                     if (owner.getType() == null || TypeUtils.isAssignableTo(declaringType, owner.getType())) {
                         thisExpression = JavaElementFactory.newThis(owner.getType());

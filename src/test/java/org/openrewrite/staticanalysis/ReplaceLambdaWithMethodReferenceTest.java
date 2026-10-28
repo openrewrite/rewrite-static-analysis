@@ -783,6 +783,53 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
+    void inheritedMethodOfGenericSuperclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base<T> {
+                  void log(T t) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A extends Base<String> {
+                  void run(List<String> l) {
+                      l.forEach(s -> log(s));
+                  }
+
+                  class Inner {
+                      void caller(List<String> l) {
+                          l.forEach(s -> log(s));
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A extends Base<String> {
+                  void run(List<String> l) {
+                      l.forEach(this::log);
+                  }
+
+                  class Inner {
+                      void caller(List<String> l) {
+                          l.forEach(A.this::log);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void functionReference() {
         rewriteRun(
           //language=java
