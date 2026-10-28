@@ -79,9 +79,10 @@ public class EqualsAvoidsNull extends Recipe {
                         }
 
                         Expression firstArgument = mi.getArguments().get(0);
-                        return firstArgument.getType() == JavaType.Primitive.Null ?
-                                literalsFirstInComparisonsNull(mi, firstArgument) :
-                                literalsFirstInComparisons(mi, firstArgument);
+                        if (firstArgument.getType() != JavaType.Primitive.Null) {
+                            return literalsFirstInComparisons(mi, firstArgument);
+                        }
+                        return StatementRemoval.needsStatementExpression(getCursor()) ? mi : literalsFirstInComparisonsNull(mi, firstArgument);
                     }
 
                     @Override

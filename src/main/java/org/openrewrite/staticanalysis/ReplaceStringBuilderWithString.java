@@ -61,7 +61,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                if (STRING_BUILDER_TO_STRING.matches(method)) {
+                if (STRING_BUILDER_TO_STRING.matches(method) && !StatementRemoval.needsStatementExpression(getCursor())) {
                     List<Expression> arguments = new ArrayList<>();
                     boolean isFlattenable = flatMethodInvocationChain(method, arguments);
                     if (!isFlattenable || arguments.isEmpty()) {

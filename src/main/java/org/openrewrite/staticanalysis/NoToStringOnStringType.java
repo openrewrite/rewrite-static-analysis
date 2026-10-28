@@ -52,7 +52,8 @@ public class NoToStringOnStringType extends Recipe {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (mi.getSelect() != null && TO_STRING.matches(mi)) {
+                if (mi.getSelect() != null && TO_STRING.matches(mi) && (!StatementRemoval.needsStatementExpression(getCursor()) ||
+                        mi.getSelect() instanceof J.MethodInvocation || mi.getSelect() instanceof J.NewClass)) {
                     return mi.getSelect().withPrefix(mi.getPrefix());
                 }
                 return mi;

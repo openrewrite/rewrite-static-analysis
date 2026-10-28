@@ -463,4 +463,23 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.TimeUnit;
+
+              class A {
+                  void foo(TimeUnit a, TimeUnit b) {
+                      a.equals(b);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
