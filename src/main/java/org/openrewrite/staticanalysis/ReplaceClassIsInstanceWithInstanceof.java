@@ -27,11 +27,13 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -62,6 +64,10 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                 if (ISINSTANCE_MATCHER.matches(method) && isObjectClass(method.getSelect()) && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
+                    // `instanceof` is a compile error (JLS 15.20.2) where `isInstance` just returns false
+                    if (cannotBeInstanceOf(objectExpression.getType(), (JavaType.FullyQualified) fieldAccessPart.getTarget().getType())) {
+                        return super.visitMethodInvocation(method, ctx);
+                    }
                     JavaCoordinates coordinates = method.getCoordinates().replace();
                     J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
@@ -92,5 +98,49 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                 return false;
             }
         });
+    }
+
+    private static boolean cannotBeInstanceOf(@Nullable JavaType type, JavaType.FullyQualified target) {
+        if (type instanceof JavaType.Primitive) {
+            // String literals and `null` are typed as primitives too, and both are fine as `instanceof` operands
+            return type != JavaType.Primitive.String && type != JavaType.Primitive.Null;
+        }
+        if (type instanceof JavaType.GenericTypeVariable) {
+            JavaType.GenericTypeVariable typeVariable = (JavaType.GenericTypeVariable) type;
+            if (typeVariable.getVariance() == JavaType.GenericTypeVariable.Variance.CONTRAVARIANT) {
+                return false;
+            }
+            // A cast from a type variable is checked against its bounds
+            for (JavaType bound : typeVariable.getBounds()) {
+                if (cannotBeInstanceOf(bound, target)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (type instanceof JavaType.Array) {
+            // An array is only an `Object`, `Cloneable` or `Serializable`
+            return !TypeUtils.isAssignableTo(target, type);
+        }
+        JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
+        if (fq == null || fq instanceof JavaType.Unknown ||
+                TypeUtils.isAssignableTo(target, fq) || TypeUtils.isAssignableTo(fq, target)) {
+            return false;
+        }
+        boolean typeIsInterface = isInterface(fq);
+        boolean targetIsInterface = isInterface(target);
+        if (typeIsInterface && targetIsInterface) {
+            return false;
+        }
+        if (!typeIsInterface && !targetIsInterface) {
+            return true;
+        }
+        // Only a subclass could implement the interface, and a final class has none
+        return (typeIsInterface ? target : fq).hasFlags(Flag.Final);
+    }
+
+    private static boolean isInterface(JavaType.FullyQualified type) {
+        return type.getKind() == JavaType.FullyQualified.Kind.Interface ||
+                type.getKind() == JavaType.FullyQualified.Kind.Annotation;
     }
 }
