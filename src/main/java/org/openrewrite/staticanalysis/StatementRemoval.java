@@ -25,9 +25,10 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 /**
- * What a visitor may put in place of a statement it deletes or replaces. Deleting an element of a statement list
- * leaves nothing. Deleting the sole body of a brace-less {@code if}, {@code else}, loop, label, arrow {@code case}
- * or void lambda leaves an empty block. Anywhere else the statement stays, as an enclosing expression may use its value.
+ * Where a statement stands, which decides whether its value is used and what a visitor may put in its place.
+ * Deleting an element of a statement list leaves nothing. Deleting the sole body of a brace-less {@code if},
+ * {@code else}, loop, label or arrow {@code case}, or a void call as a lambda body, leaves an empty block. Anywhere
+ * else the statement stays, as an enclosing expression may use its value.
  */
 final class StatementRemoval {
 
@@ -47,25 +48,29 @@ final class StatementRemoval {
     }
 
     /**
-     * Whether only a statement expression, such as a method invocation, may replace the Java expression at the cursor.
-     * That holds where it stands as a statement, as nothing uses its value. The body of a lambda whose functional
-     * interface returns void, or is unknown, stands as a statement. Kotlin, Groovy and Scala accept any expression there.
+     * Whether anything uses the value of the expression at the cursor, or null for the body of a lambda whose
+     * functional interface is unknown. Nothing uses it where the expression stands as a statement.
      */
-    static boolean needsStatementExpression(Cursor cursor) {
-        SourceFile sourceFile = cursor.firstEnclosing(SourceFile.class);
-        if (sourceFile != null && !(sourceFile instanceof J.CompilationUnit)) {
-            return false;
-        }
+    static @Nullable Boolean isValueUsed(Cursor cursor) {
         Object parent = cursor.getParentTreeCursor().getValue();
         if (parent instanceof J.Lambda) {
             JavaType.FullyQualified functionalInterface = TypeUtils.asFullyQualified(((J.Lambda) parent).getType());
             JavaType.Method sam = functionalInterface == null ? null : UseLambdaForFunctionalInterface.functionalInterfaceMethod(functionalInterface);
-            return sam == null || sam.getReturnType() == JavaType.Primitive.Void;
+            return sam == null ? null : sam.getReturnType() != JavaType.Primitive.Void;
         }
-        return isListElement(cursor) || isSoleBody(cursor);
+        return !isListElement(cursor) && !isSoleBody(cursor);
     }
 
-    private static boolean isListElement(Cursor cursor) {
+    /**
+     * Whether only a statement expression, such as a method invocation, may replace the Java expression at the cursor.
+     * That holds unless something is known to use its value. Kotlin, Groovy and Scala accept any expression as a statement.
+     */
+    static boolean needsStatementExpression(Cursor cursor) {
+        SourceFile sourceFile = cursor.firstEnclosing(SourceFile.class);
+        return (sourceFile == null || sourceFile instanceof J.CompilationUnit) && !Boolean.TRUE.equals(isValueUsed(cursor));
+    }
+
+    static boolean isListElement(Cursor cursor) {
         Object parent = cursor.getParentTreeCursor().getValue();
         Object original = cursor.getValue();
         return parent instanceof J.Block || parent instanceof SourceFile ||
