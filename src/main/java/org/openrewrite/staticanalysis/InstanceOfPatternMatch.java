@@ -298,7 +298,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     .stream()
                     .filter(e -> e.getValue() == instanceOf)
                     .findFirst()
-                    .map(e -> e.getKey().getType().equals(typeCast.getType()))
+                    .map(e -> TypeUtils.isOfType(e.getKey().getType(), typeCast.getType()))
                     .orElse(true);
         }
 

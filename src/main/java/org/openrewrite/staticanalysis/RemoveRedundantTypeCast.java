@@ -136,10 +136,11 @@ public class RemoveRedundantTypeCast extends Recipe {
                 }
 
                 JavaType targetType = null;
-                if (castType.equals(expressionType)) {
+                if (TypeUtils.isOfType(castType, expressionType)) {
                     targetType = castType;
-                } else if (parentValue instanceof J.VariableDeclarations) {
-                    targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
+                } else if (parentValue instanceof J.VariableDeclarations &&
+                        parentTreeCursor.getValue() instanceof J.VariableDeclarations.NamedVariable) {
+                    targetType = ((J.VariableDeclarations.NamedVariable) parentTreeCursor.getValue()).getType();
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
@@ -203,7 +204,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 // the cast might be necessary to control generic type inference
                 if (parentValue instanceof J.MethodInvocation &&
                         TypeUtils.isAssignableTo(castType, expressionType) &&
-                        !castType.equals(expressionType)) {
+                        !TypeUtils.isOfType(castType, expressionType)) {
                     // Check if the method returns a generic type
                     JavaType.Method methodType = ((J.MethodInvocation) parentValue).getMethodType();
                     if (methodType != null && methodType.getReturnType() instanceof JavaType.Parameterized) {

@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
@@ -267,7 +268,7 @@ public class AnnotateNullableMethods extends Recipe {
                     if (p.get()) {
                         return method;
                     }
-                    if (targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
+                    if (TypeUtils.isOfType(targetMethod, method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
                         for (J.Annotation annotation : ((J.AnnotatedType) method.getReturnTypeExpression()).getAnnotations()) {
                             if (annotationMatcher.matches(annotation)) {
                                 p.set(true);

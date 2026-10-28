@@ -127,6 +127,64 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings({"StringOperationCanBeSimplified", "ResultOfMethodCallIgnored", "RedundantStringConstructorCall"})
+    @Test
+    void toStringAsStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method(String str) {
+                      str.toString().toString().toString();
+                      str.trim().toString();
+                      new String(str).toString();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method(String str) {
+                      str.toString();
+                      str.trim();
+                      new String(str);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings({"StringOperationCanBeSimplified", "ResultOfMethodCallIgnored"})
+    @Test
+    void toStringAsLambdaBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static void method(String str) {
+                      Runnable r = () -> str.toString();
+                      UnaryOperator<String> u = s -> s.toString();
+                  }
+              }
+              """,
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static void method(String str) {
+                      Runnable r = () -> str.toString();
+                      UnaryOperator<String> u = s -> s;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void scalaToStringOnString() {
         rewriteRun(

@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -180,7 +181,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertTrueWithTrueArgument() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "junit-4")),
               //language=java
               java(
                 """
@@ -204,7 +205,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertFalseWithFalseArgument() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "junit-4")),
               //language=java
               java(
                 """
@@ -228,7 +229,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertTrueWithMessageAndTrueArgument() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "junit-4")),
               //language=java
               java(
                 """
@@ -252,7 +253,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertTrueWithMessageAndFalseArgument() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "junit-4")),
               //language=java
               java(
                 """
@@ -279,7 +280,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertTrueWithTrueArgument() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "testng-7")),
               //language=java
               java(
                 """
@@ -303,7 +304,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertFalseWithFalseArgument() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "testng-7")),
               //language=java
               java(
                 """
@@ -327,7 +328,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertTrueWithTrueArgumentAndMessage() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "testng-7")),
               //language=java
               java(
                 """
@@ -351,7 +352,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         @Test
         void assertFalseWithFalseArgumentAndMessage() {
             rewriteRun(
-              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "testng-7")),
               //language=java
               java(
                 """

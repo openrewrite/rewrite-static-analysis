@@ -519,6 +519,34 @@ class AnnotateRequiredParametersTest implements RewriteTest {
         );
     }
 
+    @Test
+    void requireNonNullAsSoleBodyOfIfIsRemoved() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Objects;
+
+              class Test {
+                  public void process(String value, boolean b) {
+                      Objects.requireNonNull(value);
+                      if (b) Objects.requireNonNull(value);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String value, boolean b) {
+                      if (b) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/792")
     @Test
     void requireNonNullInAssignmentIsReplacedWithArgument() {

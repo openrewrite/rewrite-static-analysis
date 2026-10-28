@@ -753,4 +753,21 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(String s) {
+                      new StringBuilder().append("a").append(s).toString();
+                  }
+              }
+              """
+          )
+        );
+    }
 }
