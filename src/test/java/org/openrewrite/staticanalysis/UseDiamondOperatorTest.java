@@ -468,6 +468,103 @@ class UseDiamondOperatorTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotUseDiamondForAnonymousClassWithWildcardTarget() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  // `new Consumer<>() {...}` would infer `Consumer<Object>`, so `accept(String)` no longer overrides
+                  Consumer<?> field = new Consumer<String>() {
+                      @Override
+                      public void accept(String s) {
+                      }
+                  };
+
+                  void assign() {
+                      Consumer<?> c;
+                      c = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // `new Consumer<>() {...}` would infer `Consumer<CharSequence>`
+                      Consumer<? extends CharSequence> e;
+                      e = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // Not an anonymous class, so the diamond is still fine
+                      List<?> l;
+                      l = new ArrayList<String>();
+                  }
+
+                  Consumer<? extends CharSequence> ret() {
+                      return new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  // `new Consumer<>() {...}` would infer `Consumer<Object>`, so `accept(String)` no longer overrides
+                  Consumer<?> field = new Consumer<String>() {
+                      @Override
+                      public void accept(String s) {
+                      }
+                  };
+
+                  void assign() {
+                      Consumer<?> c;
+                      c = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // `new Consumer<>() {...}` would infer `Consumer<CharSequence>`
+                      Consumer<? extends CharSequence> e;
+                      e = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // Not an anonymous class, so the diamond is still fine
+                      List<?> l;
+                      l = new ArrayList<>();
+                  }
+
+                  Consumer<? extends CharSequence> ret() {
+                      return new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class Kotlin {
         @Test
