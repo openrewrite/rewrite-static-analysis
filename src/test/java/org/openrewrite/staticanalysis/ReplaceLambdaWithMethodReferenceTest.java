@@ -2064,7 +2064,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       void log(String s) {}
                   }
 
-                  class A {
+                  class A extends Base {
                       void m(List<String> l) {
                           new Base() {
                               class Local {
