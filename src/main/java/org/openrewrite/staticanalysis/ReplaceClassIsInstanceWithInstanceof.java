@@ -59,7 +59,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
             @Override
             public J visitMethodInvocation(MethodInvocation method, ExecutionContext ctx) {
-                if (ISINSTANCE_MATCHER.matches(method) && isObjectClass(method.getSelect())) {
+                if (ISINSTANCE_MATCHER.matches(method) && isObjectClass(method.getSelect()) && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     JavaCoordinates coordinates = method.getCoordinates().replace();

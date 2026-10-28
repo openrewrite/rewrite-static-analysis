@@ -428,7 +428,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
      * public {@code Object} method do not. That difference is what makes {@code Comparator} — which
      * declares both {@code compare} and {@code equals} — recognisable as a functional interface.
      */
-    private static JavaType.@Nullable Method functionalInterfaceMethod(JavaType.FullyQualified type) {
+    static JavaType.@Nullable Method functionalInterfaceMethod(JavaType.FullyQualified type) {
         Map<String, JavaType.Method> abstractMethods = new LinkedHashMap<>();
         collectAbstractMethods(type, abstractMethods, new HashSet<>());
         return abstractMethods.size() == 1 ? abstractMethods.values().iterator().next() : null;

@@ -356,4 +356,21 @@ class SillyEqualsCheckTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object o) {
+                      o.equals(null);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

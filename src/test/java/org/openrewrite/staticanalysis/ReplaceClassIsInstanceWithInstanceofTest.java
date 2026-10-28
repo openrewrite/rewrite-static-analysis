@@ -310,4 +310,21 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object o) {
+                      String.class.isInstance(o);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

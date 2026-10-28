@@ -128,4 +128,23 @@ class UseStandardCharsetTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.charset.Charset;
+
+              class A {
+                  void foo() {
+                      Charset.forName("UTF-8");
+                  }
+              }
+              """
+          )
+        );
+    }
 }

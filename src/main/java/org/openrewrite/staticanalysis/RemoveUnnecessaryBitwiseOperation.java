@@ -32,7 +32,6 @@ import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.*;
-import static java.util.stream.Collectors.toList;
 import static org.openrewrite.Tree.randomId;
 
 @Getter
@@ -112,7 +111,9 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
             @Override
             public J visitAssignmentOperation(J.AssignmentOperation assignOp, ExecutionContext ctx) {
                 J.AssignmentOperation a = (J.AssignmentOperation) super.visitAssignmentOperation(assignOp, ctx);
-                Boolean valueUsed = isNoOp(a) ? valueUsed(assignOp) : null;
+                // visitBlock, visitCase and visitForControl drop a no-op that is an element of a statement list
+                Boolean valueUsed = isNoOp(a) && !StatementRemoval.isListElement(getCursor()) ?
+                        StatementRemoval.isValueUsed(getCursor()) : null;
                 if (valueUsed == null) {
                     return a;
                 }
@@ -129,36 +130,6 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
                     return new J.Block(randomId(), a.getPrefix(), Markers.EMPTY, JRightPadded.build(false), emptyList(), Space.EMPTY);
                 }
                 return a;
-            }
-
-            // True if the value is used, false if it is the only statement of a body, otherwise null
-            private @Nullable Boolean valueUsed(J.AssignmentOperation original) {
-                Cursor parentCursor = getCursor().getParentTreeCursor();
-                Object parent = parentCursor.getValue();
-                if (parent instanceof J.Parentheses || parent instanceof J.ControlParentheses ||
-                        parent instanceof J.Assignment || parent instanceof J.AssignmentOperation ||
-                        parent instanceof J.VariableDeclarations.NamedVariable || parent instanceof J.MethodInvocation ||
-                        parent instanceof J.NewClass || parent instanceof J.NewArray || parent instanceof J.ArrayDimension ||
-                        parent instanceof J.Ternary || parent instanceof J.Return || parent instanceof J.Yield) {
-                    return true;
-                }
-                if (parent instanceof J.If || parent instanceof J.If.Else || parent instanceof J.WhileLoop ||
-                        parent instanceof J.DoWhileLoop || parent instanceof J.ForLoop || parent instanceof J.ForEachLoop ||
-                        parent instanceof J.Label) {
-                    return false;
-                }
-                if (parent instanceof J.Case && ((J.Case) parent).getBody() == original) {
-                    return parentCursor.getParentTreeCursor().getParentTreeCursor().getValue() instanceof J.SwitchExpression;
-                }
-                JavaType.FullyQualified functionalInterface = parent instanceof J.Lambda ?
-                        TypeUtils.asFullyQualified(((J.Lambda) parent).getType()) : null;
-                if (functionalInterface == null) {
-                    return null;
-                }
-                List<JavaType.Method> abstractMethods = functionalInterface.getMethods().stream()
-                        .filter(m -> m.hasFlags(Flag.Abstract))
-                        .collect(toList());
-                return abstractMethods.size() == 1 ? abstractMethods.get(0).getReturnType() != JavaType.Primitive.Void : null;
             }
 
             @Override
