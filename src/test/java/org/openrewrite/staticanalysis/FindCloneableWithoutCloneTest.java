@@ -201,4 +201,38 @@ class FindCloneableWithoutCloneTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void recordThatDoesNotOverrideClone() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              record Boxed(int value) implements Cloneable {
+              }
+              """,
+            """
+              record /*~~(`Cloneable` is a marker interface that promises a working `clone()`, but this class inherits `Object.clone()`, which copies fields one by one. Override `clone()` and call `super.clone()` from it.)~~>*/Boxed(int value) implements Cloneable {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void recordThatOverridesClone() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              record Boxed(int value) implements Cloneable {
+                  @Override
+                  public Boxed clone() {
+                      return new Boxed(value);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

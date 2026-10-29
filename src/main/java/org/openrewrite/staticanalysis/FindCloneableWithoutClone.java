@@ -48,7 +48,7 @@ public class FindCloneableWithoutClone extends Recipe {
 
     String displayName = "Find `Cloneable` classes that do not override `clone()`";
 
-    String description = "Marks classes that are `java.lang.Cloneable`, directly or through a supertype, and that " +
+    String description = "Marks classes and records that are `java.lang.Cloneable`, directly or through a supertype, and that " +
             "would still call `Object.clone()`. `Cloneable` only tells `Object.clone()` not to throw; it declares no " +
             "method of its own, so the compiler cannot enforce the contract and the class is left with a shallow " +
             "field copy it never asked for. A class is not marked when it or an ancestor declares `clone()`, since " +
@@ -64,7 +64,10 @@ public class FindCloneableWithoutClone extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class ||
+                // A record inherits `Object.clone()` like a class does; an enum's `clone()` is `final`, so
+                // there is nothing it could override
+                if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class &&
+                        cd.getKind() != J.ClassDeclaration.Kind.Type.Record ||
                         !TypeUtils.isAssignableTo(CLONEABLE, cd.getType())) {
                     return cd;
                 }
