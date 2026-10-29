@@ -98,7 +98,7 @@ public class FindJumpOutOfFinally extends Recipe {
             // so an initializer inside one would otherwise be read as part of the `finally`
             if (value instanceof J.MethodDeclaration || value instanceof J.Lambda ||
                     value instanceof J.ClassDeclaration ||
-                    value instanceof J.NewClass && ((J.NewClass) value).getBody() != null) {
+                    value instanceof J.NewClass && ((J.NewClass) value).getBody() == child) {
                 return false;
             }
             if (label == null ? isJumpTarget(value, jump) :
@@ -120,9 +120,9 @@ public class FindJumpOutOfFinally extends Recipe {
         if (jump == Jump.RETURN) {
             return false;
         }
+        // A `break` cannot leave a switch expression, so only a `J.Switch` statement is one of its targets
         return value instanceof J.ForLoop || value instanceof J.ForEachLoop || value instanceof J.WhileLoop ||
-                value instanceof J.DoWhileLoop ||
-                (jump == Jump.BREAK && (value instanceof J.Switch || value instanceof J.SwitchExpression));
+                value instanceof J.DoWhileLoop || jump == Jump.BREAK && value instanceof J.Switch;
     }
 
     private enum Jump {

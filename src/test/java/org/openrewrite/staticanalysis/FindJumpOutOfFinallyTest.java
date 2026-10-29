@@ -371,4 +371,55 @@ class FindJumpOutOfFinallyTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void continueInsideASwitchInsideAFinally() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m(int k) {
+                      while (true) {
+                          try {
+                              work();
+                          } finally {
+                              switch (k) {
+                                  case 1:
+                                      continue;
+                                  default:
+                                      break;
+                              }
+                          }
+                      }
+                  }
+
+                  void work() {
+                  }
+              }
+              """,
+            """
+              class A {
+                  void m(int k) {
+                      while (true) {
+                          try {
+                              work();
+                          } finally {
+                              switch (k) {
+                                  case 1:
+                                      /*~~(This `continue` leaves the enclosing `finally` block, discarding any exception the `try` or `catch` was propagating.)~~>*/continue;
+                                  default:
+                                      break;
+                              }
+                          }
+                      }
+                  }
+
+                  void work() {
+                  }
+              }
+              """
+          )
+        );
+    }
 }
