@@ -49,7 +49,7 @@ class FindNullReturnedFromBooleanMethodTest implements RewriteTest {
               class A {
                   public Boolean isUsable(String value) {
                       if (value == null) {
-                          /*~~(A `Boolean` returning `null` forces every caller to handle three outcomes, and unboxing the result in a condition throws a `NullPointerException`. Return `false`, or declare the method as returning `boolean`.)~~>*/return null;
+                          /*~~(A `Boolean` returning `null` forces every caller to handle three outcomes, and unboxing the result in a condition throws a `NullPointerException`. Annotate the method `@Nullable` when `null` is a meaningful third answer, or return `boolean` when it is not.)~~>*/return null;
                       }
                       return !value.isEmpty();
                   }
@@ -74,7 +74,7 @@ class FindNullReturnedFromBooleanMethodTest implements RewriteTest {
             """
               class A {
                   Boolean m() {
-                      /*~~(A `Boolean` returning `null` forces every caller to handle three outcomes, and unboxing the result in a condition throws a `NullPointerException`. Return `false`, or declare the method as returning `boolean`.)~~>*/return (Boolean) null;
+                      /*~~(A `Boolean` returning `null` forces every caller to handle three outcomes, and unboxing the result in a condition throws a `NullPointerException`. Annotate the method `@Nullable` when `null` is a meaningful third answer, or return `boolean` when it is not.)~~>*/return (Boolean) null;
                   }
               }
               """

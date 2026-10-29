@@ -48,8 +48,8 @@ public class FindNullReturnedFromBooleanMethod extends Recipe {
     private static final Set<String> NULLABLE_NAMES = new HashSet<>(asList("Nullable", "CheckForNull"));
 
     private static final String MESSAGE = "A `Boolean` returning `null` forces every caller to handle three " +
-            "outcomes, and unboxing the result in a condition throws a `NullPointerException`. Return `false`, or " +
-            "declare the method as returning `boolean`.";
+            "outcomes, and unboxing the result in a condition throws a `NullPointerException`. Annotate the method " +
+            "`@Nullable` when `null` is a meaningful third answer, or return `boolean` when it is not.";
 
     String displayName = "Find `null` returned from a `Boolean` method";
 
