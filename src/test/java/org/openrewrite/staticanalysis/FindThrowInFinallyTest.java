@@ -251,4 +251,53 @@ class FindThrowInFinallyTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void throwInTheConstructorArgumentsOfAnAnonymousClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+
+              class A {
+                  void m(int k) {
+                      try {
+                          work();
+                      } finally {
+                          Object o = new ArrayList<String>(switch (k) {
+                              case 1 -> throw new RuntimeException();
+                              default -> 0;
+                          }) {
+                          };
+                      }
+                  }
+
+                  void work() {
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+
+              class A {
+                  void m(int k) {
+                      try {
+                          work();
+                      } finally {
+                          Object o = new ArrayList<String>(switch (k) {
+                              case 1 -> /*~~(A `throw` in a `finally` block replaces any exception the `try` or `catch` was propagating, losing its message and stack trace.)~~>*/throw new RuntimeException();
+                              default -> 0;
+                          }) {
+                          };
+                      }
+                  }
+
+                  void work() {
+                  }
+              }
+              """
+          )
+        );
+    }
 }

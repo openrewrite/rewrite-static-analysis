@@ -44,8 +44,8 @@ public class FindThrowInFinally extends Recipe {
 
     String description = "Marks `throw` statements that run as part of a `finally` block. The thrown exception " +
             "replaces whatever the `try` or `catch` block was propagating, so the original failure is lost. A " +
-            "`throw` inside a lambda, a local class or an anonymous class declared in the `finally` is not marked, " +
-            "because it does not leave the `finally` when the block runs.";
+            "`throw` inside the body of a lambda, a local class or an anonymous class declared in the `finally` is " +
+            "not marked, because it does not leave the `finally` when the block runs.";
 
     Set<String> tags = singleton("RSPEC-S1163");
 
@@ -71,10 +71,11 @@ public class FindThrowInFinally extends Recipe {
         for (Iterator<Cursor> path = cursor.getPathAsCursors(); path.hasNext(); ) {
             Object value = path.next().getValue();
             // An anonymous class body is an execution boundary too, and it has no `J.ClassDeclaration`,
-            // so an initializer inside one would otherwise be read as part of the `finally`
+            // so an initializer inside one would otherwise be read as part of the `finally`. Only the body
+            // is the boundary: the constructor arguments beside it are evaluated where the `finally` runs.
             if (value instanceof J.MethodDeclaration || value instanceof J.Lambda ||
                     value instanceof J.ClassDeclaration ||
-                    value instanceof J.NewClass && ((J.NewClass) value).getBody() != null) {
+                    value instanceof J.NewClass && ((J.NewClass) value).getBody() == child) {
                 return false;
             }
             if (value instanceof J.Try && ((J.Try) value).getFinally() == child) {
