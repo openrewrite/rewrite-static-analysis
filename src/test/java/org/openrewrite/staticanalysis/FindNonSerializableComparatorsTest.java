@@ -207,4 +207,53 @@ class FindNonSerializableComparatorsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void recordComparatorIsNotImplicitlySerializable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              record ByLength() implements Comparator<String> {
+                  @Override
+                  public int compare(String a, String b) {
+                      return Integer.compare(a.length(), b.length());
+                  }
+              }
+              """,
+            """
+              import java.util.Comparator;
+
+              record /*~~(A `Comparator` that is not `Serializable` makes every `TreeMap`, `TreeSet` or `PriorityQueue` built with it unserializable. Implement `Serializable` as well.)~~>*/ByLength() implements Comparator<String> {
+                  @Override
+                  public int compare(String a, String b) {
+                      return Integer.compare(a.length(), b.length());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void serializableRecordComparator() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+              import java.util.Comparator;
+
+              record ByLength() implements Comparator<String>, Serializable {
+                  @Override
+                  public int compare(String a, String b) {
+                      return Integer.compare(a.length(), b.length());
+                  }
+              }
+              """
+          )
+        );
+    }
 }

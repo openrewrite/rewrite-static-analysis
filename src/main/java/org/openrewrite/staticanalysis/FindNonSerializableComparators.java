@@ -44,8 +44,8 @@ public class FindNonSerializableComparators extends Recipe {
 
     String displayName = "Find `Comparator` implementations that are not `Serializable`";
 
-    String description = "Marks classes that implement `java.util.Comparator` without also being `Serializable`. " +
-            "An ordered collection keeps a reference to its comparator, so a non-serializable comparator makes an " +
+    String description = "Marks classes and records that implement `java.util.Comparator` without also being " +
+            "`Serializable`. An ordered collection keeps a reference to its comparator, so a non-serializable comparator makes an " +
             "otherwise serializable `TreeMap`, `TreeSet` or `PriorityQueue` fail to serialize. Anonymous classes and " +
             "lambdas are not marked, since neither can declare an additional interface in place.";
 
@@ -59,7 +59,9 @@ public class FindNonSerializableComparators extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Class &&
+                // A record is not `Serializable` either, unlike an enum, so it is reported the same way
+                if ((cd.getKind() == J.ClassDeclaration.Kind.Type.Class ||
+                        cd.getKind() == J.ClassDeclaration.Kind.Type.Record) &&
                         TypeUtils.isAssignableTo(COMPARATOR, cd.getType()) &&
                         !TypeUtils.isAssignableTo(SERIALIZABLE, cd.getType())) {
                     return cd.withName(SearchResult.found(cd.getName(), MESSAGE));
