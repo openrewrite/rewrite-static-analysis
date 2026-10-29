@@ -84,11 +84,13 @@ public class FindNullReturnedFromBooleanMethod extends Recipe {
     }
 
     private static boolean isNullLiteral(@Nullable Expression expression) {
-        if (expression instanceof J.TypeCast) {
-            return isNullLiteral(((J.TypeCast) expression).getExpression());
+        // `unwrap` also sees through nested parentheses, which a single-level check would miss, and it
+        // runs first so that a cast wrapped in them is still seen
+        Expression unwrapped = expression == null ? null : expression.unwrap();
+        if (unwrapped instanceof J.TypeCast) {
+            return isNullLiteral(((J.TypeCast) unwrapped).getExpression());
         }
-        // `unwrap` also sees through nested parentheses, which a single-level check would miss
-        return expression != null && J.Literal.isLiteralValue(expression.unwrap(), null);
+        return J.Literal.isLiteralValue(unwrapped, null);
     }
 
     /**

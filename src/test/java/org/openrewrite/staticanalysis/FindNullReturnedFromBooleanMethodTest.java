@@ -182,4 +182,27 @@ class FindNullReturnedFromBooleanMethodTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void parenthesizedCastNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Boolean m() {
+                      return ((Boolean) null);
+                  }
+              }
+              """,
+            """
+              class A {
+                  Boolean m() {
+                      /*~~(A `Boolean` returning `null` forces every caller to handle three outcomes, and unboxing the result in a condition throws a `NullPointerException`. Annotate the method `@Nullable` when `null` is a meaningful third answer, or return `boolean` when it is not.)~~>*/return ((Boolean) null);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
