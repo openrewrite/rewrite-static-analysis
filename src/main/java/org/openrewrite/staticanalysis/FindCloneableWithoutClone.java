@@ -64,14 +64,13 @@ public class FindCloneableWithoutClone extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                // A record inherits `Object.clone()` like a class does; an enum's `clone()` is `final`, so
-                // there is nothing it could override
+                // An enum's `clone()` is `final`, so there is nothing for it to override
                 if ((cd.getKind() != J.ClassDeclaration.Kind.Type.Class &&
                         cd.getKind() != J.ClassDeclaration.Kind.Type.Record) ||
                         !TypeUtils.isAssignableTo(CLONEABLE, cd.getType())) {
                     return cd;
                 }
-                // The `clone()` this class would call is `Object`'s unless it or an ancestor declares one
+                // `findDeclaredMethod` searches supertypes too, so this is the `clone()` that would run
                 JavaType.Method clone = TypeUtils.findDeclaredMethod(cd.getType(), "clone", emptyList()).orElse(null);
                 if (clone != null && !TypeUtils.isOfClassType(clone.getDeclaringType(), OBJECT)) {
                     return cd;
