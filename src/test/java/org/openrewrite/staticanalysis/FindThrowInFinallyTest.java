@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -97,77 +98,6 @@ class FindThrowInFinallyTest implements RewriteTest {
     }
 
     @Test
-    void throwInTheTryOrCatchBlock() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void m() {
-                      try {
-                          throw new IllegalArgumentException();
-                      } catch (IllegalArgumentException e) {
-                          throw new RuntimeException(e);
-                      } finally {
-                          System.out.println("clean up");
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void throwInALambdaDeclaredInFinally() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Supplier;
-
-              class A {
-                  void m() {
-                      try {
-                          System.out.println("work");
-                      } finally {
-                          Supplier<String> s = () -> {
-                              throw new RuntimeException();
-                          };
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void throwInAnAnonymousClassDeclaredInFinally() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void m() {
-                      try {
-                          System.out.println("work");
-                      } finally {
-                          Runnable r = new Runnable() {
-                              @Override
-                              public void run() {
-                                  throw new RuntimeException();
-                              }
-                          };
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void throwInANestedTryWithinFinallyStillLeavesIt() {
         rewriteRun(
           //language=java
@@ -198,52 +128,6 @@ class FindThrowInFinallyTest implements RewriteTest {
                           } finally {
                               System.out.println("inner clean up");
                           }
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void noFinallyAtAll() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void m() {
-                      throw new RuntimeException();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeThrowInAnAnonymousClassInitializerInFinally() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void m() {
-                      try {
-                          System.out.println("work");
-                      } finally {
-                          Runnable r = new Runnable() {
-                              {
-                                  if (hashCode() == 0) {
-                                      throw new RuntimeException();
-                                  }
-                              }
-
-                              @Override
-                              public void run() {
-                              }
-                          };
                       }
                   }
               }
@@ -299,5 +183,125 @@ class FindThrowInFinallyTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class NoChange {
+        @Test
+        void throwInTheTryOrCatchBlock() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m() {
+                          try {
+                              throw new IllegalArgumentException();
+                          } catch (IllegalArgumentException e) {
+                              throw new RuntimeException(e);
+                          } finally {
+                              System.out.println("clean up");
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void throwInALambdaDeclaredInFinally() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Supplier;
+
+                  class A {
+                      void m() {
+                          try {
+                              System.out.println("work");
+                          } finally {
+                              Supplier<String> s = () -> {
+                                  throw new RuntimeException();
+                              };
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void throwInAnAnonymousClassDeclaredInFinally() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m() {
+                          try {
+                              System.out.println("work");
+                          } finally {
+                              Runnable r = new Runnable() {
+                                  @Override
+                                  public void run() {
+                                      throw new RuntimeException();
+                                  }
+                              };
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noFinallyAtAll() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m() {
+                          throw new RuntimeException();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void throwInAnAnonymousClassInitializerInFinally() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m() {
+                          try {
+                              System.out.println("work");
+                          } finally {
+                              Runnable r = new Runnable() {
+                                  {
+                                      if (hashCode() == 0) {
+                                          throw new RuntimeException();
+                                      }
+                                  }
+
+                                  @Override
+                                  public void run() {
+                                  }
+                              };
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
