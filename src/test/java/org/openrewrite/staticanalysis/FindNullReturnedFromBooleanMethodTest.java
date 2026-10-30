@@ -205,4 +205,65 @@ class FindNullReturnedFromBooleanMethodTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void returnNullFromAnAnonymousClassMethodInsideABooleanMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Callable;
+
+              class A {
+                  Boolean outer() {
+                      Callable<String> c = new Callable<String>() {
+                          @Override
+                          public String call() {
+                              return null;
+                          }
+                      };
+                      return Boolean.TRUE;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNullFromABooleanAnonymousClassMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Callable;
+
+              class A {
+                  void outer() {
+                      Callable<Boolean> c = new Callable<Boolean>() {
+                          @Override
+                          public Boolean call() {
+                              return null;
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.concurrent.Callable;
+
+              class A {
+                  void outer() {
+                      Callable<Boolean> c = new Callable<Boolean>() {
+                          @Override
+                          public Boolean call() {
+                              /*~~(A `Boolean` returning `null` forces every caller to handle three outcomes, and unboxing the result in a condition throws a `NullPointerException`. Annotate the method `@Nullable` when `null` is a meaningful third answer, or return `boolean` when it is not.)~~>*/return null;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
 }
