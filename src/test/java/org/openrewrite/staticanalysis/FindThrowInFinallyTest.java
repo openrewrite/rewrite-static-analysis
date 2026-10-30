@@ -185,6 +185,76 @@ class FindThrowInFinallyTest implements RewriteTest {
         );
     }
 
+    @Test
+    void rethrowFromACatchInsideFinally() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m(AutoCloseable c) {
+                      try {
+                          System.out.println("work");
+                      } finally {
+                          try {
+                              c.close();
+                          } catch (Exception e) {
+                              throw new RuntimeException(e);
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void m(AutoCloseable c) {
+                      try {
+                          System.out.println("work");
+                      } finally {
+                          try {
+                              c.close();
+                          } catch (Exception e) {
+                              /*~~(A `throw` in a `finally` block replaces any exception the `try` or `catch` was propagating, losing its message and stack trace.)~~>*/throw new RuntimeException(e);
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void throwInFinallyWithinALambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Runnable r = () -> {
+                      try {
+                          System.out.println("work");
+                      } finally {
+                          throw new RuntimeException();
+                      }
+                  };
+              }
+              """,
+            """
+              class A {
+                  Runnable r = () -> {
+                      try {
+                          System.out.println("work");
+                      } finally {
+                          /*~~(A `throw` in a `finally` block replaces any exception the `try` or `catch` was propagating, losing its message and stack trace.)~~>*/throw new RuntimeException();
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class NoChange {
         @Test
@@ -296,6 +366,32 @@ class FindThrowInFinallyTest implements RewriteTest {
                                   public void run() {
                                   }
                               };
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void throwInALocalClassInitializerInFinally() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m() {
+                          try {
+                              System.out.println("work");
+                          } finally {
+                              class Local {
+                                  {
+                                      if (hashCode() == 0) {
+                                          throw new RuntimeException();
+                                      }
+                                  }
+                              }
                           }
                       }
                   }
