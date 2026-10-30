@@ -47,7 +47,7 @@ public class FindNonSerializableComparators extends Recipe {
     String description = "Marks classes and records that implement `java.util.Comparator` without also being " +
             "`Serializable`. An ordered collection keeps a reference to its comparator, so a non-serializable comparator makes an " +
             "otherwise serializable `TreeMap`, `TreeSet` or `PriorityQueue` fail to serialize. Anonymous classes and " +
-            "lambdas are not marked, since neither can declare an additional interface in place.";
+            "lambdas are not marked.";
 
     Set<String> tags = singleton("RSPEC-S2063");
 
