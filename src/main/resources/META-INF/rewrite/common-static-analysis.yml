@@ -104,6 +104,9 @@ recipeList:
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces # may change public return types that other repositories use
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
+# Changes case-conversion semantics for locale-sensitive strings; opt-in only.
+# https://github.com/openrewrite/rewrite-static-analysis/issues/78
+#  - org.openrewrite.staticanalysis.UseLocaleWithCaseConversions
   - org.openrewrite.staticanalysis.UsePortableNewlines
 #  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface # slow on large code bases, and see #980
 #  - org.openrewrite.staticanalysis.UseStringReplace # re-escapes the replacement string, see D12 in #1116
