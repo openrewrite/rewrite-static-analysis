@@ -259,6 +259,92 @@ class FindJumpOutOfFinallyTest implements RewriteTest {
         );
     }
 
+    @Test
+    void returnInACatchOfATryNestedInFinally() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m() {
+                      try {
+                          work();
+                      } finally {
+                          try {
+                              work();
+                          } catch (RuntimeException e) {
+                              return;
+                          }
+                      }
+                  }
+
+                  void work() {
+                  }
+              }
+              """,
+            """
+              class A {
+                  void m() {
+                      try {
+                          work();
+                      } finally {
+                          try {
+                              work();
+                          } catch (RuntimeException e) {
+                              /*~~(This `return` leaves the enclosing `finally` block, discarding any exception the `try` or `catch` was propagating.)~~>*/return;
+                          }
+                      }
+                  }
+
+                  void work() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void labelledContinueToALabelOutsideTheFinally() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m() {
+                      outer:
+                      for (int i = 0; i < 10; i++) {
+                          try {
+                              throw new RuntimeException();
+                          } finally {
+                              for (int j = 0; j < 10; j++) {
+                                  continue outer;
+                              }
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void m() {
+                      outer:
+                      for (int i = 0; i < 10; i++) {
+                          try {
+                              throw new RuntimeException();
+                          } finally {
+                              for (int j = 0; j < 10; j++) {
+                                  /*~~(This `continue` leaves the enclosing `finally` block, discarding any exception the `try` or `catch` was propagating.)~~>*/continue outer;
+                              }
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class NoChange {
 
@@ -419,6 +505,75 @@ class FindJumpOutOfFinallyTest implements RewriteTest {
                               System.out.println("work");
                           } finally {
                               throw new RuntimeException();
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void jumpsToTargetsDeclaredInFinally() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m(int[] a, int k) {
+                          try {
+                              throw new RuntimeException();
+                          } finally {
+                              for (int i : a) {
+                                  break;
+                              }
+                              do {
+                                  continue;
+                              } while (k > 0);
+                              block:
+                              {
+                                  break block;
+                              }
+                              switch (k) {
+                                  case 1 -> {
+                                      break;
+                                  }
+                                  default -> {
+                                  }
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void jumpsInClassInitializersDeclaredInFinally() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void m() {
+                          try {
+                              throw new RuntimeException();
+                          } finally {
+                              class Local {
+                                  {
+                                      for (int i = 0; i < 10; i++) {
+                                          break;
+                                      }
+                                  }
+                              }
+                              Object o = new Object() {
+                                  {
+                                      for (int i = 0; i < 10; i++) {
+                                          continue;
+                                      }
+                                  }
+                              };
                           }
                       }
                   }
