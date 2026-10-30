@@ -46,13 +46,13 @@ public class FindCloneableWithoutClone extends Recipe {
             "this class inherits `Object.clone()`, which copies fields one by one. Override `clone()` and call " +
             "`super.clone()` from it.";
 
-    String displayName = "Find `Cloneable` classes that do not override `clone()`";
+    String displayName = "Find `Cloneable` types that do not override `clone()`";
 
-    String description = "Marks classes and records that are `java.lang.Cloneable`, directly or through a supertype, and that " +
-            "would still call `Object.clone()`. `Cloneable` only tells `Object.clone()` not to throw; it declares no " +
-            "method of its own, so the compiler cannot enforce the contract and the class is left with a shallow " +
-            "field copy it never asked for. A class is not marked when it or an ancestor declares `clone()`, since " +
-            "that override is what it would call.";
+    String description = "Marks classes and records that are `java.lang.Cloneable`, directly or through a " +
+            "supertype, and that would still call `Object.clone()`. `Cloneable` only tells `Object.clone()` not " +
+            "to throw; it declares no method of its own, so the compiler cannot enforce the contract and the type " +
+            "is left with a shallow field copy it never asked for. A type is not marked when it or an ancestor " +
+            "declares `clone()`, since that override is what it would call.";
 
     Set<String> tags = singleton("RSPEC-S2157");
 
@@ -66,8 +66,8 @@ public class FindCloneableWithoutClone extends Recipe {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 // A record inherits `Object.clone()` like a class does; an enum's `clone()` is `final`, so
                 // there is nothing it could override
-                if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class &&
-                        cd.getKind() != J.ClassDeclaration.Kind.Type.Record ||
+                if ((cd.getKind() != J.ClassDeclaration.Kind.Type.Class &&
+                        cd.getKind() != J.ClassDeclaration.Kind.Type.Record) ||
                         !TypeUtils.isAssignableTo(CLONEABLE, cd.getType())) {
                     return cd;
                 }
