@@ -139,7 +139,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                                         JContainer.build(Space.EMPTY, singletonList(JRightPadded.build(new J.Empty(randomId(), Space.EMPTY, Markers.EMPTY))), Markers.EMPTY),
                                         toString);
                             }
-                            return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), method.getCoordinates().replace(), arg)
+                            return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), method.getCoordinates().replace(), arg.withPrefix(Space.EMPTY))
                                     .withPrefix(arg.getPrefix());
                         }
                     } else if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {
