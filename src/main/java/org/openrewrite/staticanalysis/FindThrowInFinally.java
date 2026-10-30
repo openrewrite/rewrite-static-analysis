@@ -62,17 +62,11 @@ public class FindThrowInFinally extends Recipe {
         });
     }
 
-    /**
-     * Whether the statement at this cursor runs as part of a `finally` block, rather than merely being nested in
-     * one inside a lambda or a class body that the `finally` only declares.
-     */
     private static boolean runsInFinallyBlock(Cursor cursor) {
         J child = null;
         for (Iterator<Cursor> path = cursor.getPathAsCursors(); path.hasNext(); ) {
             Object value = path.next().getValue();
-            // An anonymous class body is an execution boundary too, and it has no `J.ClassDeclaration`,
-            // so an initializer inside one would otherwise be read as part of the `finally`. Only the body
-            // is the boundary: the constructor arguments beside it are evaluated where the `finally` runs.
+            // An anonymous class's body does not run with the `finally`, but its constructor arguments do
             if (value instanceof J.MethodDeclaration || value instanceof J.Lambda ||
                     value instanceof J.ClassDeclaration ||
                     value instanceof J.NewClass && ((J.NewClass) value).getBody() == child) {
