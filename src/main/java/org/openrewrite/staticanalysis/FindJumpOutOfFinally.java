@@ -88,17 +88,15 @@ public class FindJumpOutOfFinally extends Recipe {
 
     /**
      * Walks out of the jump statement looking for the `finally` block it leaves. An enclosing loop, `switch` or
-     * label that the jump targets, or a lambda or class body that only the `finally` declares, stops the walk.
+     * label that the jump targets, or a method or lambda that only the `finally` declares, stops the walk.
      */
     private static boolean leavesFinallyBlock(Cursor cursor, @Nullable String label, Jump jump) {
         J child = null;
         for (Iterator<Cursor> path = cursor.getPathAsCursors(); path.hasNext(); ) {
             Object value = path.next().getValue();
-            // An anonymous class body is an execution boundary too, and it has no `J.ClassDeclaration`,
-            // so an initializer inside one would otherwise be read as part of the `finally`
-            if (value instanceof J.MethodDeclaration || value instanceof J.Lambda ||
-                    value instanceof J.ClassDeclaration ||
-                    value instanceof J.NewClass && ((J.NewClass) value).getBody() == child) {
+            // No jump crosses a class body: an initializer allows no `return`, and its `break` or `continue`
+            // targets a statement inside it, so a method or lambda is the only boundary to stop at
+            if (value instanceof J.MethodDeclaration || value instanceof J.Lambda) {
                 return false;
             }
             if (label == null ? isJumpTarget(value, jump) :
