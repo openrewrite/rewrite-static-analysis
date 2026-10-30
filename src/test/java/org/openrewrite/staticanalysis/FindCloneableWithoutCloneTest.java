@@ -235,4 +235,18 @@ class FindCloneableWithoutCloneTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void anEnumImplementingCloneableCannotOverrideClone() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Suit implements Cloneable {
+                  HEARTS, SPADES
+              }
+              """
+          )
+        );
+    }
 }
