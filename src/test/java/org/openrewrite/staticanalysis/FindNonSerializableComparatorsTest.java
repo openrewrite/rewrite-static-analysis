@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -100,115 +101,6 @@ class FindNonSerializableComparatorsTest implements RewriteTest {
     }
 
     @Test
-    void serializableComparator() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.Serializable;
-              import java.util.Comparator;
-
-              public class FruitComparator implements Comparator<String>, Serializable {
-                  private static final long serialVersionUID = 1;
-
-                  @Override
-                  public int compare(String a, String b) {
-                      return a.compareTo(b);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void serializableThroughASupertype() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.Serializable;
-              import java.util.Comparator;
-
-              public abstract class BaseComparator implements Comparator<String>, Serializable {
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              public class FruitComparator extends BaseComparator {
-                  @Override
-                  public int compare(String a, String b) {
-                      return a.compareTo(b);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void enumsAreAlreadySerializable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Comparator;
-
-              public enum FruitComparator implements Comparator<String> {
-                  INSTANCE;
-
-                  @Override
-                  public int compare(String a, String b) {
-                      return a.compareTo(b);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void anonymousClassesAndLambdasAreNotMarked() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Comparator;
-
-              public class A {
-                  Comparator<String> anonymous = new Comparator<String>() {
-                      @Override
-                      public int compare(String a, String b) {
-                          return a.compareTo(b);
-                      }
-                  };
-
-                  Comparator<String> lambda = (a, b) -> a.compareTo(b);
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void classThatIsNotAComparator() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Comparator;
-
-              public class A {
-                  Comparator<String> byLength = Comparator.comparingInt(String::length);
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void recordComparatorIsNotImplicitlySerializable() {
         rewriteRun(
           //language=java
@@ -237,23 +129,151 @@ class FindNonSerializableComparatorsTest implements RewriteTest {
         );
     }
 
-    @Test
-    void serializableRecordComparator() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.Serializable;
-              import java.util.Comparator;
+    @Nested
+    class NoChange {
 
-              record ByLength() implements Comparator<String>, Serializable {
-                  @Override
-                  public int compare(String a, String b) {
-                      return Integer.compare(a.length(), b.length());
+        @Test
+        void serializableComparator() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.io.Serializable;
+                  import java.util.Comparator;
+
+                  public class FruitComparator implements Comparator<String>, Serializable {
+                      private static final long serialVersionUID = 1;
+
+                      @Override
+                      public int compare(String a, String b) {
+                          return a.compareTo(b);
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Test
+        void serializableThroughASupertype() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.io.Serializable;
+                  import java.util.Comparator;
+
+                  public abstract class BaseComparator implements Comparator<String>, Serializable {
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  public class FruitComparator extends BaseComparator {
+                      @Override
+                      public int compare(String a, String b) {
+                          return a.compareTo(b);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void serializableRecordComparator() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.io.Serializable;
+                  import java.util.Comparator;
+
+                  record ByLength() implements Comparator<String>, Serializable {
+                      @Override
+                      public int compare(String a, String b) {
+                          return Integer.compare(a.length(), b.length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void enumsAreAlreadySerializable() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+
+                  public enum FruitComparator implements Comparator<String> {
+                      INSTANCE;
+
+                      @Override
+                      public int compare(String a, String b) {
+                          return a.compareTo(b);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void anonymousClassesAndLambdasAreNotMarked() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+
+                  public class A {
+                      Comparator<String> anonymous = new Comparator<String>() {
+                          @Override
+                          public int compare(String a, String b) {
+                              return a.compareTo(b);
+                          }
+                      };
+
+                      Comparator<String> lambda = (a, b) -> a.compareTo(b);
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void classThatIsNotAComparator() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+
+                  public class A {
+                      Comparator<String> byLength = Comparator.comparingInt(String::length);
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void interfaceExtendingComparator() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+
+                  interface ByLength extends Comparator<String> {
+                  }
+                  """
+              )
+            );
+        }
     }
 }
