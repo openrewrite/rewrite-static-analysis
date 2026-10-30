@@ -84,8 +84,7 @@ public class FindNullReturnedFromBooleanMethod extends Recipe {
     }
 
     private static boolean isNullLiteral(@Nullable Expression expression) {
-        // `unwrap` also sees through nested parentheses, which a single-level check would miss, and it
-        // runs first so that a cast wrapped in them is still seen
+        // Unwrapping runs first so that a cast wrapped in parentheses is still seen
         Expression unwrapped = expression == null ? null : expression.unwrap();
         if (unwrapped instanceof J.TypeCast) {
             return isNullLiteral(((J.TypeCast) unwrapped).getExpression());
@@ -106,7 +105,8 @@ public class FindNullReturnedFromBooleanMethod extends Recipe {
         return false;
     }
 
-    /** The method this {@code return} leaves, which is not the enclosing one when a lambda or class body intervenes. */
+    /** The method this {@code return} leaves, or {@code null} when a lambda intervenes. A nested class's own
+     * method declaration is reached first, so its returns are attributed to it and not to the outer method. */
     private static J.@Nullable MethodDeclaration enclosingMethod(Cursor cursor) {
         for (Iterator<Cursor> path = cursor.getPathAsCursors(); path.hasNext(); ) {
             Object value = path.next().getValue();
