@@ -108,6 +108,83 @@ class ForLoopIncrementInUpdateTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1166")
+    @Test
+    void doNotMoveIncrementOfVariableIncrementedMoreThanOnce() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  void test(List<Object> ps, String[] strings) {
+                      for (int k = 0, pos = 1; k < strings.length; k++) {
+                          ps.add(pos);
+                          pos++;
+                          ps.add(strings[k]);
+                          pos++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotMoveIncrementOfVariableAssignedInBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[] a) {
+                      for (int i = 0; i < a.length; ) {
+                          if (a[i] < 0) {
+                              i += 2;
+                          }
+                          i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveIncrementWhenOnlyOtherVariablesAreModified() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test(int[] a) {
+                      int sum = 0;
+                      for (int i = 0; i < a.length; ) {
+                          sum += a[i];
+                          i++;
+                      }
+                      return sum;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int test(int[] a) {
+                      int sum = 0;
+                      for (int i = 0; i < a.length; i++) {
+                          sum += a[i];
+                      }
+                      return sum;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void moveIncrementWhenContinueTargetsNestedLoop() {
         rewriteRun(
