@@ -29,9 +29,10 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static java.util.Collections.singleton;
+import static java.util.Arrays.asList;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -47,7 +48,7 @@ public class FindThrowInFinally extends Recipe {
             "`throw` inside the body of a lambda, a local class or an anonymous class declared in the `finally` is " +
             "not marked, because it does not leave the `finally` when the block runs.";
 
-    Set<String> tags = singleton("RSPEC-S1163");
+    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1163", "RSPEC-S1143"));
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(30);
 
