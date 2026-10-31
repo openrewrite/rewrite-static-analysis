@@ -30,7 +30,10 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
@@ -54,10 +57,11 @@ public class UnwrapElseAfterReturn extends Recipe {
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = super.visitBlock(block, ctx);
                 AtomicReference<@Nullable Space> blockEnd = new AtomicReference<>(null);
-                J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
+                J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), (index, statement) -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
                         if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
+                            List<Statement> laterStatements = b.getStatements().subList(index + 1, b.getStatements().size());
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.If) {
                                 J.If innermost = findInnermostIfWithElse((J.If) elsePart);
@@ -65,11 +69,13 @@ public class UnwrapElseAfterReturn extends Recipe {
                                         innermost.getElsePart() != null &&
                                         endsWithReturnOrThrow(innermost.getThenPart()) &&
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
-                                    J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
-                                    return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
+                                    if (!collidesWithLaterScope(innermostElseBody, laterStatements)) {
+                                        J.If modifiedChain = removeInnermostElse(ifStatement);
+                                        return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
+                                    }
                                 }
-                            } else {
+                            } else if (!collidesWithLaterScope(elsePart, laterStatements)) {
                                 J.If newIf = ifStatement.withElsePart(null);
                                 return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
@@ -108,6 +114,83 @@ public class UnwrapElseAfterReturn extends Recipe {
                             prefix.getWhitespace().contains("\n") ? prefix.getWhitespace() : statementIndent;
                     return first.withPrefix(Space.build(whitespace, ListUtils.concatAll(leadingComments, prefix.getComments())));
                 }));
+            }
+
+            /**
+             * Hoisting the else block widens the scope of the names it declares to the end of the enclosing block,
+             * so unwrapping is skipped where that could change how a later name resolves: a later redeclaration no
+             * longer compiles (JLS 6.4), and a later unqualified use of a field or statically imported member would
+             * be captured instead. Names a local cannot capture, such as invocation names and labels, are exempt.
+             * Every {@code instanceof} pattern variable counts as hoisted, since flow scoping (JLS 6.3.2) can carry
+             * one past its own statement; not all of them do, so this errs towards keeping the else block.
+             */
+            private boolean collidesWithLaterScope(Statement elseBody, List<Statement> laterStatements) {
+                if (laterStatements.isEmpty()) {
+                    return false;
+                }
+                Set<String> hoistedNames = new HashSet<>();
+                JavaIsoVisitor<Set<String>> patternVariableCollector = new JavaIsoVisitor<Set<String>>() {
+                    @Override
+                    public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Set<String> names) {
+                        if (instanceOf.getPattern() instanceof J.Identifier) {
+                            names.add(((J.Identifier) instanceOf.getPattern()).getSimpleName());
+                        }
+                        return super.visitInstanceOf(instanceOf, names);
+                    }
+
+                    @Override
+                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Set<String> names) {
+                        // A record deconstruction pattern nests its bindings as variable declarations
+                        if (getCursor().firstEnclosing(J.DeconstructionPattern.class) != null) {
+                            names.add(variable.getSimpleName());
+                        }
+                        return super.visitVariable(variable, names);
+                    }
+                };
+                List<Statement> hoistedStatements = elseBody instanceof J.Block ? ((J.Block) elseBody).getStatements() : singletonList(elseBody);
+                for (Statement hoisted : hoistedStatements) {
+                    if (hoisted instanceof J.VariableDeclarations) {
+                        for (J.VariableDeclarations.NamedVariable variable : ((J.VariableDeclarations) hoisted).getVariables()) {
+                            hoistedNames.add(variable.getSimpleName());
+                        }
+                    } else if (hoisted instanceof J.ClassDeclaration) {
+                        hoistedNames.add(((J.ClassDeclaration) hoisted).getSimpleName());
+                    }
+                    patternVariableCollector.visit(hoisted, hoistedNames);
+                }
+                if (hoistedNames.isEmpty()) {
+                    return false;
+                }
+
+                AtomicBoolean collides = new AtomicBoolean(false);
+                JavaIsoVisitor<AtomicBoolean> nameScanner = new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean found) {
+                        if (hoistedNames.contains(identifier.getSimpleName())) {
+                            // Declarations and unqualified uses are both identifiers; only another namespace or a
+                            // qualifier makes one safe
+                            Object parent = getCursor().getParentTreeCursor().getValue();
+                            boolean unaffected = parent instanceof J.MethodInvocation && identifier == ((J.MethodInvocation) parent).getName() ||
+                                    parent instanceof J.FieldAccess && identifier == ((J.FieldAccess) parent).getName() ||
+                                    parent instanceof J.MemberReference && identifier == ((J.MemberReference) parent).getReference() ||
+                                    parent instanceof J.MethodDeclaration && identifier == ((J.MethodDeclaration) parent).getName() ||
+                                    parent instanceof J.Label ||
+                                    parent instanceof J.Break ||
+                                    parent instanceof J.Continue;
+                            if (!unaffected) {
+                                found.set(true);
+                            }
+                        }
+                        return super.visitIdentifier(identifier, found);
+                    }
+                };
+                for (Statement laterStatement : laterStatements) {
+                    nameScanner.visit(laterStatement, collides);
+                    if (collides.get()) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private J.@Nullable If findInnermostIfWithElse(J.If ifStatement) {
