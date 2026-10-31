@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -255,6 +256,78 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
                   @SuppressWarnings("all")
                   boolean test(int x) {
                       return x == x;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void keepParenthesesNeededForPrecedence() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean x, boolean y, boolean z) {
+                      return (x || y) && (x || y) && z;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean x, boolean y, boolean z) {
+                      return (x || y) && z;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void keepParenthesesForTernary() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean a, boolean b, boolean c, boolean z) {
+                      return (a ? b : c) && (a ? b : c) && z;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean a, boolean b, boolean c, boolean z) {
+                      return (a ? b : c) && z;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void unwrapParenthesesWhenNotNeededForPrecedence() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean x, boolean y) {
+                      return (x || y) && (x || y);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean x, boolean y) {
+                      return x || y;
                   }
               }
               """
