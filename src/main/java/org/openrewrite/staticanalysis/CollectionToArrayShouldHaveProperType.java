@@ -31,7 +31,6 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
 
 public class CollectionToArrayShouldHaveProperType extends Recipe {
     private static final MethodMatcher TO_ARRAY = new MethodMatcher("java.util.Collection toArray()", true);
@@ -78,13 +77,25 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
                             if (fqType != null) {
                                 String className = fqType.getClassName();
                                 String fqn = fqType.getFullyQualifiedName();
-                                JavaTemplate template = JavaTemplate.builder("#{any()}.toArray(new #{}[0])")
+                                JavaTemplate template = JavaTemplate.builder("#{any(java.util.Collection)}.toArray(new #{}[0])")
                                         .imports(fqn)
                                         .build();
 
-                                Expression result = template.apply(getCursor(), visitedTypeCast.getCoordinates().replace(),
-                                        requireNonNull(methodInvocation.getSelect()),
+                                Expression select = methodInvocation.getSelect();
+                                boolean hasSelect = select != null;
+                                if (!hasSelect) {
+                                    JavaType declaringType = methodInvocation.getMethodType() != null ?
+                                            methodInvocation.getMethodType().getDeclaringType() : null;
+                                    select = JavaElementFactory.newThis(declaringType);
+                                }
+
+                                J.MethodInvocation result = template.apply(getCursor(), visitedTypeCast.getCoordinates().replace(),
+                                        select,
                                         className);
+
+                                if (!hasSelect) {
+                                    result = result.withSelect(null);
+                                }
 
                                 maybeAddImport(fqn);
 
