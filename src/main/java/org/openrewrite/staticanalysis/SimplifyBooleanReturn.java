@@ -27,6 +27,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -57,6 +58,15 @@ public class SimplifyBooleanReturn extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J visitIf(J.If iff, ExecutionContext ctx) {
                 J.If i = visitAndCast(iff, ctx, super::visitIf);

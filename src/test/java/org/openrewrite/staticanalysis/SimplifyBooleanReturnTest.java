@@ -349,10 +349,6 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                       return True
 
                   return False
-              """,
-            """
-              def is_ip(address):
-                  return re.match(regexp, address)
               """
           )
         );
@@ -370,11 +366,6 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                           return True
 
                       return False
-              """,
-            """
-              class A:
-                  def is_ip(self, address):
-                      return re.match(regexp, address)
               """
           )
         );

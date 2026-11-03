@@ -26,6 +26,7 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -51,6 +52,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        // Java boolean literal spelling and statement-expression rules do not apply to Python.
         return new SimplifyBooleanExpressionVisitor() {
             @Override
             public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -59,6 +61,15 @@ public class SimplifyBooleanExpression extends Recipe {
                     return method;
                 }
                 return super.visitMethodDeclaration(method, ctx);
+            }
+
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
             }
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
