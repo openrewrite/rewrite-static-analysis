@@ -23,6 +23,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -41,6 +42,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
                 JavaType.Method methodType = m.getMethodType();
                 if (methodType == null || m.getTypeParameters() == null || m.getTypeParameters().isEmpty()) {
+                    return m;
+                }
+
+                // Functional arguments are target typed by the witness, even when the method returns a
+                // non-generic type. Removing it can widen lambda parameters or change overload resolution.
+                if (hasTargetTypedArguments(m)) {
                     return m;
                 }
 
@@ -124,6 +131,30 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 }
 
                 return m;
+            }
+
+            private boolean hasTargetTypedArguments(J.MethodInvocation method) {
+                AtomicBoolean found = new AtomicBoolean();
+                JavaIsoVisitor<AtomicBoolean> visitor = new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean result) {
+                        result.set(true);
+                        return lambda;
+                    }
+
+                    @Override
+                    public J.MemberReference visitMemberReference(J.MemberReference reference, AtomicBoolean result) {
+                        result.set(true);
+                        return reference;
+                    }
+                };
+                for (Expression argument : method.getArguments()) {
+                    visitor.visit(argument, found);
+                    if (found.get()) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private JavaType.@Nullable Method findMethodIfUnambiguous(JavaType.FullyQualified type) {
