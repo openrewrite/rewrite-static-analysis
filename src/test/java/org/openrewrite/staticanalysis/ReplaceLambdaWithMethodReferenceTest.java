@@ -96,6 +96,27 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
+    void preserveStaticQualifierEvaluation() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  static class Target { static String f() { return "value"; } }
+                  static class Holder { final Target target = null; }
+                  Supplier<String> field(Holder holder) {
+                      return () -> holder.target.f();
+                  }
+                  Supplier<String> array(Target[] values, int index) {
+                      return () -> values[index].f();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void stableNonNullBoundReceivers() {
         rewriteRun(
           java(

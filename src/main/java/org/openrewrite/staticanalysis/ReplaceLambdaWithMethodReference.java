@@ -213,6 +213,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     Expression select =
                             method instanceof J.MethodInvocation ? ((J.MethodInvocation) method).getSelect() : null;
+                    if (methodType.hasFlags(Flag.Static) && select != null && !canDiscardStaticQualifier(select)) {
+                        // A value-qualified static call still evaluates its qualifier inside the lambda.
+                        return l;
+                    }
                     if (!methodType.hasFlags(Flag.Static) && select != null &&
                         !methodSelectMatchesFirstLambdaParameter(method, lambda) && !isStableNonNullReceiver(select)) {
                         // A bound reference evaluates and null-checks its receiver when it is created.
@@ -295,6 +299,18 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 current = current.getParent();
             }
             return false;
+        }
+
+        private boolean canDiscardStaticQualifier(Expression qualifier) {
+            if (qualifier instanceof J.Identifier) {
+                JavaType.Variable variable = ((J.Identifier) qualifier).getFieldType();
+                return variable == null || variable.getOwner() instanceof JavaType.Method;
+            }
+            if (qualifier instanceof J.FieldAccess) {
+                J.FieldAccess field = (J.FieldAccess) qualifier;
+                return field.getName().getFieldType() == null && !"class".equals(field.getSimpleName());
+            }
+            return qualifier instanceof J.Literal;
         }
 
         private boolean isStableNonNullReceiver(Expression receiver) {
