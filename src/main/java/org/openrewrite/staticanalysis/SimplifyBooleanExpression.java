@@ -21,7 +21,9 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 
@@ -33,6 +35,10 @@ import static java.util.Arrays.asList;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class SimplifyBooleanExpression extends Recipe {
+    private static final AnnotationMatcher BEFORE_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
+    private static final AnnotationMatcher AFTER_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.AfterTemplate");
 
     String displayName = "Simplify boolean expression";
 
@@ -46,6 +52,14 @@ public class SimplifyBooleanExpression extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new SimplifyBooleanExpressionVisitor() {
+            @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream()
+                        .anyMatch(a -> BEFORE_TEMPLATE.matches(a) || AFTER_TEMPLATE.matches(a))) {
+                    return method;
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
