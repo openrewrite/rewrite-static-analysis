@@ -20,6 +20,7 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -75,6 +76,18 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     }
 
     private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
+        private static final AnnotationMatcher BEFORE_TEMPLATE =
+                new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
+
+        @Override
+        public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+            // A Refaster before-template describes the syntax to match, rather than code to modernize.
+            if (method.getLeadingAnnotations().stream().anyMatch(BEFORE_TEMPLATE::matches)) {
+                return method;
+            }
+            return super.visitMethodDeclaration(method, ctx);
+        }
+
         @Override
         public J visitLambda(J.Lambda lambda, ExecutionContext ctx) {
             J.Lambda l = (J.Lambda) super.visitLambda(lambda, ctx);
