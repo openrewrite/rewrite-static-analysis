@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
@@ -26,6 +27,7 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -51,7 +53,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new SimplifyBooleanExpressionVisitor() {
+        return Preconditions.check(Preconditions.not(new PythonFileChecker<>()), new SimplifyBooleanExpressionVisitor() {
             @Override
             public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream()
@@ -71,6 +73,6 @@ public class SimplifyBooleanExpression extends Recipe {
                 }
                 return super.shouldSimplifyEqualsOn(j);
             }
-        };
+        });
     }
 }
