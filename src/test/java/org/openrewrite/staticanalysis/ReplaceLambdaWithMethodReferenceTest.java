@@ -71,6 +71,73 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveNullableBoundReceiverTiming() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  final Object field = null;
+                  Supplier<String> parameter(Object value) {
+                      return () -> value.toString();
+                  }
+                  Supplier<String> local() {
+                      Object value = null;
+                      return () -> value.toString();
+                  }
+                  Supplier<String> field() {
+                      return () -> field.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveStaticQualifierEvaluation() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  static class Target { static String f() { return "value"; } }
+                  static class Holder { final Target target = null; }
+                  Supplier<String> field(Holder holder) {
+                      return () -> holder.target.f();
+                  }
+                  Supplier<String> array(Target[] values, int index) {
+                      return () -> values[index].f();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void stableNonNullBoundReceivers() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  Supplier<String> literal() { return () -> " text ".trim(); }
+                  Supplier<String> type() { return () -> String.class.getName(); }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+              class A {
+                  Supplier<String> literal() { return " text "::trim; }
+                  Supplier<String> type() { return String.class::getName; }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void functionMultiParamReference() {
@@ -305,7 +372,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
                   void foo() {
                       Test t = new Test();
-                      Runnable r = t::run;
+                      Runnable r = () -> t.run();
                   }
               }
               """
@@ -347,7 +414,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
-    void systemOutPrint() {
+    void preserveSystemOutPrintReceiver() {
         rewriteRun(
           //language=java
           java(
@@ -358,21 +425,13 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       input.forEach(x -> System.out.println(x));
                   }
               }
-              """,
-            """
-              import java.util.List;
-              class Test {
-                  void method(List<Integer> input) {
-                      input.forEach(System.out::println);
-                  }
-              }
               """
           )
         );
     }
 
     @Test
-    void systemOutPrintInBlock() {
+    void preserveSystemOutPrintReceiverInBlock() {
         rewriteRun(
           //language=java
           java(
@@ -381,14 +440,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class Test {
                   void method(List<Integer> input) {
                       input.forEach(x -> { System.out.println(x); });
-                  }
-              }
-              """,
-            """
-              import java.util.List;
-              class Test {
-                  void method(List<Integer> input) {
-                      input.forEach(System.out::println);
                   }
               }
               """
