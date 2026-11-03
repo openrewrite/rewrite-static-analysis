@@ -17,7 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -31,6 +34,51 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new EqualsAvoidsNull());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
+      "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})
+    void preserveRefasterComparisonPattern(String annotation) {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.google.errorprone.refaster.annotation;
+              @java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+              public @interface BeforeTemplate {}
+              """
+          )),
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Test {
+                  %s
+                  boolean before(String string) {
+                      return string.equals("");
+                  }
+
+                  boolean helper(String string) {
+                      return string.equals("");
+                  }
+              }
+              """.formatted(annotation),
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Test {
+                  %s
+                  boolean before(String string) {
+                      return string.equals("");
+                  }
+
+                  boolean helper(String string) {
+                      return "".equals(string);
+                  }
+              }
+              """.formatted(annotation)
+          )
+        );
     }
 
     @DocumentExample
