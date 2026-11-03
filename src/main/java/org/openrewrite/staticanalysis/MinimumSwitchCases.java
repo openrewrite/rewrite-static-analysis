@@ -229,6 +229,14 @@ public class MinimumSwitchCases extends Recipe {
                 if (hasUnresolvableCasePattern(switch_)) {
                     return false;
                 }
+                List<Statement> cases = switch_.getCases().getStatements();
+                boolean defaultOnly = cases.size() == 1 && isDefault((J.Case) cases.get(0));
+                boolean repeatedSelector = cases.size() == 2 && cases.stream()
+                        .noneMatch(c -> isDefault((J.Case) c));
+                if ((defaultOnly || repeatedSelector) &&
+                    !switch_.getSelector().getTree().getSideEffects().isEmpty()) {
+                    return false;
+                }
                 return switch_.getCases().getStatements().stream()
                                .reduce(0, (a, b) -> a + ((J.Case) b).getCaseLabels().size(), Integer::sum) < 3;
             }
