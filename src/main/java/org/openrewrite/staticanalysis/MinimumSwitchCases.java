@@ -27,6 +27,7 @@ import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.*;
@@ -58,8 +59,8 @@ public class MinimumSwitchCases extends Recipe {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
-                // Python truthiness, structural patterns and statement rules differ from Java.
-                if (PythonFileChecker.isPython(tree)) {
+                // Python and JavaScript truthiness and switch semantics differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
                     stopAfterPreVisit();
                 }
                 return tree;

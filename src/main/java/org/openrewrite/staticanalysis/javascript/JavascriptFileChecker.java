@@ -28,9 +28,13 @@ import org.openrewrite.marker.SearchResult;
 public class JavascriptFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.javascript.tree.JS");
 
+    public static boolean isJavaScript(@Nullable Tree tree) {
+        return IS_AVAILABLE && tree instanceof JS.CompilationUnit;
+    }
+
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (IS_AVAILABLE && tree instanceof JS.CompilationUnit) {
+        if (isJavaScript(tree)) {
             return SearchResult.found(tree);
         }
         return tree;
