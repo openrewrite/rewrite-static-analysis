@@ -26,6 +26,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.python.PythonFileChecker;
@@ -93,6 +94,10 @@ public class SimplifyBooleanReturn extends Recipe {
                         }
 
                         Expression ifCondition = i.getIfCondition().getTree().withPrefix(return_.getExpression().getPrefix());
+                        // The if condition unboxes Boolean, but a return to Boolean/Object need not.
+                        if (ifCondition.getType() != JavaType.Primitive.Boolean) {
+                            return i;
+                        }
 
                         if (J.Literal.isLiteralValue(return_.getExpression(), true)) {
                             if (singleFollowingStatement.map(e -> J.Literal.isLiteralValue(e, false)).orElse(false) && i.getElsePart() == null) {
