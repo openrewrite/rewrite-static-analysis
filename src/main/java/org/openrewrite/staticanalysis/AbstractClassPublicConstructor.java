@@ -22,6 +22,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
@@ -47,6 +48,15 @@ public class AbstractClassPublicConstructor extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Inferred JS method return types also have no explicit return-type expression.
+                if (JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);

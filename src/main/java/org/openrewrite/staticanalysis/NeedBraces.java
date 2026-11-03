@@ -31,6 +31,7 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -122,8 +123,8 @@ public class NeedBraces extends Recipe {
             public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof SourceFile) {
                     SourceFile cu = (SourceFile) requireNonNull(tree);
-                    // Python don't need none of your curly braces
-                    if (cu.getSourcePath().toString().endsWith(".py")) {
+                    // Python has no braces; Java-only wrapping does not relocate JS semicolon markers.
+                    if (cu.getSourcePath().toString().endsWith(".py") || JavascriptFileChecker.isJavaScript(cu)) {
                         return (J) tree;
                     }
                     needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
