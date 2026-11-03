@@ -17,6 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -32,6 +34,77 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnnecessaryExplicitTypeArguments());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"value -> value.trim()", "(value) -> value.trim()", "(var value) -> value.trim()"})
+    void retainWitnessThatTypesLambdaParameter(String lambda) {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static <T extends CharSequence> int apply(Object context, UnaryOperator<T> operator) {
+                      return 0;
+                  }
+
+                  int test() {
+                      return Test.<String>apply(new Object(), %s);
+                  }
+              }
+              """.formatted(lambda)
+          )
+        );
+    }
+
+    @Test
+    void retainWitnessForOverloadedMethodReference() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  static <T> String apply(Function<T, String> function) {
+                      return function.apply(null);
+                  }
+
+                  static String label(Object value) { return "Object"; }
+                  static String label(String value) { return "String"; }
+
+                  String test() {
+                      return Test.<String>apply(Test::label);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainWitnessForNestedTargetTypedLambda() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static class Wrapper<T> {
+                      Wrapper(UnaryOperator<T> operator) {}
+                  }
+
+                  static <T extends CharSequence> int apply(Wrapper<T> wrapper) {
+                      return 0;
+                  }
+
+                  int test() {
+                      return Test.<String>apply(new Wrapper<>(value -> value.trim()));
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
