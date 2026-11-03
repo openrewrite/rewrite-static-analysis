@@ -19,7 +19,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
@@ -38,6 +40,9 @@ import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class EqualsAvoidsNull extends Recipe {
+
+    private static final AnnotationMatcher BEFORE_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
 
     private static final String JAVA_LANG_STRING = "java.lang.String";
     private static final String JAVA_LANG_OBJECT = "java.lang.Object";
@@ -70,6 +75,14 @@ public class EqualsAvoidsNull extends Recipe {
                         new UsesMethod<>(EQUALS_IGNORE_CASE),
                         new UsesMethod<>(CONTENT_EQUALS)),
                 new JavaVisitor<ExecutionContext>() {
+                    @Override
+                    public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                        if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream().anyMatch(BEFORE_TEMPLATE::matches)) {
+                            return method;
+                        }
+                        return super.visitMethodDeclaration(method, ctx);
+                    }
+
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
