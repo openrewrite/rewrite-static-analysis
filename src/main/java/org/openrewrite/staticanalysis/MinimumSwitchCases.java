@@ -246,15 +246,9 @@ public class MinimumSwitchCases extends Recipe {
                 if (defaultOnly) {
                     J.Case defaultCase = (J.Case) cases.get(0);
                     Expression selector = switch_.getSelector().getTree();
-                    JavaType selectorType = selector.getType();
-                    boolean primitiveSelector = selectorType == JavaType.Primitive.Byte ||
-                            selectorType == JavaType.Primitive.Short || selectorType == JavaType.Primitive.Int ||
-                            selectorType == JavaType.Primitive.Char;
-                    boolean thisSelector = selector instanceof J.Identifier &&
-                            "this".equals(((J.Identifier) selector).getSimpleName());
-                    // A Java switch rejects null selectors even when it has only a default case.
+                    // Removing a selector must preserve null checks and other possible exceptions.
                     if (getCursor().firstEnclosing(SourceFile.class) instanceof J.CompilationUnit &&
-                        !primitiveSelector && !thisSelector) {
+                        !canDropDefaultSelector(selector)) {
                         return false;
                     }
                     // Default-only lowering lifts colon-case statements into the enclosing block.
@@ -273,6 +267,25 @@ public class MinimumSwitchCases extends Recipe {
                 }
                 return switch_.getCases().getStatements().stream()
                                .reduce(0, (a, b) -> a + ((J.Case) b).getCaseLabels().size(), Integer::sum) < 3;
+            }
+
+            private boolean canDropDefaultSelector(Expression selector) {
+                selector = selector.unwrap();
+                if (selector instanceof J.Identifier) {
+                    J.Identifier identifier = (J.Identifier) selector;
+                    if ("this".equals(identifier.getSimpleName())) {
+                        return true;
+                    }
+                    JavaType.Variable variable = identifier.getFieldType();
+                    if (variable == null || !(variable.getOwner() instanceof JavaType.Method)) {
+                        return false;
+                    }
+                } else if (!(selector instanceof J.Literal)) {
+                    return false;
+                }
+                JavaType type = selector.getType();
+                return type == JavaType.Primitive.Byte || type == JavaType.Primitive.Short ||
+                       type == JavaType.Primitive.Int || type == JavaType.Primitive.Char;
             }
 
             private boolean hasUnresolvableCasePattern(J.Switch switch_) {

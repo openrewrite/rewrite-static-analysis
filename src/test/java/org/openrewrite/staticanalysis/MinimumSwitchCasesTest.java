@@ -696,6 +696,54 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveDefaultOnlySelectorExceptions() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  int value;
+                  void division(int denominator) {
+                      switch (1 / denominator) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void field(A holder) {
+                      switch (holder.value) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"n", "1"})
+    void defaultOnlySafePrimitiveSelector(String selector) {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (%s) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """.formatted(selector),
+            """
+              class A {
+                  void f(int n) {
+                      System.out.println("body");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     @Test
     void defaultOnly() {
