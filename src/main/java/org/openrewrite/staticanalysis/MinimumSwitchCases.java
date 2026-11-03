@@ -243,6 +243,16 @@ public class MinimumSwitchCases extends Recipe {
                 }
                 List<Statement> cases = switch_.getCases().getStatements();
                 boolean defaultOnly = cases.size() == 1 && isDefault((J.Case) cases.get(0));
+                if (defaultOnly) {
+                    J.Case defaultCase = (J.Case) cases.get(0);
+                    // Default-only lowering lifts colon-case statements into the enclosing block.
+                    // Rule bodies live in getBody(), and local declarations need the switch's scope.
+                    if (defaultCase.getType() == J.Case.Type.Rule ||
+                        defaultCase.getStatements().stream().anyMatch(s ->
+                                s instanceof J.VariableDeclarations || s instanceof J.ClassDeclaration)) {
+                        return false;
+                    }
+                }
                 boolean repeatedSelector = cases.size() == 2 && cases.stream()
                         .noneMatch(c -> isDefault((J.Case) c));
                 if ((defaultOnly || repeatedSelector) &&

@@ -607,6 +607,45 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveDefaultOnlyRuleBody() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default -> System.out.println(n);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyScope() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default:
+                              int value = n;
+                              System.out.println(value);
+                              break;
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     @Test
     void defaultOnly() {
