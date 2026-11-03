@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis.javascript;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.javascript.tree.JS;
 import org.openrewrite.marker.SearchResult;
 
@@ -26,7 +25,16 @@ import org.openrewrite.marker.SearchResult;
  * Add a search marker if visiting a JS file
  */
 public class JavascriptFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.javascript.tree.JS");
+    private static final boolean IS_AVAILABLE = isLanguageAvailable();
+
+    private static boolean isLanguageAvailable() {
+        try {
+            Class.forName("org.openrewrite.javascript.tree.JS", false, JavascriptFileChecker.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 
     public static boolean isJavaScript(@Nullable Tree tree) {
         return IS_AVAILABLE && tree instanceof JS.CompilationUnit;
