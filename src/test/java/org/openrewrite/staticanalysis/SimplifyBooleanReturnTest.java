@@ -33,6 +33,31 @@ class SimplifyBooleanReturnTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanReturn());
     }
 
+    @Test
+    void preserveBoxedConditionUnboxing() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  Object impliedElse(Boolean value) {
+                      if (value) {
+                          return true;
+                      }
+                      return false;
+                  }
+                  Boolean explicitElse(Boolean value) {
+                      if (value) {
+                          return true;
+                      } else {
+                          return false;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simplifyBooleanReturn() {
