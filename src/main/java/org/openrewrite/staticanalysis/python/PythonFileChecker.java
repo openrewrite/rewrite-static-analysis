@@ -28,9 +28,13 @@ import org.openrewrite.python.tree.Py;
 public class PythonFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_PYTHON_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.python.tree.Py");
 
+    public static boolean isPython(@Nullable Tree tree) {
+        return IS_PYTHON_AVAILABLE && tree instanceof Py.CompilationUnit;
+    }
+
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (IS_PYTHON_AVAILABLE && tree instanceof Py.CompilationUnit) {
+        if (isPython(tree)) {
             return SearchResult.found(tree);
         }
         return tree;

@@ -55,8 +55,16 @@ public class MinimumSwitchCases extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         // Python match statements use structural patterns rather than Java switch semantics.
-        return Preconditions.check(Preconditions.not(Preconditions.or(
-                new CSharpFileChecker<>(), new PythonFileChecker<>())), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), statement -> {

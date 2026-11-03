@@ -19,7 +19,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
@@ -53,7 +52,8 @@ public class SimplifyBooleanExpression extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new PythonFileChecker<>()), new SimplifyBooleanExpressionVisitor() {
+        // Java boolean literal spelling and statement-expression rules do not apply to Python.
+        return new SimplifyBooleanExpressionVisitor() {
             @Override
             public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream()
@@ -61,6 +61,15 @@ public class SimplifyBooleanExpression extends Recipe {
                     return method;
                 }
                 return super.visitMethodDeclaration(method, ctx);
+            }
+
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
             }
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
@@ -73,6 +82,6 @@ public class SimplifyBooleanExpression extends Recipe {
                 }
                 return super.shouldSimplifyEqualsOn(j);
             }
-        });
+        };
     }
 }
