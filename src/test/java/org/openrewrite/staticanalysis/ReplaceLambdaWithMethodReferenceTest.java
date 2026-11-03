@@ -17,8 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
@@ -38,6 +41,34 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceLambdaWithMethodReference());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
+      "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})
+    void preserveRefasterBeforeTemplate(String annotation) {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.google.errorprone.refaster.annotation;
+              @java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+              public @interface BeforeTemplate {}
+              """
+          )),
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              import java.util.Comparator;
+
+              class Test {
+                  %s
+                  Comparator<String> fromLambda() {
+                      return (a, b) -> a.compareToIgnoreCase(b);
+                  }
+              }
+              """.formatted(annotation)
+          )
+        );
     }
 
     @DocumentExample
