@@ -24,6 +24,7 @@ import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.kotlin.KotlinVisitor;
@@ -82,7 +83,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         @Override
         public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             // A Refaster before-template describes the syntax to match, rather than code to modernize.
-            if (method.getLeadingAnnotations().stream().anyMatch(BEFORE_TEMPLATE::matches)) {
+            if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream().anyMatch(BEFORE_TEMPLATE::matches)) {
                 return method;
             }
             return super.visitMethodDeclaration(method, ctx);
