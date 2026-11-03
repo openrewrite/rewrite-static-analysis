@@ -232,7 +232,9 @@ public class MinimumSwitchCases extends Recipe {
                 for (Statement statement : switch_.getCases().getStatements()) {
                     if (statement instanceof J.Case) {
                         for (J label : ((J.Case) statement).getCaseLabels()) {
-                            if (!(label instanceof Expression)) {
+                            // Null dispatch cannot use the String equals template.
+                            if (!(label instanceof Expression) ||
+                                label instanceof J.Literal && ((J.Literal) label).getValue() == null) {
                                 return false;
                             }
                         }

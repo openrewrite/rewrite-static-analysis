@@ -744,6 +744,24 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveExplicitNullCase() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(String value) {
+                      switch (value) {
+                          case null: System.out.println("null"); break;
+                          default: System.out.println("other"); break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     @Test
     void defaultOnly() {
