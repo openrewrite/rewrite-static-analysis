@@ -24,6 +24,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -53,6 +54,15 @@ public class InlineVariable extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // JS initializer closures may capture the variable being inlined.
+                if (JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block bl = super.visitBlock(block, ctx);

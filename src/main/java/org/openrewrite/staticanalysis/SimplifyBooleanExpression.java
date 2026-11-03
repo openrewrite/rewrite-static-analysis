@@ -26,6 +26,7 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.LinkedHashSet;
@@ -66,7 +67,7 @@ public class SimplifyBooleanExpression extends Recipe {
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
                 // Python truthiness, structural patterns and statement rules differ from Java.
-                if (PythonFileChecker.isPython(tree)) {
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
                     stopAfterPreVisit();
                 }
                 return tree;

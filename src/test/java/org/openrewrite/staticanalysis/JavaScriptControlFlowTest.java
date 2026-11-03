@@ -39,6 +39,9 @@ class JavaScriptControlFlowTest {
     static Stream<Object[]> cases() {
         return Stream.of(
           new Object[]{new SimplifyBooleanReturn(), "boolean f(boolean a) { if (a) { return true; } else { return false; } }"},
+          new Object[]{new SimplifyBooleanExpression(), "boolean f(boolean a) { return a || false; }"},
+          new Object[]{new InlineVariable(), "int f() { int backend = 1; return backend; }"},
+          new Object[]{new BooleanChecksNotInverted(), "boolean f(boolean a) { return !(!a); }"},
           new Object[]{new MinimumSwitchCases(), "void f(String route) { switch (route) { case \"/settings/account\": System.out.println(route); break; } }"}
         );
     }
@@ -65,7 +68,7 @@ class JavaScriptControlFlowTest {
         J.CompilationUnit source = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { " + methodText + " }").findFirst().orElseThrow();
         // MinimumSwitchCases already uses a separate C# precondition.
-        if (recipe instanceof SimplifyBooleanReturn) {
+        if (!(recipe instanceof MinimumSwitchCases)) {
             source = SearchResult.found(source);
         }
         assertThat(recipe.getVisitor().visit(source, ctx)).isNotSameAs(source);
