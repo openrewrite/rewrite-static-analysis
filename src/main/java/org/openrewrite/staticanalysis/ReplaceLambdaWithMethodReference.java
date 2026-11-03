@@ -47,10 +47,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     String displayName = "Use method references in lambda";
 
     String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
-            "`o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, " +
+            "`o -> (A) o`, `o -> o != null`, " +
             "`o -> o == null` with the equivalent method reference. Method references are often " +
             "more concise and readable than their lambda equivalents, making the code's intent " +
-            "clearer at a glance.";
+            "clearer at a glance. Captured receivers are retained unless they are known to be stable and non-null.";
 
     Set<String> tags = singleton("RSPEC-S1612");
 
@@ -213,6 +213,11 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     Expression select =
                             method instanceof J.MethodInvocation ? ((J.MethodInvocation) method).getSelect() : null;
+                    if (!methodType.hasFlags(Flag.Static) && select != null &&
+                        !methodSelectMatchesFirstLambdaParameter(method, lambda) && !isStableNonNullReceiver(select)) {
+                        // A bound reference evaluates and null-checks its receiver when it is created.
+                        return l;
+                    }
                     if (methodType.hasFlags(Flag.Static) ||
                             methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                         if (method.getType() instanceof JavaType.Parameterized &&
@@ -290,6 +295,18 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 current = current.getParent();
             }
             return false;
+        }
+
+        private boolean isStableNonNullReceiver(Expression receiver) {
+            if (receiver instanceof J.Identifier) {
+                String name = ((J.Identifier) receiver).getSimpleName();
+                return "this".equals(name) || "super".equals(name);
+            }
+            if (receiver instanceof J.FieldAccess) {
+                String name = ((J.FieldAccess) receiver).getSimpleName();
+                return "this".equals(name) || "super".equals(name) || "class".equals(name);
+            }
+            return receiver instanceof J.Literal && ((J.Literal) receiver).getValue() != null;
         }
 
         private boolean hasSelectWithPotentialSideEffects(MethodCall method) {
