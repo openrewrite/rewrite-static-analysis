@@ -646,6 +646,56 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveDefaultOnlyNullSelectorCheck() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  enum Kind { ONE }
+                  void string(String value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void boxed(Integer value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void enumeration(Kind value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyLocalClassScope() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default:
+                              class Local {}
+                              System.out.println(new Local());
+                              break;
+                      }
+                      class Local {}
+                      System.out.println(new Local());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     @Test
     void defaultOnly() {

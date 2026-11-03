@@ -245,6 +245,18 @@ public class MinimumSwitchCases extends Recipe {
                 boolean defaultOnly = cases.size() == 1 && isDefault((J.Case) cases.get(0));
                 if (defaultOnly) {
                     J.Case defaultCase = (J.Case) cases.get(0);
+                    Expression selector = switch_.getSelector().getTree();
+                    JavaType selectorType = selector.getType();
+                    boolean primitiveSelector = selectorType == JavaType.Primitive.Byte ||
+                            selectorType == JavaType.Primitive.Short || selectorType == JavaType.Primitive.Int ||
+                            selectorType == JavaType.Primitive.Char;
+                    boolean thisSelector = selector instanceof J.Identifier &&
+                            "this".equals(((J.Identifier) selector).getSimpleName());
+                    // A Java switch rejects null selectors even when it has only a default case.
+                    if (getCursor().firstEnclosing(SourceFile.class) instanceof J.CompilationUnit &&
+                        !primitiveSelector && !thisSelector) {
+                        return false;
+                    }
                     // Default-only lowering lifts colon-case statements into the enclosing block.
                     // Rule bodies live in getBody(), and local declarations need the switch's scope.
                     if (defaultCase.getType() == J.Case.Type.Rule ||
