@@ -2221,4 +2221,66 @@ void doesNotReplaceCastAfterReassignment() {
       )
     );
  }
+
+    @Test
+    void keepUnconditionalInstanceOfBeforeJava21() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Named {
+                  void setName(String name);
+              }
+              abstract class Machine implements Named {
+              }
+              class Factory {
+                  void configure(Machine machine) {
+                      if (machine instanceof Named) {
+                          ((Named) machine).setName("machine");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unconditionalInstanceOfOnJava21() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                interface Named {
+                    void setName(String name);
+                }
+                abstract class Machine implements Named {
+                }
+                class Factory {
+                    void configure(Machine machine) {
+                        if (machine instanceof Named) {
+                            ((Named) machine).setName("machine");
+                        }
+                    }
+                }
+                """,
+              """
+                interface Named {
+                    void setName(String name);
+                }
+                abstract class Machine implements Named {
+                }
+                class Factory {
+                    void configure(Machine machine) {
+                        if (machine instanceof Named named) {
+                            named.setName("machine");
+                        }
+                    }
+                }
+                """
+            ), 21
+          )
+        );
+    }
 }

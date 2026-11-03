@@ -25,6 +25,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
@@ -89,7 +90,8 @@ public class InstanceOfPatternMatch extends Recipe {
             @Override
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, ctx);
-                if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty()) {
+                if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty() ||
+                    isUnconditionalPatternNotAllowed(instanceOf)) {
                     return instanceOf;
                 }
 
@@ -137,6 +139,24 @@ public class InstanceOfPatternMatch extends Recipe {
                     }
                 }
                 return instanceOf;
+            }
+
+            /**
+             * Before Java 21, a type pattern must not be unconditional: when the static type of the
+             * expression is already a subtype of the tested type, javac reports
+             * "expression type is a subtype of pattern type".
+             */
+            private boolean isUnconditionalPatternNotAllowed(J.InstanceOf instanceOf) {
+                JavaType testedType = ((TypedTree) instanceOf.getClazz()).getType();
+                JavaType expressionType = instanceOf.getExpression().getType();
+                if (testedType == null || expressionType == null ||
+                    !TypeUtils.isAssignableTo(testedType, expressionType)) {
+                    return false;
+                }
+                JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
+                return sourceFile == null || sourceFile.getMarkers().findFirst(JavaVersion.class)
+                        .map(v -> v.getMajorVersion() < 21)
+                        .orElse(true);
             }
 
             @Override
