@@ -61,13 +61,10 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (enclosing instanceof J.MethodInvocation) {
                     J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
                     if (enclosingMethod.getSelect() == method) {
-                        // This invocation is the select (receiver) of the enclosing invocation, so the
-                        // enclosing call provides no target type to drive inference of this call's type
-                        // variables. Retain the witness unless those type variables can be inferred from
-                        // this call's own arguments.
-                        if (!canInferTypeArgumentsFromArguments(methodType)) {
-                            return m;
-                        }
+                        // A receiver gets no target type from the enclosing invocation. Even when
+                        // arguments constrain inference, removing a witness can narrow it (e.g.
+                        // singletonList<Interface>(implementation).iterator() to Iterator<Implementation>).
+                        return m;
                     } else {
                         // As above, retain unless inferable from this call's own arguments (static or not).
                         if (!canInferTypeArgumentsFromArguments(methodType)) {

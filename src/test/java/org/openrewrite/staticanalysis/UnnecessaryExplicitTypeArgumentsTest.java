@@ -59,6 +59,38 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
+    void preserveReceiverWitnessWideningArgumentType() {
+        rewriteRun(java(
+          """
+            import java.util.Collections;
+            import java.util.Iterator;
+            interface ValueMap {}
+            class SimpleValueMapImpl implements ValueMap {}
+            class A {
+                Iterator<ValueMap> queryResources() {
+                    SimpleValueMapImpl valueMap = new SimpleValueMapImpl();
+                    return Collections.<ValueMap>singletonList(valueMap).iterator();
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveReceiverWitnessForNullArgument() {
+        rewriteRun(java(
+          """
+            import java.util.concurrent.CompletableFuture;
+            class A {
+                CompletableFuture<Integer> length() {
+                    return CompletableFuture.<String>completedFuture(null).thenApply(String::length);
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
     void retainWitnessForOverloadedMethodReference() {
         rewriteRun(
           java(
@@ -597,7 +629,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         }
 
         @Test
-        void staticMethodInvocationWithoutTypeArguments() {
+        void retainReceiverWitnessWhileRemovingTargetTypedWitness() {
             //language=java
             rewriteRun(
               GENERIC_CLASS_SOURCE,
@@ -613,7 +645,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                 """
                   class Test {
                       <T> void test(Class<T> clazz) {
-                          final GenericClass<T> gc = GenericClass.typedBuilderWithClass(clazz).build();
+                          final GenericClass<T> gc = GenericClass.<T>typedBuilderWithClass(clazz).build();
                           final GenericClass.GenericClassBuilder<T> gcb = GenericClass.typedBuilder();
                       }
                   }
