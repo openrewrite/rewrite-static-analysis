@@ -314,7 +314,7 @@ public class FinalizePrivateFields extends Recipe {
                 int increment;
                 if (isInLoop(cursor) || isInLambda(cursor)) {
                     increment = 2;
-                } else if (isInitializedByClass(cursor, privateField.hasFlags(Flag.Static))) {
+                } else if (isInitializedByClass(cursor, privateField)) {
                     increment = 1;
                 } else {
                     increment = 2;
@@ -328,7 +328,13 @@ public class FinalizePrivateFields extends Recipe {
             return isInForLoop(cursor) || isInDoWhileLoopLoop(cursor) || isInWhileLoop(cursor);
         }
 
-        private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
+        private static boolean isInitializedByClass(Cursor cursor, JavaType.Variable privateField) {
+            J.ClassDeclaration enclosingClass = cursor.firstEnclosing(J.ClassDeclaration.class);
+            // A nested class initializes itself, not the class that declares the assigned field.
+            if (enclosingClass == null || !TypeUtils.isOfType(privateField.getOwner(), enclosingClass.getType())) {
+                return false;
+            }
+            boolean privateFieldIsStatic = privateField.hasFlags(Flag.Static);
             Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic()) ||
                             p instanceof JRightPadded ||
                             p instanceof JLeftPadded)

@@ -38,6 +38,83 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         spec.recipe(new FinalizePrivateFields());
     }
 
+    @Test
+    void assignmentsInNestedClassInitializersDoNotFinalizeOuterFields() {
+        rewriteRun(
+          java(
+            """
+              class Outer {
+                  private static boolean classInitializerRan;
+                  private boolean instanceInitializerRan;
+                  private boolean constructorRan;
+
+                  static class Plugin {
+                      static {
+                          classInitializerRan = true;
+                      }
+                  }
+
+                  class Inner {
+                      {
+                          instanceInitializerRan = true;
+                      }
+
+                      Inner() {
+                          constructorRan = true;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void assignmentsInOwnInitializersStillFinalizeFields() {
+        rewriteRun(
+          java(
+            """
+              class Outer {
+                  private static boolean classInitializerRan;
+                  private boolean instanceInitializerRan;
+                  private boolean constructorRan;
+
+                  static {
+                      classInitializerRan = true;
+                  }
+
+                  {
+                      instanceInitializerRan = true;
+                  }
+
+                  Outer() {
+                      constructorRan = true;
+                  }
+              }
+              """,
+            """
+              class Outer {
+                  private static final boolean classInitializerRan;
+                  private final boolean instanceInitializerRan;
+                  private final boolean constructorRan;
+
+                  static {
+                      classInitializerRan = true;
+                  }
+
+                  {
+                      instanceInitializerRan = true;
+                  }
+
+                  Outer() {
+                      constructorRan = true;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample("Finalize private field.")
     @Test
     void fieldWithInitializerMadeFinal() {
