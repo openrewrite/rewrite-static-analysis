@@ -43,6 +43,27 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
+    @Test
+    void retainExplicitLambdaParameterWithWildcardTarget() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class Test {
+                  Consumer<?> field = (String value) -> value.trim();
+                  void accept(Consumer<?> consumer) {}
+                  void test() {
+                      accept((String value) -> value.trim());
+                      Consumer<?> local = (String value) -> value.trim();
+                      local = (String value) -> value.trim();
+                  }
+                  Consumer<?> create() { return (String value) -> value.trim(); }
+              }
+              """
+          )
+        );
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
       "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})

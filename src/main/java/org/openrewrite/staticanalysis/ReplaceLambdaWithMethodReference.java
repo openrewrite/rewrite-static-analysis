@@ -94,7 +94,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             J.Lambda l = (J.Lambda) super.visitLambda(lambda, ctx);
             updateCursor(l);
 
-            if (insideAnonymousInnerClass()) {
+
+            if (insideAnonymousInnerClass() || hasExplicitParametersAndWildcardTarget(l)) {
                 return l;
             }
 
@@ -282,6 +283,63 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             }
 
             return l;
+        }
+
+        private boolean hasExplicitParametersAndWildcardTarget(J.Lambda lambda) {
+            boolean explicit = lambda.getParameters().getParameters().stream().anyMatch(parameter ->
+                    parameter instanceof J.VariableDeclarations &&
+                            ((J.VariableDeclarations) parameter).getTypeExpression() != null);
+            if (!explicit) {
+                return false;
+            }
+            Cursor expression = getCursor();
+            Cursor parent = expression.getParentTreeCursor();
+            while (parent.getValue() instanceof J.Parentheses) {
+                expression = parent;
+                parent = parent.getParentTreeCursor();
+            }
+            Object target = parent.getValue();
+            JavaType targetType = null;
+            if (target instanceof MethodCall) {
+                MethodCall call = (MethodCall) target;
+                JavaType.Method method = call.getMethodType();
+                int index = call.getArguments().indexOf(expression.getValue());
+                if (method != null && index >= 0 && !method.getParameterTypes().isEmpty()) {
+                    int last = method.getParameterTypes().size() - 1;
+                    targetType = method.getParameterTypes().get(Math.min(index, last));
+                    if (method.hasFlags(Flag.Varargs) && index >= last && targetType instanceof JavaType.Array) {
+                        targetType = ((JavaType.Array) targetType).getElemType();
+                    }
+                }
+            } else if (target instanceof J.VariableDeclarations.NamedVariable) {
+                targetType = ((J.VariableDeclarations.NamedVariable) target).getType();
+            } else if (target instanceof J.Assignment) {
+                targetType = ((J.Assignment) target).getVariable().getType();
+            } else if (target instanceof J.TypeCast) {
+                targetType = ((J.TypeCast) target).getType();
+            } else if (target instanceof J.Return) {
+                Cursor function = parent.dropParentUntil(value -> value instanceof J.MethodDeclaration ||
+                        value instanceof J.Lambda || value == Cursor.ROOT_VALUE);
+                if (function.getValue() instanceof J.MethodDeclaration) {
+                    TypeTree returnType = function.<J.MethodDeclaration>getValue().getReturnTypeExpression();
+                    targetType = returnType == null ? null : returnType.getType();
+                }
+            }
+            // An explicit lambda parameter can narrow the ground target of Consumer<?> to
+            // Consumer<String>. A method reference instead uses the wildcard's bound (Object).
+            return containsWildcard(targetType, 0);
+        }
+
+        private boolean containsWildcard(@Nullable JavaType type, int depth) {
+            if (depth > 8) {
+                return false;
+            }
+            if (type instanceof JavaType.GenericTypeVariable) {
+                return "?".equals(((JavaType.GenericTypeVariable) type).getName());
+            }
+            JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+            return parameterized != null && parameterized.getTypeParameters().stream()
+                    .anyMatch(parameter -> containsWildcard(parameter, depth + 1));
         }
 
         private boolean insideAnonymousInnerClass() {
