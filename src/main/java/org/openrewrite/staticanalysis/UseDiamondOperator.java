@@ -229,6 +229,7 @@ public class UseDiamondOperator extends Recipe {
                     if (paramTypes.size() != newClassType.getTypeParameters().size() ||
                             hasAnnotations(newClassType) ||
                             breaksNestedTypeInference(newClass) ||
+                            hasGenericArrayVarargsArgument(newClass) ||
                             isAnonymousClassWithWildcardTarget(paramTypes, newClass)) {
                         return newClass;
                     }
@@ -244,6 +245,27 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
             return newClass;
+        }
+
+        private static boolean hasGenericArrayVarargsArgument(J.NewClass newClass) {
+            JavaType.Method constructor = newClass.getConstructorType();
+            if (constructor == null || !constructor.hasFlags(Flag.Varargs) ||
+                    newClass.getArguments().size() != constructor.getParameterTypes().size()) {
+                return false;
+            }
+            Expression last = newClass.getArguments().get(newClass.getArguments().size() - 1);
+            if (!(last instanceof J.MethodInvocation)) {
+                return false;
+            }
+            JavaType.Method factory = ((J.MethodInvocation) last).getMethodType();
+            if (factory == null || !(factory.getReturnType() instanceof JavaType.Array)) {
+                return false;
+            }
+            // Diamond and a generic array factory can infer the varargs component jointly,
+            // rather than passing the array as the single fixed-arity constructor argument.
+            Optional<JavaType.Method> declared = findDeclaredMethod(
+                    factory.getDeclaringType(), factory.getName(), factory.getParameterTypes());
+            return !declared.isPresent() || mentionsTypeVariable(declared.get().getReturnType(), null, 0);
         }
 
         /**
@@ -316,6 +338,9 @@ public class UseDiamondOperator extends Recipe {
         private static boolean mentionsTypeVariable(JavaType type, @Nullable String name, int depth) {
             if (depth > 4) {
                 return false;
+            }
+            if (type instanceof JavaType.Array) {
+                return mentionsTypeVariable(((JavaType.Array) type).getElemType(), name, depth + 1);
             }
             if (type instanceof JavaType.GenericTypeVariable) {
                 return name == null || name.equals(((JavaType.GenericTypeVariable) type).getName());
