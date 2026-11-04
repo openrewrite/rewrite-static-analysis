@@ -60,7 +60,7 @@ public class EqualsAvoidsNull extends Recipe {
                 "It also removes redundant null checks in conjunction with `equals()` comparisons. " +
                 "Placing the literal on the left side prevents `NullPointerException`s, " +
                 "since a literal can never be null and its `equals` method handles null " +
-                "arguments safely.";
+                "arguments safely. Groovy source is left unchanged because equality receiver dispatch can be customized.";
 
     Set<String> tags = singleton("RSPEC-S1132");
 
@@ -75,6 +75,21 @@ public class EqualsAvoidsNull extends Recipe {
                         new UsesMethod<>(EQUALS_IGNORE_CASE),
                         new UsesMethod<>(CONTENT_EQUALS)),
                 new JavaVisitor<ExecutionContext>() {
+                    @Override
+                    public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                        if (tree instanceof SourceFile) {
+                            SourceFile source = (SourceFile) tree;
+                            String path = source.getSourcePath().toString();
+                            // Avoid an optional Groovy class reference and retain dynamic equality dispatch.
+                            // A standalone invocation is a Statement, but replacing it with a bare Binary is not.
+                            if (tree.getClass().getName().startsWith("org.openrewrite.groovy.") ||
+                                path.endsWith(".groovy") || path.endsWith(".gradle")) {
+                                return (J) tree;
+                            }
+                        }
+                        return super.visit(tree, ctx);
+                    }
+
                     @Override
                     public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                         if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream().anyMatch(BEFORE_TEMPLATE::matches)) {
