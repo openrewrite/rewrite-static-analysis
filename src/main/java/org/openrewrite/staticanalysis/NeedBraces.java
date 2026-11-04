@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.format.AutoFormatVisitor;
 import org.openrewrite.java.service.AutoFormatService;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
@@ -75,7 +76,11 @@ public class NeedBraces extends Recipe {
                 FormattingListener.beforeFormat(tree, stopAfter, parent);
                 JavaSourceFile source = tree instanceof JavaSourceFile ? (JavaSourceFile) tree :
                         getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
-                // Resolve the service alongside this recipe, rather than the base visitor's runtime version.
+                // Service classes can be shared with an older platform, while formatter implementations
+                // are isolated with the recipe. Invoke the bundled formatter directly for Java.
+                if (source instanceof J.CompilationUnit) {
+                    return (J2) new AutoFormatVisitor<ExecutionContext>(stopAfter).visit(tree, ctx, parent);
+                }
                 AutoFormatService service = source.service(AutoFormatService.class);
                 return (J2) service.autoFormatVisitor(stopAfter).visit(tree, ctx, parent);
             }
