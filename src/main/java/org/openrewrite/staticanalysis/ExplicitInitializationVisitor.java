@@ -86,7 +86,9 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         if (service(AnnotationService.class).matches(variableDeclsCursor, LOMBOK_BUILDER_DEFAULT)) {
             return v;
         }
-        if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
+        // C# const fields require an initializer even when it is the type's default value.
+        if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final) &&
+                variableDecls.getModifiers().stream().noneMatch(modifier -> "const".equals(modifier.getKeyword()))) {
             J.Literal literalInit = (J.Literal) variable.getInitializer();
             if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null == literalInit.getType()) {
                 v = v.withInitializer(null);
