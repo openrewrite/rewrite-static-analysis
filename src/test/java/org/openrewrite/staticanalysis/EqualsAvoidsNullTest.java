@@ -26,6 +26,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SequencedCollectionMethodCanBeUsed"})
@@ -34,6 +35,32 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new EqualsAvoidsNull());
+    }
+
+    @Test
+    void preserveGroovyStandaloneEqualsNull() {
+        rewriteRun(groovy(
+          """
+            class Test {
+                void test(String value) {
+                    value.equals(null)
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveGroovyEqualsDispatch() {
+        rewriteRun(groovy(
+          """
+            class Test {
+                boolean test(String value) {
+                    value.equals("literal")
+                }
+            }
+            """
+        ));
     }
 
     @ParameterizedTest
