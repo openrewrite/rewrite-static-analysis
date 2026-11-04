@@ -338,4 +338,30 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void preserveCloseBeforeReadAfterCloseAssertion() {
+        rewriteRun(
+          java(
+            """
+              import java.io.BufferedInputStream;
+              import java.io.ByteArrayInputStream;
+              import java.io.IOException;
+
+              class ReadAfterClose {
+                  void verifyClosed() throws IOException {
+                      try (BufferedInputStream stream = new BufferedInputStream(new ByteArrayInputStream(new byte[] {1}))) {
+                          stream.close();
+                          try {
+                              stream.read();
+                              throw new AssertionError("Read must fail after close");
+                          } catch (IOException expected) {
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
