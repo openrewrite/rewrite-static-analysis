@@ -22,7 +22,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.service.AutoFormatService;
+import org.openrewrite.java.format.AutoFormatVisitor;
 
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
@@ -35,16 +35,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class NeedBracesClassLoaderTest {
     @Test
-    void usesRecipeFormattingService(@TempDir Path directory) throws Exception {
+    void usesRecipeJavaFormatterWithSharedServices(@TempDir Path directory) throws Exception {
         String property = getClass().getName() + ".formatted";
-        String serviceName = AutoFormatService.class.getName();
-        Path source = directory.resolve("AutoFormatService.java");
+        String formatterName = AutoFormatVisitor.class.getName();
+        Path source = directory.resolve("AutoFormatVisitor.java");
         Files.writeString(source, """
-          package org.openrewrite.java.service;
-          public class AutoFormatService {
-              public org.openrewrite.java.JavaVisitor<?> autoFormatVisitor(org.openrewrite.Tree stopAfter) {
+          package org.openrewrite.java.format;
+          public class AutoFormatVisitor extends org.openrewrite.java.JavaIsoVisitor<Object> {
+              public AutoFormatVisitor(org.openrewrite.Tree stopAfter, org.openrewrite.style.NamedStyles... styles) {
                   System.setProperty("%s", "true");
-                  return new org.openrewrite.java.JavaIsoVisitor<Object>();
+              }
+              public org.openrewrite.java.tree.J visit(org.openrewrite.Tree tree, Object p, org.openrewrite.Cursor cursor) {
+                  return (org.openrewrite.java.tree.J) super.visit(tree, p, cursor);
               }
           }
           """.formatted(property));
@@ -59,7 +61,7 @@ class NeedBracesClassLoaderTest {
             @Override
             protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                 synchronized (getClassLoadingLock(name)) {
-                    if (!name.equals(serviceName) && !name.equals(NeedBraces.class.getName()) &&
+                    if (!name.equals(formatterName) && !name.equals(NeedBraces.class.getName()) &&
                         !name.startsWith(NeedBraces.class.getName() + "$")) {
                         return super.loadClass(name, resolve);
                     }
@@ -67,7 +69,7 @@ class NeedBracesClassLoaderTest {
                     if (loaded == null) {
                         try {
                             byte[] bytes;
-                            if (name.equals(serviceName)) {
+                            if (name.equals(formatterName)) {
                                 bytes = Files.readAllBytes(directory.resolve(name.replace('.', '/') + ".class"));
                             } else {
                                 try (InputStream in = getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
