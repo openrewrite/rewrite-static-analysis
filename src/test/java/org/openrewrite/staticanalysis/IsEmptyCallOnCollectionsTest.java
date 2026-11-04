@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -35,6 +37,23 @@ import static org.openrewrite.java.Assertions.java;
   "Convert2MethodRef"
 })
 class IsEmptyCallOnCollectionsTest implements RewriteTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"size() == 0", "this.size() < 1", "0 == size()"})
+    void retainIsEmptyImplementation(String comparison) {
+        rewriteRun(
+          java(
+            """
+              class Test extends java.util.AbstractCollection<String> {
+                  public java.util.Iterator<String> iterator() { return java.util.Collections.emptyIterator(); }
+                  public int size() { return 0; }
+                  @Override
+                  public boolean isEmpty() { return %s; }
+              }
+              """.formatted(comparison)
+          )
+        );
+    }
+
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new IsEmptyCallOnCollections());
