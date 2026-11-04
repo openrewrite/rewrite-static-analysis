@@ -112,6 +112,12 @@ public class SimplifyBooleanReturn extends Recipe {
                                 return maybeAutoFormat(return_, return_.withPrefix(i.getPrefix()).withExpression(ifCondition), ctx, parent);
                             }
                         } else if (J.Literal.isLiteralValue(return_.getExpression(), false)) {
+                            // Removing a negation of Boolean would also remove its unboxing.
+                            if (ifCondition instanceof J.Unary &&
+                                ((J.Unary) ifCondition).getOperator() == J.Unary.Type.Not &&
+                                ((J.Unary) ifCondition).getExpression().getType() != JavaType.Primitive.Boolean) {
+                                return i;
+                            }
                             boolean returnThenPart = false;
 
                             if (singleFollowingStatement.map(e -> J.Literal.isLiteralValue(e, true)).orElse(false) && i.getElsePart() == null) {
