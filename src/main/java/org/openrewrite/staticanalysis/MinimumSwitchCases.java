@@ -26,7 +26,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
@@ -55,11 +54,15 @@ public class MinimumSwitchCases extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        // Python match statements use structural patterns rather than Java switch semantics.
-        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        return new JavaVisitor<ExecutionContext>() {
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
-                // Python and JavaScript truthiness and switch semantics differ from Java.
+                // Only Java/Groovy switch syntax and labels are supported by this lowering.
+                // Inspect the source root without optional language class linkage or marker dependence.
+                if (tree instanceof SourceFile && !(tree instanceof J.CompilationUnit) &&
+                    !tree.getClass().getName().startsWith("org.openrewrite.groovy.")) {
+                    stopAfterPreVisit();
+                }
                 if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
                     stopAfterPreVisit();
                 }
@@ -419,7 +422,7 @@ public class MinimumSwitchCases extends Recipe {
                 return false;
             }
 
-        });
+        };
     }
 
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {
