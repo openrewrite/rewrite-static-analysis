@@ -61,13 +61,10 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (enclosing instanceof J.MethodInvocation) {
                     J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
                     if (enclosingMethod.getSelect() == method) {
-                        // This invocation is the select (receiver) of the enclosing invocation, so the
-                        // enclosing call provides no target type to drive inference of this call's type
-                        // variables. Retain the witness unless those type variables can be inferred from
-                        // this call's own arguments.
-                        if (!canInferTypeArgumentsFromArguments(methodType)) {
-                            return m;
-                        }
+                        // A receiver gets no target type from the enclosing invocation. Even when
+                        // arguments constrain inference, removing a witness can narrow it (e.g.
+                        // singletonList<Interface>(implementation).iterator() to Iterator<Implementation>).
+                        return m;
                     } else {
                         // As above, retain unless inferable from this call's own arguments (static or not).
                         if (!canInferTypeArgumentsFromArguments(methodType)) {
@@ -97,8 +94,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         }
                     }
                     inferredType = methodType.getReturnType();
+                } else if (enclosing instanceof J.Assignment) {
+                    inferredType = ((J.Assignment) enclosing).getVariable().getType();
                 } else if (enclosing instanceof Expression) {
-                    inferredType = ((Expression) enclosing).getType();
+                    // Casts, field receivers and other enclosing expressions do not establish a
+                    // target type merely because their attributed result happens to match this call.
+                    return m;
                 } else if (enclosing instanceof NameTree) {
                     if (enclosing instanceof J.VariableDeclarations.NamedVariable) {
                         J.VariableDeclarations decl = getCursor().getParentTreeCursor().getParentTreeCursor().getValue();

@@ -59,6 +59,73 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
+    void preserveWitnessUnderCast() {
+        rewriteRun(java(
+          """
+            interface Descriptor {}
+            interface ActiveDescriptor<T> {}
+            interface Config { <T> ActiveDescriptor<T> bind(Descriptor descriptor); }
+            class MyService {}
+            class A {
+                ActiveDescriptor<MyService> bind(Config config, Descriptor descriptor) {
+                    return (ActiveDescriptor<MyService>) config.<MyService>bind(descriptor);
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveFieldReceiverWitness() {
+        rewriteRun(java(
+          """
+            import java.util.List;
+            class Box<T> {
+                Box<T> next;
+                List<T> values;
+                static <T> Box<T> of(T value) { return null; }
+            }
+            class A {
+                Box<Number> recursive() { return Box.<Number>of(1).next; }
+                List<Number> list() { return Box.<Number>of(1).values; }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveReceiverWitnessWideningArgumentType() {
+        rewriteRun(java(
+          """
+            import java.util.Collections;
+            import java.util.Iterator;
+            interface ValueMap {}
+            class SimpleValueMapImpl implements ValueMap {}
+            class A {
+                Iterator<ValueMap> queryResources() {
+                    SimpleValueMapImpl valueMap = new SimpleValueMapImpl();
+                    return Collections.<ValueMap>singletonList(valueMap).iterator();
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveReceiverWitnessForNullArgument() {
+        rewriteRun(java(
+          """
+            import java.util.concurrent.CompletableFuture;
+            class A {
+                CompletableFuture<Integer> length() {
+                    return CompletableFuture.<String>completedFuture(null).thenApply(String::length);
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
     void retainWitnessForOverloadedMethodReference() {
         rewriteRun(
           java(
@@ -597,7 +664,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         }
 
         @Test
-        void staticMethodInvocationWithoutTypeArguments() {
+        void retainReceiverWitnessWhileRemovingTargetTypedWitness() {
             //language=java
             rewriteRun(
               GENERIC_CLASS_SOURCE,
@@ -613,7 +680,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                 """
                   class Test {
                       <T> void test(Class<T> clazz) {
-                          final GenericClass<T> gc = GenericClass.typedBuilderWithClass(clazz).build();
+                          final GenericClass<T> gc = GenericClass.<T>typedBuilderWithClass(clazz).build();
                           final GenericClass.GenericClassBuilder<T> gcb = GenericClass.typedBuilder();
                       }
                   }
