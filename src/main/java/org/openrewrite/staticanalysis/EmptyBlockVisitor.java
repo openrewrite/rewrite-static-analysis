@@ -138,6 +138,11 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         if (i.getElsePart() == null) {
+            if (getCursor().firstEnclosing(SourceFile.class) instanceof J.CompilationUnit &&
+                containsBoxedBoolean(i.getIfCondition().getTree())) {
+                // Extracting calls/assignments does not preserve implicit Boolean unboxing.
+                return i;
+            }
             replaceWithSideEffects(i, i.getIfCondition().getTree(), p);
             return i;
         }
@@ -209,6 +214,20 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         return super.visitSwitch(switch_, p);
+    }
+
+    private static boolean containsBoxedBoolean(Expression expression) {
+        return new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J preVisit(J tree, AtomicBoolean found) {
+                if (tree instanceof Expression &&
+                    TypeUtils.isAssignableTo("java.lang.Boolean", ((Expression) tree).getType())) {
+                    found.set(true);
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+        }.reduce(expression, new AtomicBoolean()).get();
     }
 
     private void replaceWithSideEffects(Statement statement, Expression expression, P p) {
