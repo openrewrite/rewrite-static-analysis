@@ -234,6 +234,10 @@ public class MinimumSwitchCases extends Recipe {
                 // as those case labels are not simple expressions and cannot be converted to `==`/`equals` checks
                 for (Statement statement : switch_.getCases().getStatements()) {
                     if (statement instanceof J.Case) {
+                        // getPattern() represents only the first label; retain multi-label colon cases too.
+                        if (((J.Case) statement).getCaseLabels().size() > 1) {
+                            return false;
+                        }
                         for (J label : ((J.Case) statement).getCaseLabels()) {
                             // Null dispatch cannot use the String equals template.
                             if (!(label instanceof Expression) ||

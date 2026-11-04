@@ -56,6 +56,23 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @Test
+    void preserveMultipleColonCaseLabels() {
+        rewriteRun(java(
+          """
+            class Example {
+                void f(int n) {
+                    switch (n) {
+                        case 1, 2:
+                            System.out.println(n);
+                            break;
+                    }
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
     void preserveDefaultOnlySelectorEvaluation() {
         rewriteRun(java("""
           class Example {
