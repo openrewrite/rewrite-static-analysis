@@ -40,9 +40,11 @@ import static org.openrewrite.Tree.randomId;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class ReplaceStringBuilderWithString extends Recipe {
+    private static final MethodMatcher STRING_LENGTH = new MethodMatcher("java.lang.String length()");
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(..)");
     private static final MethodMatcher STRING_BUILDER_APPEND_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(char[])");
     private static final MethodMatcher STRING_BUILDER_APPEND_KOTLIN_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(kotlin.CharArray)");
+    private static final MethodMatcher STRING_BUILDER_APPEND_CHAR_SEQUENCE = new MethodMatcher("java.lang.StringBuilder append(java.lang.CharSequence)");
     private static final MethodMatcher STRING_BUILDER_CAPACITY = new MethodMatcher("java.lang.StringBuilder <constructor>(int)");
     private static final MethodMatcher STRING_BUILDER_TO_STRING = new MethodMatcher("java.lang.StringBuilder toString()");
 
@@ -50,13 +52,23 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
     String description = "Replace `StringBuilder.append()` with `String` concatenation if you are only concatenating a small number of strings " +
             "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
-            "expressions into a single `String` object, which can be more efficient than using `StringBuilder`.";
+            "expressions into a single `String` object, which can be more efficient than using `StringBuilder`. " +
+            "Preserves constructor exceptions and overload behavior, and retains chains when String identity cannot be preserved.";
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.and(new UsesMethod<>(STRING_BUILDER_APPEND), new UsesMethod<>(STRING_BUILDER_TO_STRING)), new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                if (tree instanceof SourceFile && !(tree instanceof J.CompilationUnit) &&
+                    !tree.getClass().getName().startsWith("org.openrewrite.kotlin.")) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
@@ -78,17 +90,90 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         return m;
                     }
 
+                    boolean valueOnly = isLengthSelect(method);
+                    boolean nonEmpty = arguments.stream().anyMatch(this::knownNonEmpty);
+                    if ((!valueOnly && !nonEmpty) || (arguments.size() == 1 &&
+                            !(arguments.get(0).unwrap() instanceof J.Literal))) {
+                        return m;
+                    }
+                    if (!valueOnly && (arguments.size() == 1 || arguments.stream().allMatch(this::potentiallyConstant))) {
+                        if (kotlin) {
+                            return m;
+                        }
+                        // Non-empty builder results are fresh Strings, unlike a constant concatenation.
+                        additive = JavaTemplate.apply("new String(#{any(java.lang.String)})", getCursor(),
+                                method.getCoordinates().replace(), additive);
+                    }
+
                     if (arguments.get(0).getComments().isEmpty() || !arguments.get(0).getPrefix().getWhitespace().startsWith("\n")) {
                         additive = additive.withPrefix(method.getPrefix());
                     }
 
-                    if (isAMethodSelect(method)) {
+                    if (isAMethodSelect(method) && !(additive instanceof J.NewClass)) {
                         additive = new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(additive));
                     }
 
                     return additive;
                 }
                 return m;
+            }
+
+            private boolean isLengthSelect(J.MethodInvocation method) {
+                Cursor parent = getCursor().getParent(2);
+                return parent != null && parent.getValue() instanceof J.MethodInvocation &&
+                       ((J.MethodInvocation) parent.getValue()).getSelect() == method &&
+                       STRING_LENGTH.matches((J.MethodInvocation) parent.getValue());
+            }
+
+            private boolean knownNonEmpty(Expression expression) {
+                expression = expression.unwrap();
+                if (expression instanceof J.Literal) {
+                    Object value = ((J.Literal) expression).getValue();
+                    return value != null && (!(value instanceof String) || !((String) value).isEmpty());
+                }
+                if (expression instanceof J.Binary && ((J.Binary) expression).getOperator() == J.Binary.Type.Addition &&
+                    TypeUtils.isString(expression.getType())) {
+                    return knownNonEmpty(((J.Binary) expression).getLeft()) || knownNonEmpty(((J.Binary) expression).getRight());
+                }
+                return false;
+            }
+
+            private boolean nonNullString(Expression expression) {
+                expression = expression.unwrap();
+                return expression instanceof J.Literal && ((J.Literal) expression).getValue() instanceof String ||
+                       expression instanceof J.NewClass || expression instanceof J.Binary &&
+                       ((J.Binary) expression).getOperator() == J.Binary.Type.Addition && TypeUtils.isString(expression.getType());
+            }
+
+            private boolean potentiallyConstant(Expression expression) {
+                expression = expression.unwrap();
+                if (expression instanceof J.Literal) {
+                    return true;
+                }
+                if (expression instanceof J.Identifier) {
+                    JavaType.Variable variable = ((J.Identifier) expression).getFieldType();
+                    return variable == null || variable.hasFlags(Flag.Final);
+                }
+                if (expression instanceof J.FieldAccess) {
+                    JavaType.Variable variable = ((J.FieldAccess) expression).getName().getFieldType();
+                    return variable == null || variable.hasFlags(Flag.Final);
+                }
+                if (expression instanceof J.Binary) {
+                    return potentiallyConstant(((J.Binary) expression).getLeft()) &&
+                           potentiallyConstant(((J.Binary) expression).getRight());
+                }
+                if (expression instanceof J.Unary) {
+                    return potentiallyConstant(((J.Unary) expression).getExpression());
+                }
+                if (expression instanceof J.TypeCast) {
+                    return potentiallyConstant(((J.TypeCast) expression).getExpression());
+                }
+                if (expression instanceof J.Ternary) {
+                    J.Ternary ternary = (J.Ternary) expression;
+                    return potentiallyConstant(ternary.getCondition()) && potentiallyConstant(ternary.getTruePart()) &&
+                           potentiallyConstant(ternary.getFalsePart());
+                }
+                return false;
             }
 
             // Check if a method call is a "select" of another method call
@@ -176,7 +261,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     Expression arg = args.get(0);
                     JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
                     Space prefix = jrp == null ? arg.getPrefix() : jrp.getAfter();
-                    if (STRING_BUILDER_APPEND_KOTLIN_CHAR_ARRAY.matches(selectMethod)) {
+                    if (STRING_BUILDER_APPEND_KOTLIN_CHAR_ARRAY.matches(selectMethod) ||
+                        STRING_BUILDER_APPEND_CHAR_SEQUENCE.matches(selectMethod)) {
                         return false;
                     }
                     if (STRING_BUILDER_APPEND_CHAR_ARRAY.matches(selectMethod)) {
@@ -193,10 +279,20 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         TypeUtils.isOfClassType(((J.NewClass) select).getClazz().getType(), "java.lang.StringBuilder")) {
                     J.NewClass nc = (J.NewClass) select;
                     if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
+                        Expression initial = nc.getArguments().get(0).unwrap();
+                        if (!nonNullString(initial)) {
+                            return false;
+                        }
                         arguments.add(nc.getArguments().get(0));
                     } else if (!(nc.getArguments().get(0) instanceof J.Empty) && !STRING_BUILDER_CAPACITY.matches(nc)) {
                         return false;
                     } else if (!arguments.isEmpty()) {
+                        Expression capacity = nc.getArguments().get(0).unwrap();
+                        if (STRING_BUILDER_CAPACITY.matches(nc) &&
+                            (!(capacity instanceof J.Literal) || !(((J.Literal) capacity).getValue() instanceof Number) ||
+                             ((Number) ((J.Literal) capacity).getValue()).longValue() < 0)) {
+                            return false;
+                        }
                         Expression lastArgument = arguments.get(arguments.size() - 1);
                         Space formattedPrefix = lastArgument.getComments().isEmpty() ? Space.EMPTY : lastArgument.getPrefix();
                         arguments.set(arguments.size() - 1, lastArgument.withPrefix(formattedPrefix));

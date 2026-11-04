@@ -21,6 +21,7 @@ import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
@@ -29,6 +30,63 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceStringBuilderWithString());
+    }
+
+    @Test
+    void preserveFreshStringIdentity() {
+        rewriteRun(java(
+          "class A { boolean f() { return new StringBuilder(\"tr\").append(\"ue\").toString() == \"true\"; } }",
+          "class A { boolean f() { return new String(\"tr\" + \"ue\") == \"true\"; } }"
+        ));
+    }
+
+    @Test
+    void preserveFreshnessInCommonRecipe() {
+        rewriteRun(
+          spec -> spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis"),
+          java(
+            "class A { String f() { return new StringBuilder(\"tr\").append(\"ue\").toString(); } }",
+            "class A { String f() { return new String(\"tr\" + \"ue\"); } }"
+          )
+        );
+    }
+
+    @Test
+    void preservePossiblyEmptyIdentity() {
+        rewriteRun(java("class A { boolean f(String a, String b) { return new StringBuilder().append(a).append(b).toString() == \"\"; } }"));
+    }
+
+    @Test
+    void preserveGroovyBuilderDispatch() {
+        rewriteRun(groovy("class A { String f() { new StringBuilder().append('a').append('b').toString() } }"));
+    }
+
+    @Test
+    void preserveConstantVariableIdentity() {
+        rewriteRun(java(
+          "class A { static final String PREFIX = \"tr\"; String f() { return new StringBuilder().append(PREFIX).append(\"ue\").toString(); } }",
+          "class A { static final String PREFIX = \"tr\"; String f() { return new String(PREFIX + \"ue\"); } }"
+        ));
+    }
+
+    @Test
+    void preserveNullableConstructor() {
+        rewriteRun(java("class A { String f(String prefix) { return new StringBuilder(prefix).append(\"suffix\").toString(); } }"));
+    }
+
+    @Test
+    void preserveCapacityEvaluation() {
+        rewriteRun(java("class A { String f(int capacity) { return new StringBuilder(capacity).append(\"value\").toString(); } }"));
+    }
+
+    @Test
+    void preserveSingleNullableAppend() {
+        rewriteRun(java("class A { String f(String value) { return new StringBuilder().append(value).toString(); } }"));
+    }
+
+    @Test
+    void preserveCharSequenceAppend() {
+        rewriteRun(java("class A { String f(CharSequence value) { return new StringBuilder().append(value).append(\"suffix\").toString(); } }"));
     }
 
     @DocumentExample
@@ -47,7 +105,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   void foo() {
-                      String s = "A" + "B";
+                      String s = new String("A" + "B");
                   }
               }
               """
@@ -89,12 +147,12 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   void foo() {
-                      String scenarioOne = "A" +
-                          "B" +
-                          "C";
-                      String scenarioTwo = "A" +
-                          "B" +
-                          "C";
+                      String scenarioOne = new String("A" +
+                              "B" +
+                              "C");
+                      String scenarioTwo = new String("A" +
+                              "B" +
+                              "C");
                       String scenarioThree = "A" +
                           "B" +
                           "C" +
@@ -125,7 +183,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   String foo() {
-                      return "A" + "B";
+                      return new String("A" + "B");
                   }
               }
               """
@@ -134,7 +192,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     }
 
     @Test
-    void replaceCombinedConcatenation() {
+    void preservePossiblyEmptyCombinedConcatenation() {
         rewriteRun(
           //language=java
           java(
@@ -144,21 +202,6 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
                       String str1 = "Hello";
                       String str2 = name();
                       return new StringBuilder().append(str1).append(str2).append(getSuffix()).toString();
-                  }
-                  String name() {
-                      return "world";
-                  }
-                  String getSuffix() {
-                      return "!";
-                  }
-              }
-              """,
-            """
-              class A {
-                  String bar() {
-                      String str1 = "Hello";
-                      String str2 = name();
-                      return str1 + str2 + getSuffix();
                   }
                   String name() {
                       return "world";
@@ -217,10 +260,10 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   void method() {
-                      String key1 = "_" + "a";
-                      String key2 = name() + "_" + "a";
-                      String key3 = "m" + "_" + "a";
-                      String key4 = "A" + "B" + "C";
+                      String key1 = new String("_" + "a");
+                      String key2 = new StringBuilder(name()).append("_").append("a").toString();
+                      String key3 = new String("m" + "_" + "a");
+                      String key4 = new String("A" + "B" + "C");
                   }
                   String name() {
                       return "name";
@@ -288,18 +331,18 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   void foo() {
-                      String scenarioOne =
-                          // A
-                          "A" +
-                          // B
-                          "B" +
-                          // C
-                          "C";
-                      String scenarioTwo = "A" +
-                          // B
-                          "B" +
-                          // C
-                          "C";
+                      String scenarioOne = new String(
+                              // A
+                              "A" +
+                              // B
+                              "B" +
+                              // C
+                              "C");
+                      String scenarioTwo = new String("A" +
+                              // B
+                              "B" +
+                              // C
+                              "C");
                       String scenarioThree =
                           // A
                           "A" +
@@ -314,13 +357,13 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
                           String.valueOf(1 + 1) +
                           // 1
                           1;
-                      String scenarioFive =
-                          // A
-                          "A" +
-                          // 1 + 1
-                          (1 + 1) +
-                          // 1
-                          1;
+                      String scenarioFive = new String(
+                              // A
+                              "A" +
+                              // 1 + 1
+                              (1 + 1) +
+                              // 1
+                              1);
                   }
 
                   String testString() {
@@ -356,10 +399,10 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
               class A {
                   void method() {
                       String key0 = String.valueOf(1 + 2) + 3; // "33"
-                      String key1 = "1.5" + 2 + 3; // "1.523"
-                      String key2 = "m" + (1 + 2) + 3; // "m33"
-                      String key3 = "_" + 1; // "_1"
-                      String key4 = "A" + "B" + (1 + 2) + 3; // "AB33"
+                      String key1 = new String("1.5" + 2 + 3); // "1.523"
+                      String key2 = new String("m" + (1 + 2) + 3); // "m33"
+                      String key3 = new String("_" + 1); // "_1"
+                      String key4 = new String("A" + "B" + (1 + 2) + 3); // "AB33"
                       String key5 = String.valueOf(count()) + 1; // 101
                   }
                   int count() {
@@ -477,7 +520,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   String only(char[] chars) {
-                      return String.valueOf(chars);
+                      return new StringBuilder().append(chars).toString();
                   }
                   String first(char[] chars) {
                       return String.valueOf(chars) + "suffix";
