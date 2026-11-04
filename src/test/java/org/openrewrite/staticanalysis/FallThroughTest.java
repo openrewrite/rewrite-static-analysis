@@ -98,7 +98,7 @@ class FallThroughTest implements RewriteTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"drop through", "drop-through", "DROP THROUGH", "drops through", "fall through", "FALL-THROUGH"})
+    @ValueSource(strings = {"drop through", "drop-through", "DROP THROUGH", "drops through", "fall through", "FALL-THROUGH", "$FALL-THROUGH$"})
     void switchHeaderReliefVariations(String comment) {
         rewriteRun(
           java(
