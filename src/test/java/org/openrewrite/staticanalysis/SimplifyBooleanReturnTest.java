@@ -58,6 +58,31 @@ class SimplifyBooleanReturnTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveNegatedBoxedConditionUnboxing() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  Object impliedElse(Boolean value) {
+                      if (!value) {
+                          return false;
+                      }
+                      return true;
+                  }
+                  Boolean explicitElse(Boolean value) {
+                      if (!value) {
+                          return false;
+                      } else {
+                          return true;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simplifyBooleanReturn() {
