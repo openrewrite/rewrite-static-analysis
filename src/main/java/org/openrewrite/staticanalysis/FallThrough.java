@@ -36,7 +36,8 @@ public class FallThrough extends Recipe {
             "statements in locations where a case contains Java code but does not have " +
             "a `break`, `return`, `throw`, or `continue` statement. Unintentional " +
             "fall-through is a common source of bugs, as execution silently continues " +
-            "into the next case branch.";
+            "into the next case branch. Intentional fall-through documented by a `fall through` or `drop through` " +
+            "comment at the end of a case or in the switch header is preserved.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S128");
