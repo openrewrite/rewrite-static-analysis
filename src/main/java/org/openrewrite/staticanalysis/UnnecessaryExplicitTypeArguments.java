@@ -94,8 +94,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         }
                     }
                     inferredType = methodType.getReturnType();
+                } else if (enclosing instanceof J.Assignment) {
+                    inferredType = ((J.Assignment) enclosing).getVariable().getType();
                 } else if (enclosing instanceof Expression) {
-                    inferredType = ((Expression) enclosing).getType();
+                    // Casts, field receivers and other enclosing expressions do not establish a
+                    // target type merely because their attributed result happens to match this call.
+                    return m;
                 } else if (enclosing instanceof NameTree) {
                     if (enclosing instanceof J.VariableDeclarations.NamedVariable) {
                         J.VariableDeclarations decl = getCursor().getParentTreeCursor().getParentTreeCursor().getValue();

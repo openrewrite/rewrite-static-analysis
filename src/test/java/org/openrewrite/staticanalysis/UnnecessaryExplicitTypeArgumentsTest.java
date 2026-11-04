@@ -59,6 +59,41 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
+    void preserveWitnessUnderCast() {
+        rewriteRun(java(
+          """
+            interface Descriptor {}
+            interface ActiveDescriptor<T> {}
+            interface Config { <T> ActiveDescriptor<T> bind(Descriptor descriptor); }
+            class MyService {}
+            class A {
+                ActiveDescriptor<MyService> bind(Config config, Descriptor descriptor) {
+                    return (ActiveDescriptor<MyService>) config.<MyService>bind(descriptor);
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveFieldReceiverWitness() {
+        rewriteRun(java(
+          """
+            import java.util.List;
+            class Box<T> {
+                Box<T> next;
+                List<T> values;
+                static <T> Box<T> of(T value) { return null; }
+            }
+            class A {
+                Box<Number> recursive() { return Box.<Number>of(1).next; }
+                List<Number> list() { return Box.<Number>of(1).values; }
+            }
+            """
+        ));
+    }
+
+    @Test
     void preserveReceiverWitnessWideningArgumentType() {
         rewriteRun(java(
           """
