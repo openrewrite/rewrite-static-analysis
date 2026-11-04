@@ -20,12 +20,14 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.service.AutoFormatService;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
@@ -66,6 +68,17 @@ public class NeedBraces extends Recipe {
 
             @SuppressWarnings("NotNullFieldNotInitialized")
             NeedBracesStyle needBracesStyle;
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <J2 extends J> J2 autoFormat(J2 tree, @Nullable J stopAfter, ExecutionContext ctx, Cursor parent) {
+                FormattingListener.beforeFormat(tree, stopAfter, parent);
+                JavaSourceFile source = tree instanceof JavaSourceFile ? (JavaSourceFile) tree :
+                        getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
+                // Resolve the service alongside this recipe, rather than the base visitor's runtime version.
+                AutoFormatService service = source.service(AutoFormatService.class);
+                return (J2) service.autoFormatVisitor(stopAfter).visit(tree, ctx, parent);
+            }
 
             /**
              * A {@link J.Block} implies the section of code is implicitly surrounded in braces.
