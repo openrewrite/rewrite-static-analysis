@@ -35,6 +35,48 @@ class UseDiamondOperatorTest implements RewriteTest {
         spec.recipe(new UseDiamondOperator());
     }
 
+    @Test
+    void retainVarargsConstructorWithGenericArrayFactory() {
+        rewriteRun(
+          java(
+            """
+              interface Predicate<T> {}
+              class AllPredicate<T> implements Predicate<T> {
+                  AllPredicate(Predicate<? super T>... predicates) {}
+                  static <T> T[] copy(T... values) { return values.clone(); }
+                  static <T> Predicate<T> all(Predicate<? super T>... predicates) {
+                      Predicate<T> result = new AllPredicate<T>(copy(predicates));
+                      result = new AllPredicate<T>(copy(predicates));
+                      return new AllPredicate<T>(copy(predicates));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useDiamondWithNonGenericArrayFactory() {
+        rewriteRun(
+          java(
+            """
+              class Box<T> {
+                  Box(T... values) {}
+                  static String[] values() { return new String[0]; }
+                  static Box<String> create() { return new Box<String>(values()); }
+              }
+              """,
+            """
+              class Box<T> {
+                  Box(T... values) {}
+                  static String[] values() { return new String[0]; }
+                  static Box<String> create() { return new Box<>(values()); }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void useDiamondOperator() {
