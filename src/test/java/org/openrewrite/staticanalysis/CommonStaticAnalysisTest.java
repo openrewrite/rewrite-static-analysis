@@ -59,4 +59,46 @@ class CommonStaticAnalysisTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void preserveFreshWrapperIdentity() {
+        rewriteRun(
+          java(
+            """
+              import java.util.IdentityHashMap;
+              import java.util.Map;
+
+              class IdentityFixtures {
+                  public static final Integer FIRST = new Integer(1);
+                  public static final Integer SECOND = new Integer(1);
+
+                  public Map<Integer, String> fixtures() {
+                      Map<Integer, String> values = new IdentityHashMap<>();
+                      values.put(FIRST, "first");
+                      values.put(SECOND, "second");
+                      return values;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void convertImmediatelyUnboxedWrapper() {
+        rewriteRun(
+          java(
+            """
+              class PrimitiveFixture {
+                  public int number = new Integer(1);
+              }
+              """,
+            """
+              class PrimitiveFixture {
+                  public int number = Integer.valueOf(1);
+              }
+              """
+          )
+        );
+    }
+
 }

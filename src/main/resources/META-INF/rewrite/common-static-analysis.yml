@@ -69,7 +69,8 @@ recipeList:
   - org.openrewrite.staticanalysis.NoValueOfOnStringType
   - org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
   - org.openrewrite.staticanalysis.PreferSystemGetPropertyOverGetenv
-  - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
+  - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf:
+      onlyIfImmediatelyUnboxed: true
   - org.openrewrite.staticanalysis.RedundantFileCreation
   - org.openrewrite.staticanalysis.RemoveExtraSemicolons
   - org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall
