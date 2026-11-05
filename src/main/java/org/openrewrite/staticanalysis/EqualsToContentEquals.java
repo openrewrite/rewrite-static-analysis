@@ -61,7 +61,6 @@ public class EqualsToContentEquals extends Recipe {
                 if (toStringSelect == null || !TypeUtils.isAssignableTo("java.lang.CharSequence", toStringSelect.getType())) {
                     return m;
                 }
-                // Strip out the toString() on the argument and replace with contentEquals
                 return m.withArguments(singletonList(toStringSelect))
                         .withName(m.getName().withSimpleName("contentEquals"));
             }
