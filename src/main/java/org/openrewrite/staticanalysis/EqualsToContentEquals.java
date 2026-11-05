@@ -33,12 +33,6 @@ public class EqualsToContentEquals extends Recipe {
     private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("String equals(Object)");
     private static final MethodMatcher TOSTRING_MATCHER = new MethodMatcher("java.lang.* toString()");
 
-    private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
-            new UsesType<>("java.lang.CharSequence", false),
-            new UsesType<>("java.lang.StringBuffer", false),
-            new UsesType<>("java.lang.StringBuilder", false)
-    );
-
     @Getter
     final String displayName = "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`";
 
@@ -47,7 +41,11 @@ public class EqualsToContentEquals extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(PRECONDITION, new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.or(
+                new UsesType<>("java.lang.CharSequence", false),
+                new UsesType<>("java.lang.StringBuffer", false),
+                new UsesType<>("java.lang.StringBuilder", false)
+        ), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(mi, ctx);
