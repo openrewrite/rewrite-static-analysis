@@ -546,4 +546,21 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotFinalizeVariableIncrementedThroughParentheses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void f() {
+                      int a = 0;
+                      (a)++;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
