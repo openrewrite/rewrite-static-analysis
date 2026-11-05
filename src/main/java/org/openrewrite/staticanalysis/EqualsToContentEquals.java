@@ -58,7 +58,8 @@ public class EqualsToContentEquals extends Recipe {
                 }
                 J.MethodInvocation inv = (J.MethodInvocation) equalsArgument;
                 Expression toStringSelect = inv.getSelect();
-                if (toStringSelect == null || !TypeUtils.isAssignableTo("java.lang.CharSequence", toStringSelect.getType())) {
+                if (toStringSelect == null || inv.getMethodType() == null ||
+                    !TypeUtils.isAssignableTo("java.lang.CharSequence", inv.getMethodType().getDeclaringType())) {
                     return m;
                 }
                 return m.withArguments(singletonList(toStringSelect))
