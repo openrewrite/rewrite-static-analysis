@@ -39,6 +39,164 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     }
 
     @Test
+    void finalizeFieldAssignedBeforeConstructorReturn() {
+        rewriteRun(
+          java(
+            """
+              class Login {
+                  private Thread t;
+                  Login(boolean ticket) {
+                      t = new Thread();
+                      if (!ticket) {
+                          return;
+                      }
+                  }
+              }
+              """,
+            """
+              class Login {
+                  private final Thread t;
+                  Login(boolean ticket) {
+                      t = new Thread();
+                      if (!ticket) {
+                          return;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finalizeInitializedFieldAndIgnoreLambdaReturns() {
+        rewriteRun(
+          java(
+            """
+              class Login {
+                  private Thread t;
+                  private Object token = null;
+                  Login() {
+                      Runnable task = () -> { return; };
+                      t = new Thread(task);
+                  }
+              }
+              """,
+            """
+              class Login {
+                  private final Thread t;
+                  private final Object token = null;
+                  Login() {
+                      Runnable task = () -> { return; };
+                      t = new Thread(task);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainFinalDefaultInitializerWithConstructorReturn() {
+        rewriteRun(
+          spec -> spec.recipes(new ExplicitInitialization(), new FinalizePrivateFields()),
+          java(
+            """
+              class Login {
+                  private final Object token = null;
+                  Login(boolean ticket) {
+                      if (!ticket) {
+                          return;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveBlankFieldWhenConstructorReturnsBeforeAssignment() {
+        rewriteRun(
+          java(
+            """
+              class Login {
+                  private Thread t;
+                  Login(boolean ticket) {
+                      if (!ticket) {
+                          return;
+                      }
+                      t = new Thread();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void explicitInitializationBeforeFinalizationPreservesEarlyReturn() {
+        rewriteRun(
+          spec -> spec.recipes(new ExplicitInitialization(), new FinalizePrivateFields()),
+          java(
+            """
+              class Login {
+                  private Thread t = null;
+                  Login(boolean ticket) {
+                      if (!ticket) {
+                          return;
+                      }
+                      t = new Thread();
+                  }
+              }
+              """,
+            """
+              class Login {
+                  private Thread t;
+                  Login(boolean ticket) {
+                      if (!ticket) {
+                          return;
+                      }
+                      t = new Thread();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finalizationBeforeExplicitInitializationPreservesEarlyReturn() {
+        rewriteRun(
+          spec -> spec.recipes(new FinalizePrivateFields(), new ExplicitInitialization()),
+          java(
+            """
+              class Login {
+                  private Thread t = null;
+                  Login(boolean ticket) {
+                      if (!ticket) {
+                          return;
+                      }
+                      t = new Thread();
+                  }
+              }
+              """,
+            """
+              class Login {
+                  private Thread t;
+                  Login(boolean ticket) {
+                      if (!ticket) {
+                          return;
+                      }
+                      t = new Thread();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void assignmentsInNestedClassInitializersDoNotFinalizeOuterFields() {
         rewriteRun(
           java(
