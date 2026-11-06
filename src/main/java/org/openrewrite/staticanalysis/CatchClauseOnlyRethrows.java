@@ -126,7 +126,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
                         return false;
                     }
                 }
-                if (exception instanceof J.Identifier) {
+                if (exception instanceof J.Identifier && aCatch.getParameter().getTree().getVariables().size() == 1) {
                     return ((J.Identifier) exception).getSimpleName().equals(aCatch.getParameter().getTree().getVariables().get(0).getSimpleName());
                 }
 
