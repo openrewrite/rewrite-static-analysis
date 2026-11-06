@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -64,7 +64,12 @@ public class UseDiamondOperator extends Recipe {
 
         @Override
         public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-            java9 = new UsesJavaVersion<Integer>(9).visit(cu, 0) != cu;
+            JavaVersion version = cu.getMarkers().findFirst(JavaVersion.class).orElse(null);
+            int sourceVersion = version == null ? -1 : version.getMajorVersion();
+            if (sourceVersion > 0 && sourceVersion < 7) {
+                return cu;
+            }
+            java9 = sourceVersion >= 9;
             return super.visitCompilationUnit(cu, ctx);
         }
 

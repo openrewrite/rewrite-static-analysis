@@ -20,6 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.marker.JavaVersion;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.openrewrite.Tree.randomId;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +38,59 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseDiamondOperator());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1.5", "1.6"})
+    void retainExplicitTypesBeforeJava7(String source) {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", source, source))),
+          java(
+            """
+              import java.util.List;
+              import java.util.ArrayList;
+              class Test {
+                  List<String> values = new ArrayList<String>();
+                  List<String> create() {
+                      values = new ArrayList<String>();
+                      accept(new ArrayList<String>());
+                      return new ArrayList<String>();
+                  }
+                  void accept(List<String> values) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useDiamondAtSource7WithNewerCompiler() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "1.7", "1.7"))),
+          java(
+            "import java.util.*; class Test { List<String> values = new ArrayList<String>(); }",
+            "import java.util.*; class Test { List<String> values = new ArrayList<>(); }"
+          )
+        );
+    }
+
+    @Test
+    void retainAnonymousTypeArgumentsAtSource8WithNewerCompiler() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "1.8", "1.8"))),
+          java("import java.util.*; class Test { List<String> values = new ArrayList<String>() {}; }")
+        );
+    }
+
+    @Test
+    void useAnonymousDiamondAtSource9() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "9", "9"))),
+          java(
+            "import java.util.*; class Test { List<String> values = new ArrayList<String>() {}; }",
+            "import java.util.*; class Test { List<String> values = new ArrayList<>() {}; }"
+          )
+        );
     }
 
     @Test
