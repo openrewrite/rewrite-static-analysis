@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
@@ -370,6 +371,62 @@ class CollectionToArrayShouldHaveProperTypeTest implements RewriteTest {
               class Test {
                   String[] test(List<String> list) {
                       return list.toArray(new String[0]);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void implicitThis() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+
+              class TestList extends ArrayList<String> {
+                  void test() {
+                      String[] array = (String[]) toArray();
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+
+              class TestList extends ArrayList<String> {
+                  void test() {
+                      String[] array = toArray(new String[0]);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void explicitThis() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+
+              class TestList extends ArrayList<String> {
+                  void test() {
+                      String[] array = (String[]) this.toArray();
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+
+              class TestList extends ArrayList<String> {
+                  void test() {
+                      String[] array = this.toArray(new String[0]);
                   }
               }
               """
