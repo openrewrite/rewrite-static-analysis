@@ -71,7 +71,6 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
                         return m;
                     }
                     m = JavaTemplate.builder("#{any(java.math.BigDecimal)}, #{}")
-                            .contextSensitive()
                             .imports("java.math.RoundingMode")
                             .build()
                             .apply(updateCursor(m), m.getCoordinates().replaceArguments(), m.getArguments().get(0), roundingModeEnum);
@@ -82,7 +81,6 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
                         return m;
                     }
                     m = JavaTemplate.builder("#{any(int)}, #{}")
-                            .contextSensitive()
                             .imports("java.math.RoundingMode")
                             .build()
                             .apply(updateCursor(m), m.getCoordinates().replaceArguments(), m.getArguments().get(0), roundingModeEnum);
@@ -94,7 +92,6 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
                         return m;
                     }
                     m = JavaTemplate.builder("#{any(java.math.BigDecimal)}, #{any(int)}, #{}")
-                            .contextSensitive()
                             .imports("java.math.RoundingMode")
                             .build()
                             .apply(updateCursor(m), m.getCoordinates().replaceArguments(), m.getArguments().get(0), m.getArguments().get(1), roundingModeEnum);

@@ -21,12 +21,47 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new BigDecimalRoundingConstantsToEnums());
+    }
+
+
+    @Test
+    void kotlinPrimaryConstructorAndCompanion() {
+        rewriteRun(
+          kotlin(
+            """
+              import java.math.BigDecimal
+
+              class Test(val value: Int) {
+                  companion object {
+                      fun round(decimal: BigDecimal, scale: Int) = decimal
+                          .setScale(scale, BigDecimal.ROUND_HALF_EVEN)
+                          .divide(BigDecimal.TEN, BigDecimal.ROUND_DOWN)
+                          .divide(BigDecimal.TEN, scale, BigDecimal.ROUND_UP)
+                  }
+              }
+              """,
+            """
+              import java.math.BigDecimal
+              import java.math.RoundingMode
+
+              class Test(val value: Int) {
+                  companion object {
+                      fun round(decimal: BigDecimal, scale: Int) = decimal
+                          .setScale(scale, RoundingMode.HALF_EVEN)
+                          .divide(BigDecimal.TEN, RoundingMode.DOWN)
+                          .divide(BigDecimal.TEN, scale, RoundingMode.UP)
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
