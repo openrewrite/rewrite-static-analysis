@@ -351,6 +351,440 @@ class AllBranchesIdenticalTest implements RewriteTest {
     }
 
     @Test
+    void hoistBareCallConditionWithSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume()) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithoutBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume())
+                          System.out.println("hello");
+                      else
+                          System.out.println("hello");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistKeepsUnrelatedBlocksAndComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      {
+                          System.out.println("unrelated");
+                      }
+                      // advance
+                      if (it.hasNext()) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      {
+                          System.out.println("unrelated");
+                      }
+                      // advance
+                      it.hasNext();
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithEmptyBranches() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      if (it.hasNext()) {
+                      } else {
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      it.hasNext();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionKeepingScopingBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      if (it.hasNext()) {
+                          String s = "hello";
+                          System.out.println(s);
+                      } else {
+                          String s = "hello";
+                          System.out.println(s);
+                      }
+                      System.out.println("done");
+                  }
+              }
+              """,
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      it.hasNext();
+                      {
+                          String s = "hello";
+                          System.out.println(s);
+                      }
+                      System.out.println("done");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(it: Iterator<String>) {
+                  if (it.hasNext()) {
+                      println("hello")
+                  } else {
+                      println("hello")
+                  }
+              }
+              """,
+            """
+              fun test(it: Iterator<String>) {
+                  it.hasNext()
+                  println("hello")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(it: Iterator<string>) {
+                  if (it.next()) {
+                      console.log("hi");
+                  } else {
+                      console.log("hi");
+                  }
+              }
+              """,
+            """
+              function test(it: Iterator<string>) {
+                  it.next();
+                  console.log("hi");
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func applyPromotion() {
+                  if consume() {
+                      applyDiscount()
+                  } else {
+                      applyDiscount()
+                  }
+              }
+
+              func consume() bool { return true }
+
+              func applyDiscount() {}
+              """,
+            """
+              package main
+
+              func applyPromotion() {
+                  consume()
+                  applyDiscount()
+              }
+
+              func consume() bool { return true }
+
+              func applyDiscount() {}
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithEmptyBranchesTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(it: Iterator<string>, a: number, b: number) {
+                  if (it.next()) {
+                  } else {
+                  }
+                  [a, b] = [b, a];
+              }
+              """,
+            """
+              function test(it: Iterator<string>, a: number, b: number) {
+                  it.next();
+                  [a, b] = [b, a];
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithEmptyStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume()) ; else ;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistKeepsCommentBeforeBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume()) /* keep */ {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                      /* keep */ System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotHoistScopingBlockKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(it: Iterator<String>) {
+                  if (it.hasNext()) {
+                      val s = "a"
+                      println(s)
+                  } else {
+                      val s = "a"
+                      println(s)
+                  }
+                  println("done")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotHoistNonBareCallCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume() && false) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotHoistThreeBranchChainWithSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume(int x) {
+                      System.out.println(x);
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume(1)) {
+                          System.out.println("hello");
+                      } else if (consume(2)) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void collapseIdenticalBranchesGo() {
         rewriteRun(
           //language=go
