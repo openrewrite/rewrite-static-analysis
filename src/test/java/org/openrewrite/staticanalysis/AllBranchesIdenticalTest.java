@@ -426,6 +426,198 @@ class AllBranchesIdenticalTest implements RewriteTest {
     }
 
     @Test
+    void hoistKeepsUnrelatedBlocksAndComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      {
+                          System.out.println("unrelated");
+                      }
+                      // advance
+                      if (it.hasNext()) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      {
+                          System.out.println("unrelated");
+                      }
+                      // advance
+                      it.hasNext();
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithEmptyBranches() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      if (it.hasNext()) {
+                      } else {
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      it.hasNext();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionKeepingScopingBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      if (it.hasNext()) {
+                          String s = "hello";
+                          System.out.println(s);
+                      } else {
+                          String s = "hello";
+                          System.out.println(s);
+                      }
+                      System.out.println("done");
+                  }
+              }
+              """,
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void test(Iterator<String> it) {
+                      it.hasNext();
+                      {
+                          String s = "hello";
+                          System.out.println(s);
+                      }
+                      System.out.println("done");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(it: Iterator<String>) {
+                  if (it.hasNext()) {
+                      println("hello")
+                  } else {
+                      println("hello")
+                  }
+              }
+              """,
+            """
+              fun test(it: Iterator<String>) {
+                  it.hasNext()
+                  println("hello")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(it: Iterator<string>) {
+                  if (it.next()) {
+                      console.log("hi");
+                  } else {
+                      console.log("hi");
+                  }
+              }
+              """,
+            """
+              function test(it: Iterator<string>) {
+                  it.next();
+                  console.log("hi");
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func applyPromotion() {
+                  if consume() {
+                      applyDiscount()
+                  } else {
+                      applyDiscount()
+                  }
+              }
+
+              func consume() bool { return true }
+
+              func applyDiscount() {}
+              """,
+            """
+              package main
+
+              func applyPromotion() {
+                  consume()
+                  applyDiscount()
+              }
+
+              func consume() bool { return true }
+
+              func applyDiscount() {}
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotHoistNonBareCallCondition() {
         rewriteRun(
           //language=java

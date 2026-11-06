@@ -19,17 +19,22 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
@@ -52,32 +57,35 @@ public class AllBranchesIdentical extends Recipe {
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block bl = (J.Block) super.visitBlock(block, ctx);
-
-                List<Statement> statements = bl.getStatements();
-                List<Statement> hoisted = new ArrayList<>(statements.size());
-                boolean changed = false;
-                for (Statement statement : statements) {
-                    if (statement instanceof J.If) {
-                        J.If if_ = (J.If) statement;
-                        Expression condition = if_.getIfCondition().getTree();
-                        if (if_.getElsePart() != null &&
-                                !(if_.getElsePart().getBody() instanceof J.If) &&
-                                condition instanceof J.MethodInvocation &&
-                                SemanticallyEqual.areEqual(if_.getThenPart(), if_.getElsePart().getBody())) {
-                            hoisted.add(((Statement) condition).withPrefix(if_.getPrefix()));
-                            hoisted.add(if_.getThenPart().withPrefix(if_.getPrefix()));
-                            changed = true;
-                            continue;
-                        }
+                return bl.getPadding().withStatements(ListUtils.flatMap(bl.getPadding().getStatements(), rp -> {
+                    if (!(rp.getElement() instanceof J.If)) {
+                        return rp;
                     }
-                    hoisted.add(statement);
-                }
+                    J.If if_ = (J.If) rp.getElement();
+                    Expression condition = if_.getIfCondition().getTree();
+                    if (if_.getElsePart() == null ||
+                            if_.getElsePart().getBody() instanceof J.If ||
+                            !(condition instanceof J.MethodInvocation) ||
+                            !SemanticallyEqual.areEqual(if_.getThenPart(), if_.getElsePart().getBody())) {
+                        return rp;
+                    }
 
-                if (changed) {
-                    doAfterVisit(new RemoveUnneededBlock().getVisitor());
-                    return bl.withStatements(hoisted);
-                }
-                return bl;
+                    Statement body = if_.getThenPart();
+                    JRightPadded<Statement> bodyRp = if_.getPadding().getThenPart();
+                    // The hoisted call borrows the padding of the body's first statement, which carries e.g. the JS/TS `Semicolon` marker
+                    JRightPadded<Statement> conditionRp = bodyRp;
+                    if (body instanceof J.Block) {
+                        List<JRightPadded<Statement>> bodyStatements = ((J.Block) body).getPadding().getStatements();
+                        if (bodyStatements.isEmpty()) {
+                            return rp.withElement(((Statement) condition).withPrefix(if_.getPrefix()));
+                        }
+                        conditionRp = bodyStatements.get(0);
+                        doAfterVisit(new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor((J.Block) body));
+                    }
+                    return Arrays.asList(
+                            conditionRp.withElement(((Statement) condition).withPrefix(if_.getPrefix())),
+                            bodyRp.withElement(body.withPrefix(Space.build(if_.getPrefix().getLastWhitespace(), emptyList()))));
+                }));
             }
 
             @Override
