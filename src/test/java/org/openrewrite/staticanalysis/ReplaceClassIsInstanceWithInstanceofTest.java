@@ -46,6 +46,71 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
     }
 
     @Test
+    void mutuallyRecursiveBounds() {
+        rewriteRun(
+          java(
+            """
+              interface Box<T> {}
+              class Candidate {}
+              class Test<T extends Box<U>, U extends Box<T>> {
+                  boolean test(T value) {
+                      return Candidate.class.isInstance(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void recursiveTargetAndDisjointParameters() {
+        rewriteRun(
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              interface Left<T> {}
+              interface Right<T extends Right<T>> extends Left<T> {}
+              final class Recursive<T extends Recursive<T>> {}
+              final class Integers extends ArrayList<Integer> {}
+              class Test {
+                  <T extends Right<T>> boolean indirect(T value) {
+                      return Recursive.class.isInstance(value);
+                  }
+                  boolean target(Object value) {
+                      return Recursive.class.isInstance(value);
+                  }
+                  boolean disjoint(List<String> value) {
+                      return Integers.class.isInstance(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void recursiveGenericOperand() {
+        rewriteRun(
+          java(
+            """
+              interface Type<T extends Type<T>> {}
+              interface NumericType<T extends NumericType<T>> extends Type<T> {}
+              interface RealType<T extends RealType<T>> extends NumericType<T> {}
+              interface NativeType<T extends NativeType<T>> extends Type<T> {}
+              class UnsignedShortType implements RealType<UnsignedShortType>, NativeType<UnsignedShortType> {}
+              class Test {
+                  static <T> T type(T value) { return value; }
+                  <T extends RealType<T> & NativeType<T>> boolean test(T value) {
+                      return UnsignedShortType.class.isInstance(type(value));
+                  }
+              }
+                """
+          )
+        );
+    }
+
+    @Test
     void nestedWildcardOperand() {
         AtomicReference<Expression> original = new AtomicReference<>();
         rewriteRun(
