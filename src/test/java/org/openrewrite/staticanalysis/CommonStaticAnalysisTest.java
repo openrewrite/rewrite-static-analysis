@@ -148,4 +148,29 @@ class CommonStaticAnalysisTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveExactDoubleConstructorForNumericalOracle() {
+        rewriteRun(
+          java(
+            """
+              import java.math.BigDecimal;
+
+              class ToDecimalChecker {
+                  public BigDecimal exact(double v) {
+                      return new BigDecimal(v);
+                  }
+
+                  public BigDecimal tenth() {
+                      return new BigDecimal(0.1);
+                  }
+
+                  public BigDecimal integralDouble() {
+                      return new BigDecimal(1.0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

@@ -25,7 +25,7 @@ recipeList:
   - org.openrewrite.staticanalysis.AbstractClassPublicConstructor
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable # slow on large code bases, and see #1055 and #1060
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
-  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
+#  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe # changes exact binary values and observable scale; use explicitly when decimal round-trip semantics are intended
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
   - org.openrewrite.staticanalysis.BooleanChecksNotInverted
   - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
