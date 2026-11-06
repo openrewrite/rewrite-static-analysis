@@ -70,7 +70,8 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         // Always exclude supertypes from finalization, even for abstract or final classes
         excludeSupertypes(cd.getType());
 
-        if (cd.hasModifier(J.Modifier.Type.Abstract) || cd.hasModifier(J.Modifier.Type.Final)) {
+        if (cd.hasModifier(J.Modifier.Type.Abstract) || cd.hasModifier(J.Modifier.Type.Final) ||
+            PublicApi.isExternallyVisible(cd)) {
             return cd;
         }
 
