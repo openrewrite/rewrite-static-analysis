@@ -24,7 +24,9 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.MethodCall;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
@@ -45,7 +47,11 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
     String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with " +
             "`String.valueOf(...)`. This improves code readability and may have minor performance " +
             "benefits. The empty string prefix `\"\" +` is an indirect way to convert a value to " +
-            "a `String`, while `String.valueOf()` clearly communicates the conversion intent.";
+            "a `String`, while `String.valueOf()` clearly communicates the conversion intent. " +
+            "Concatenation with a `char[]` is left unchanged, since `String.valueOf(char[])` renders " +
+            "the array's contents while concatenation renders the array like any other `Object`. " +
+            "In Groovy sources, concatenation with any array is left unchanged, since Groovy's `+` renders " +
+            "the array's elements.";
 
     Set<String> tags = singleton("RSPEC-S9433");
 
@@ -68,18 +74,35 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                Expression right = binary.getRight();
+                while (right instanceof J.Parentheses && ((J.Parentheses<?>) right).getTree() instanceof Expression) {
+                    right = (Expression) ((J.Parentheses<?>) right).getTree();
+                }
+                JavaType rightType = right.getType();
+                JavaType.Array arrayType = TypeUtils.asArray(rightType);
                 if (J.Literal.isLiteralValue(binary.getLeft(), "") &&
                         binary.getOperator() == J.Binary.Type.Addition &&
-                        !TypeUtils.isString(binary.getRight().getType()) &&
-                        !J.Literal.isLiteralValue(binary.getRight(), null) &&
+                        rightType != null &&
+                        !TypeUtils.isString(rightType) &&
+                        // `String.valueOf(null)` selects the `char[]` overload and throws, while `"" + null` yields "null"
+                        !J.Literal.isLiteralValue(right, null) &&
+                        // Concatenation renders a `char[]` like any `Object`; `String.valueOf(char[])` renders its
+                        // contents, or throws on null
+                        (arrayType == null || arrayType.getElemType() != JavaType.Primitive.Char) &&
+                        // Groovy's `+` renders an array's elements; `String.valueOf(Object)` renders its type and hash
+                        !(arrayType != null && inGroovySource()) &&
                         // Avoid breaking symmetry in chained String concatenations
                         !(binary.getRight() instanceof J.Binary) &&
                         !(getCursor().getParentTreeCursor().getValue() instanceof J.Binary)) {
-                    return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), binary.getCoordinates().replace(), binary.getRight() instanceof J.Parentheses ?
-                            ((J.Parentheses<?>) binary.getRight()).getTree() : binary.getRight())
+                    return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), binary.getCoordinates().replace(), right)
                             .withPrefix(binary.getPrefix());
                 }
                 return super.visitBinary(binary, ctx);
+            }
+
+            private boolean inGroovySource() {
+                // The precondition admits only Java and Groovy sources
+                return getCursor().firstEnclosing(J.CompilationUnit.class) == null;
             }
         });
     }
