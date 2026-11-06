@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("java:S2699")
 class AbstractClassPublicConstructorTest implements RewriteTest {
@@ -29,6 +30,37 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new AbstractClassPublicConstructor());
+    }
+
+    @Test
+    void preserveKotlinInferredReturnTypeMethodVisibility() {
+        rewriteRun(
+          kotlin(
+            """
+              abstract class Dispatcher : AutoCloseable {
+                  public open override fun close() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void restrictKotlinSecondaryConstructorVisibility() {
+        rewriteRun(
+          kotlin(
+            """
+              abstract class Base {
+                  public constructor()
+              }
+              """,
+            """
+              abstract class Base {
+                  protected constructor()
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
