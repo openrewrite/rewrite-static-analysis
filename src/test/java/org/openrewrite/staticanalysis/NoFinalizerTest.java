@@ -17,18 +17,23 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 class NoFinalizerTest implements RewriteTest {
 
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new NoFinalizer());
+    }
+
     @DocumentExample
     @SuppressWarnings("FinalizeCalledExplicitly")
     @Test
     void noFinalizer() {
         rewriteRun(
-          spec -> spec.recipe(new NoFinalizer()),
           //language=java
           java(
             """
@@ -59,4 +64,169 @@ class NoFinalizerTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void retainExplicitCrossFileCall() {
+        rewriteRun(
+          java(
+            """
+              package example;
+              class AutoCloseInputStream {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              package example;
+              class StreamTest {
+                  void close(AutoCloseInputStream stream) throws Throwable {
+                      stream.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainMethodReferenceAndInheritedFinalizer() {
+        rewriteRun(
+          java(
+            """
+              package example;
+              class Parent {
+                  @Override
+                  public void finalize() {}
+              }
+              class Child extends Parent {}
+              """
+          ),
+          java(
+            """
+              package example;
+              class Caller {
+                  Runnable cleanup(Child child) {
+                      return child::finalize;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainSuperFinalizerOfExplicitlyCalledOverride() {
+        rewriteRun(
+          java(
+            """
+              class Parent {
+                  @Override
+                  public void finalize() {}
+              }
+              class Child extends Parent {
+                  @Override
+                  public void finalize() {
+                      super.finalize();
+                  }
+              }
+              class Caller {
+                  void cleanup(Child child) {
+                      child.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainOverridesOfExplicitlyCalledBaseMethod() {
+        rewriteRun(
+          java(
+            """
+              class Parent {
+                  @Override
+                  public void finalize() {}
+              }
+              class Child extends Parent {
+                  @Override
+                  public void finalize() {}
+              }
+              class Caller {
+                  void cleanup(Parent parent) {
+                      parent.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUncalledFinalizerHierarchy() {
+        rewriteRun(
+          java(
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """,
+            """
+              class Parent {
+              }
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainOrdinarySuperCallButRemoveUnrelatedFinalizer() {
+        rewriteRun(
+          java(
+            """
+              class Parent {
+                  @Override
+                  public void finalize() {}
+              }
+              class Child extends Parent {
+                  void cleanup() {
+                      super.finalize();
+                  }
+              }
+              class Unrelated {
+                  @Override
+                  public void finalize() {}
+              }
+              """,
+            """
+              class Parent {
+                  @Override
+                  public void finalize() {}
+              }
+              class Child extends Parent {
+                  void cleanup() {
+                      super.finalize();
+                  }
+              }
+              class Unrelated {
+              }
+              """
+          )
+        );
+    }
+
 }

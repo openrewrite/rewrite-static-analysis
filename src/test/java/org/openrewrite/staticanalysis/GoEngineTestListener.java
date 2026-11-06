@@ -27,12 +27,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Configures the shared Go parsing engine before any {@code go()} test starts it. The engine is an
- * out-of-process RPC server, {@code rewrite-go-rpc}. When the Moderne CLI has already produced that
- * binary under {@code $MODERNE_CLI_HOME} (default {@code ~/.moderne/cli}) it is reused; otherwise it is
- * built from the {@code go} sources bundled in the {@code rewrite-go} jar, which vendors its
- * dependencies and so builds offline against a host {@code go} toolchain.
+ * out-of-process RPC server, {@code rewrite-go-rpc}, built from the {@code go} sources bundled in the
+ * {@code rewrite-go} jar so that it always matches the {@code rewrite-go} version on the test classpath.
+ * The sources vendor their dependencies and so build offline against a host {@code go} toolchain.
  * <p>
- * When neither a prebuilt binary nor a {@code go} toolchain is available, {@link #isAvailable()}
+ * When no {@code go} toolchain is available, {@link #isAvailable()}
  * returns {@code false} and {@code go()} tests skip instead of failing.
  */
 public class GoEngineTestListener implements LauncherSessionListener {
@@ -55,14 +54,6 @@ public class GoEngineTestListener implements LauncherSessionListener {
     private static @Nullable Path resolveBinary() {
         String executableName = System.getProperty("os.name", "").toLowerCase().contains("win") ?
                 "rewrite-go-rpc.exe" : "rewrite-go-rpc";
-
-        String cliHome = System.getenv("MODERNE_CLI_HOME");
-        Path cliBinary = (cliHome != null && !cliHome.isEmpty() ? Path.of(cliHome) :
-                Path.of(System.getProperty("user.home"), ".moderne", "cli"))
-                .resolve("recipes").resolve("go").resolve(executableName);
-        if (Files.isRegularFile(cliBinary)) {
-            return cliBinary;
-        }
 
         try {
             Path work = Files.createTempDirectory("rewrite-go-rpc");

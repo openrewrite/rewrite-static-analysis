@@ -20,6 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.search.UsesType;
@@ -27,6 +28,8 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -56,7 +59,12 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.io.Externalizable", false),
+        // Constructor detection and generation below require Java-style declarations. Kotlin
+        // constructors may delegate to a primary constructor or use default arguments, which
+        // cannot be safely remediated by inserting an empty Java constructor.
+        return Preconditions.check(Preconditions.and(
+                Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
+                new UsesType<>("java.io.Externalizable", false)),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
@@ -87,8 +95,9 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
                                         .build()
                                         .apply(updateCursor(cd), cd.getBody().getCoordinates().lastStatement());
                                 if (firstMethodDeclarationIndex != null) {
-                                    statements.add(firstMethodDeclarationIndex, cd.getBody().getStatements().remove(cd.getBody().getStatements().size() - 1));
-                                    cd = cd.withBody(cd.getBody().withStatements(statements));
+                                    List<Statement> withConstructor = cd.getBody().getStatements();
+                                    cd = cd.withBody(cd.getBody().withStatements(ListUtils.insert(
+                                            statements, withConstructor.get(withConstructor.size() - 1), firstMethodDeclarationIndex)));
                                 }
                             }
                         }

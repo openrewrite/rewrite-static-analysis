@@ -20,13 +20,101 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new BigDecimalRoundingConstantsToEnums());
+    }
+
+
+    @Test
+    void groovyCastReceiver() {
+        rewriteRun(
+          groovy(
+            """
+              import java.math.BigDecimal
+
+              def getNodeArgs(int nodeCount, int gpuCount) {
+                  int gpusPerNode = ((gpuCount / nodeCount) as BigDecimal).setScale(0, BigDecimal.ROUND_CEILING).intValue()
+                  return gpusPerNode
+              }
+              """,
+            """
+              import java.math.BigDecimal
+              import java.math.RoundingMode
+
+              def getNodeArgs(int nodeCount, int gpuCount) {
+                  int gpusPerNode = ((gpuCount / nodeCount) as BigDecimal).setScale(0, RoundingMode.CEILING).intValue()
+                  return gpusPerNode
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groovyCastReceiverAllOverloads() {
+        rewriteRun(
+          groovy(
+            """
+              import java.math.BigDecimal
+
+              def round(int value, int scale) {
+                  return (value as BigDecimal).setScale(scale, 6)
+                      .divide(BigDecimal.TEN, BigDecimal.ROUND_DOWN)
+                      .divide(BigDecimal.TEN, scale, BigDecimal.ROUND_UP)
+              }
+              """,
+            """
+              import java.math.BigDecimal
+              import java.math.RoundingMode
+
+              def round(int value, int scale) {
+                  return (value as BigDecimal).setScale(scale, RoundingMode.HALF_EVEN)
+                      .divide(BigDecimal.TEN, RoundingMode.DOWN)
+                      .divide(BigDecimal.TEN, scale, RoundingMode.UP)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinPrimaryConstructorAndCompanion() {
+        rewriteRun(
+          kotlin(
+            """
+              import java.math.BigDecimal
+
+              class Test(val value: Int) {
+                  companion object {
+                      fun round(decimal: BigDecimal, scale: Int) = decimal
+                          .setScale(scale, BigDecimal.ROUND_HALF_EVEN)
+                          .divide(BigDecimal.TEN, BigDecimal.ROUND_DOWN)
+                          .divide(BigDecimal.TEN, scale, BigDecimal.ROUND_UP)
+                  }
+              }
+              """,
+            """
+              import java.math.BigDecimal
+              import java.math.RoundingMode
+
+              class Test(val value: Int) {
+                  companion object {
+                      fun round(decimal: BigDecimal, scale: Int) = decimal
+                          .setScale(scale, RoundingMode.HALF_EVEN)
+                          .divide(BigDecimal.TEN, RoundingMode.DOWN)
+                          .divide(BigDecimal.TEN, scale, RoundingMode.UP)
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample

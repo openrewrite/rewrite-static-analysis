@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.config.Environment;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -27,10 +26,7 @@ class ReplaceThreadRunWithThreadStartTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(Environment.builder()
-          .scanRuntimeClasspath("org.openrewrite.staticanalysis")
-          .build()
-          .activateRecipes("org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart"));
+        spec.recipeFromResources("org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart");
     }
 
     @DocumentExample

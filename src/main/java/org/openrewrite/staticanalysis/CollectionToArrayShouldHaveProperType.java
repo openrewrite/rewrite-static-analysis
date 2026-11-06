@@ -37,7 +37,7 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
     private static final MethodMatcher TO_ARRAY = new MethodMatcher("java.util.Collection toArray()", true);
 
     @Getter
-    final String displayName = "'Collection.toArray()' should be passed an array of the proper type";
+    final String displayName = "`Collection.toArray()` should be passed an array of the proper type";
 
     @Getter
     final String description = "Using `Collection.toArray()` without parameters returns an " +
@@ -56,55 +56,6 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             @Override
-            public <T extends J> J visitParentheses(J.Parentheses<T> parentheses, ExecutionContext ctx) {
-                J visited = super.visitParentheses(parentheses, ctx);
-                if (visited instanceof J.Parentheses) {
-                    @SuppressWarnings("unchecked") J.Parentheses<T> visitedParentheses = (J.Parentheses<T>) visited;
-                    if (visitedParentheses.getTree() instanceof J.TypeCast) {
-                        J.TypeCast typeCast = (J.TypeCast) visitedParentheses.getTree();
-                        Expression expression = typeCast.getExpression();
-
-                        // Check if the expression is a method invocation of toArray() with no arguments
-                        if (expression instanceof J.MethodInvocation) {
-                            J.MethodInvocation methodInvocation = (J.MethodInvocation) expression;
-                            if (TO_ARRAY.matches(methodInvocation)) {
-                                // Get the target type from the cast
-                                JavaType targetType = typeCast.getType();
-                                JavaType.Array arrayType = TypeUtils.asArray(targetType);
-                                if (arrayType != null) {
-                                    JavaType componentType = arrayType.getElemType();
-
-                                    // Use TypeUtils for safer type checking and casting
-                                    JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(componentType);
-                                    if (fqType != null) {
-                                        String className = fqType.getClassName();
-                                        String fqn = fqType.getFullyQualifiedName();
-                                        // Build the toArray call with the proper array argument
-                                        JavaTemplate template = JavaTemplate.builder("#{any()}.toArray(new #{}[0])")
-                                                .imports(fqn)
-                                                .build();
-
-                                        // Apply the template, replacing the entire parentheses expression
-                                        Expression result = template.apply(getCursor(), visitedParentheses.getCoordinates().replace(),
-                                                requireNonNull(methodInvocation.getSelect()),
-                                                className);
-
-                                        // Add the import if needed
-                                        maybeAddImport(fqn);
-
-                                        // Return the result wrapped in parentheses to preserve the original structure
-                                        //noinspection unchecked
-                                        return visitedParentheses.withTree((T) result);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return visited;
-            }
-
-            @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                 J visited = super.visitTypeCast(typeCast, ctx);
                 if (!(visited instanceof J.TypeCast)) {
@@ -114,33 +65,27 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
                 J.TypeCast visitedTypeCast = (J.TypeCast) visited;
                 Expression expression = visitedTypeCast.getExpression();
 
-                // Check if the expression is a method invocation of toArray() with no arguments
                 if (expression instanceof J.MethodInvocation) {
                     J.MethodInvocation methodInvocation = (J.MethodInvocation) expression;
                     if (TO_ARRAY.matches(methodInvocation)) {
 
-                        // Get the target type from the cast
                         JavaType targetType = visitedTypeCast.getType();
                         JavaType.Array arrayType = TypeUtils.asArray(targetType);
                         if (arrayType != null) {
                             JavaType componentType = arrayType.getElemType();
 
-                            // Use TypeUtils for safer type checking and casting
                             JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(componentType);
                             if (fqType != null) {
                                 String className = fqType.getClassName();
                                 String fqn = fqType.getFullyQualifiedName();
-                                // Build the toArray call with the proper array argument
                                 JavaTemplate template = JavaTemplate.builder("#{any()}.toArray(new #{}[0])")
                                         .imports(fqn)
                                         .build();
 
-                                // Apply the template, replacing the cast expression
                                 Expression result = template.apply(getCursor(), visitedTypeCast.getCoordinates().replace(),
                                         requireNonNull(methodInvocation.getSelect()),
                                         className);
 
-                                // Add the import if needed
                                 maybeAddImport(fqn);
 
                                 return result;

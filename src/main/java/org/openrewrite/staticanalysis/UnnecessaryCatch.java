@@ -20,11 +20,13 @@ import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.NewClass;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
+
+import static java.util.Collections.emptyList;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -34,7 +36,7 @@ public class UnnecessaryCatch extends Recipe {
             description = "Whether to include `java.lang.Exception` in the list of checked exceptions to remove. " +
                     "Unlike other checked exceptions, `java.lang.Exception` is also the superclass of unchecked exceptions. " +
                     "So removing `catch(Exception e)` may result in changed runtime behavior in the presence of unchecked exceptions. " +
-                    "Default `false`",
+                    "Default `false`.",
             required = false)
     boolean includeJavaLangException;
 
@@ -42,7 +44,7 @@ public class UnnecessaryCatch extends Recipe {
             description = "Whether to include `java.lang.Throwable` in the list of exceptions to remove. " +
                     "Unlike other checked exceptions, `java.lang.Throwable` is also the superclass of unchecked exceptions. " +
                     "So removing `catch(Throwable e)` may result in changed runtime behavior in the presence of unchecked exceptions. " +
-                    "Default `false`",
+                    "Default `false`.",
             required = false)
     boolean includeJavaLangThrowable;
 
@@ -52,7 +54,9 @@ public class UnnecessaryCatch extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new NoMissingTypes(), new JavaIsoVisitor<ExecutionContext>() {
+        // Sound only where the compiler enforces catch-or-declare: elsewhere a checked exception can be thrown
+        // without any callee declaring it, so an undeclared exception is no evidence that the catch is dead.
+        return Preconditions.check(new JavaFileChecker<>(), new JavaIsoVisitor<ExecutionContext>() {
             private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
             private static final String JAVA_LANG_ERROR = "java.lang.Error";
             private static final String JAVA_LANG_RUNTIME_EXCEPTION = "java.lang.RuntimeException";
@@ -63,7 +67,6 @@ public class UnnecessaryCatch extends Recipe {
                 J.Block b = super.visitBlock(block, ctx);
                 return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.Try) {
-                        // if a try has no catches, no finally, and no resources get rid of it and merge its statements into the current block
                         J.Try aTry = (J.Try) statement;
                         if (aTry.getCatches().isEmpty() && aTry.getResources() == null && aTry.getFinally() == null) {
                             return ListUtils.map(aTry.getBody().getStatements(), tryStat -> autoFormat(tryStat, ctx, getCursor()));
@@ -83,13 +86,17 @@ public class UnnecessaryCatch extends Recipe {
                 }
 
                 List<JavaType> thrownExceptions = new ArrayList<>();
-                //Collect any checked exceptions thrown from the try block.
+                // An empty `thrownExceptions` is indistinguishable from one that was never populated, so only a
+                // try body that resolves throughout is evidence that a caught exception cannot be thrown.
+                boolean[] incompleteTypeInformation = new boolean[1];
                 new JavaIsoVisitor<Integer>() {
                     @Override
                     public NewClass visitNewClass(NewClass newClass, Integer integer) {
                         JavaType.Method methodType = newClass.getMethodType();
-                        if (methodType != null) {
+                        if (TypeUtils.isWellFormedType(methodType)) {
                             thrownExceptions.addAll(methodType.getThrownExceptions());
+                        } else {
+                            incompleteTypeInformation[0] = true;
                         }
                         return super.visitNewClass(newClass, integer);
                     }
@@ -97,8 +104,10 @@ public class UnnecessaryCatch extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer integer) {
                         JavaType.Method methodType = method.getMethodType();
-                        if (methodType != null) {
+                        if (TypeUtils.isWellFormedType(methodType)) {
                             thrownExceptions.addAll(methodType.getThrownExceptions());
+                        } else {
+                            incompleteTypeInformation[0] = true;
                         }
                         return super.visitMethodInvocation(method, integer);
                     }
@@ -106,8 +115,10 @@ public class UnnecessaryCatch extends Recipe {
                     @Override
                     public J.Throw visitThrow(J.Throw thrown, Integer integer) {
                         JavaType type = thrown.getException().getType();
-                        if (type != null) {
+                        if (TypeUtils.isWellFormedType(type)) {
                             thrownExceptions.add(type);
+                        } else {
+                            incompleteTypeInformation[0] = true;
                         }
                         return super.visitThrow(thrown, integer);
                     }
@@ -116,19 +127,25 @@ public class UnnecessaryCatch extends Recipe {
                     public J.Try visitTry(J.Try nestedTry, Integer integer) {
                         if (nestedTry.getResources() != null) {
                             for (J.Try.Resource resource : nestedTry.getResources()) {
-                                JavaType resourceType = resource.getVariableDeclarations().getType();
-                                if (resourceType instanceof JavaType.FullyQualified) {
-                                    for (JavaType.Method method : ((JavaType.FullyQualified) resourceType).getMethods()) {
-                                        if ("close".equals(method.getName()) && method.getParameterTypes().isEmpty()) {
-                                            thrownExceptions.addAll(method.getThrownExceptions());
-                                        }
-                                    }
+                                JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(resource.getVariableDeclarations().getType());
+                                // `close()` is commonly inherited, so it has to be looked up through the supertypes.
+                                Optional<JavaType.Method> close = TypeUtils.findDeclaredMethod(resourceType, "close", emptyList());
+                                if (close.isPresent()) {
+                                    thrownExceptions.addAll(close.get().getThrownExceptions());
+                                } else {
+                                    incompleteTypeInformation[0] = true;
                                 }
                             }
                         }
                         return super.visitTry(nestedTry, integer);
                     }
                 }.visit(t.getBody(), 0);
+
+                // An `Unknown` left by a `throws` clause whose type is absent from the classpath is assignable
+                // to nothing, so it identifies no catch as necessary.
+                if (incompleteTypeInformation[0] || !thrownExceptions.stream().allMatch(TypeUtils::isWellFormedType)) {
+                    return t;
+                }
 
                 Set<JavaType> unnecessaryTypes = getUnnecessaryTypes(t, thrownExceptions);
                 if (unnecessaryTypes.isEmpty()) {
@@ -139,14 +156,13 @@ public class UnnecessaryCatch extends Recipe {
                     maybeRemoveImport(TypeUtils.asFullyQualified(type));
                 }
 
-                //For any checked exceptions being caught, if the exception is not thrown, remove the catch block.
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
                     J.ControlParentheses<J.VariableDeclarations> parameter = aCatch.getParameter();
                     TypeTree typeExpression = aCatch.getParameter().getTree().getTypeExpression();
                     if (typeExpression instanceof J.MultiCatch) {
                         J.MultiCatch multiCatch = (J.MultiCatch) typeExpression;
-                        List<NameTree> alternatives = ListUtils.map(multiCatch.getAlternatives(), typeTree ->
-                                typeTree != null && unnecessaryTypes.contains(typeTree.getType()) ? null : typeTree
+                        List<NameTree> alternatives = ListUtils.filter(multiCatch.getAlternatives(), typeTree ->
+                                !(typeTree != null && unnecessaryTypes.contains(typeTree.getType()))
                         );
                         if (alternatives.isEmpty()) {
                             return null;
@@ -164,21 +180,12 @@ public class UnnecessaryCatch extends Recipe {
                 }));
             }
 
-            /**
-             * Retrieves a set of unique checked exception types declared within the catch blocks
-             * of a given {@link J.Try} statement. This method supports both single and multi-catch
-             * declarations.
-             *
-             * @param aTry The {@link J.Try} statement to analyze.
-             * @return A {@link Set} of {@link JavaType} instances representing the caught checked exceptions.
-             * An empty set is returned if no checked exceptions are found.
-             */
             private Set<JavaType> getUnnecessaryTypes(J.Try aTry, Collection<JavaType> thrownExceptions) {
                 Set<JavaType> caughtExceptions = new HashSet<>();
 
                 for (J.Try.Catch c : aTry.getCatches()) {
                     JavaType type = c.getParameter().getType();
-                    if (type == null) {
+                    if (!TypeUtils.isWellFormedType(type)) {
                         continue;
                     }
 
@@ -188,14 +195,13 @@ public class UnnecessaryCatch extends Recipe {
                                 caughtExceptions.add(throwable);
                             }
                         }
-                    } else { // Single catch
+                    } else {
                         if (isCheckedException(type) || isGenericTypeRemovableByOption(type)) {
                             caughtExceptions.add(c.getParameter().getType());
                         }
                     }
                 }
 
-                // Filter out caught exceptions that are necessary
                 Set<JavaType> unnecessaryExceptions = new HashSet<>(caughtExceptions);
                 unnecessaryExceptions.removeAll(thrownExceptions);
 
@@ -239,15 +245,6 @@ public class UnnecessaryCatch extends Recipe {
                 return includeJavaLangThrowable && TypeUtils.isOfClassType(type, JAVA_LANG_THROWABLE);
             }
 
-            /**
-             * Determines if a given {@link JavaType} represents a checked exception.
-             * A checked exception is a subclass of {@code java.lang.Throwable} that is not
-             * a subclass of {@code java.lang.RuntimeException} or {@code java.lang.Error}.
-             * <a href="https://docs.oracle.com/javase/specs/jls/se7/html/jls-11.html#:~:text=The%20checked%20exception%20classes%20are,and%20Error%20and%20its%20subclasses.">Source</a>
-             *
-             * @param type The {@link JavaType} to evaluate.
-             * @return {@code true} if the type is a checked exception; {@code false} otherwise.
-             */
             private boolean isCheckedException(JavaType type) {
                 if (!(type instanceof JavaType.Class)) {
                     return false;

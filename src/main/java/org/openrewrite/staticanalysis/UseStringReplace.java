@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
@@ -33,16 +35,6 @@ import java.util.regex.Pattern;
 
 import static java.util.Collections.singleton;
 
-/**
- * Recipe to use {@link String#replace(CharSequence, CharSequence)} when the fist argument is not a regular expression.
- * <p>
- * The underlying implementation of {@link String#replaceAll(String, String)} calls the {@link Pattern#compile(String)}
- * method each time it is called even if the first argument is not a regular expression. This has a significant
- * performance cost and therefore should be used with care.
- *
- * @see <a href="https://rules.sonarsource.com/java/RSPEC-S5361"></a>
- * @see <a href="https://docs.oracle.com/javase/tutorial/essential/regex/index.html"></a>
- */
 public class UseStringReplace extends Recipe {
 
     private static final MethodMatcher REPLACE_ALL = new MethodMatcher("java.lang.String replaceAll(..)");
@@ -55,7 +47,7 @@ public class UseStringReplace extends Recipe {
 
     @Getter
     final String description = "When `String::replaceAll` is used, the first argument should be a real regular expression. " +
-            "If it’s not the case, `String::replace` does exactly the same thing as `String::replaceAll` without the performance drawback of the regex.";
+            "If that's not the case, `String::replace` does exactly the same thing as `String::replaceAll` without the performance drawback of the regex.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5361");
@@ -65,10 +57,10 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(REPLACE_ALL), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
 
                 // Checks if method invocation matches with String#replaceAll
                 if (REPLACE_ALL.matches(invocation)) {
@@ -119,6 +111,6 @@ public class UseStringReplace extends Recipe {
                         .replace("\\'", "'")
                         .replace("\\", "");
             }
-        };
+        });
     }
 }

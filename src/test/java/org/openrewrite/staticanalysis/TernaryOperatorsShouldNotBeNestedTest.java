@@ -36,6 +36,41 @@ class TernaryOperatorsShouldNotBeNestedTest {
             spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(11)));
         }
 
+        @Test
+        void keepUnrelatedBlocks() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      String determineSomething(int a, int b, int c) {
+                          {
+                              System.out.println("unrelated");
+                          }
+                          return a == 1 ? "one" : b == 2 ? "two" : c == 3 ? "three" : "other";
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      String determineSomething(int a, int b, int c) {
+                          {
+                              System.out.println("unrelated");
+                          }
+                          if (a == 1) {
+                              return "one";
+                          }
+                          if (b == 2) {
+                              return "two";
+                          }
+                          return c == 3 ? "three" : "other";
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @DocumentExample
         @Test
         void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
@@ -302,7 +337,6 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
-        @ExpectedToFail("only directly returned ternaries are taken into account")
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
         @Test
         void doReplaceNestedOrAssignmentTernaryWithIfElse() {
@@ -322,12 +356,256 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       public void doThing(String a, String b) {
                           String result;
                           if ("a".equals(a)) {
-                            result = "a";
-                          }
-                          else {
-                            result = "b".equals(b) ? "b" : "nope";
+                              result = "a";
+                          } else {
+                              result = "b".equals(b) ? "b" : "nope";
                           }
                           System.out.println(result);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryInFinalVariableDeclaration() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void doThing(int a, int b) {
+                          final int result = a == 1 ? 1 : b == 2 ? 2 : 3;
+                          Runnable r = () -> System.out.println(result);
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      public void doThing(int a, int b) {
+                          final int result;
+                          if (a == 1) {
+                              result = 1;
+                          } else {
+                              result = b == 2 ? 2 : 3;
+                          }
+                          Runnable r = () -> System.out.println(result);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryInAssignmentWithElseIfChain() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private String result;
+
+                      public void doThing(String a, String b, String c) {
+                          // pick one
+                          result = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "c".equals(c) ? "c" : "nope";
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      private String result;
+
+                      public void doThing(String a, String b, String c) {
+                          // pick one
+                          if ("a".equals(a)) {
+                              result = "a";
+                          } else if ("b".equals(b)) {
+                              result = "b";
+                          } else {
+                              result = "c".equals(c) ? "c" : "nope";
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryInTruePartOfAssignmentOperation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public int doThing(boolean a, boolean b, boolean c) {
+                          int result = 0;
+                          result += a ? b ? 1 : c ? 2 : 3 : 4;
+                          return result;
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      public int doThing(boolean a, boolean b, boolean c) {
+                          int result = 0;
+                          if (a) {
+                              if (b) {
+                                  result += 1;
+                              } else {
+                                  result += c ? 2 : 3;
+                              }
+                          } else {
+                              result += 4;
+                          }
+                          return result;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryAssignmentInLambdaBlock() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  class Test {
+                      Function<String, String> f = s -> {
+                          String result = s.isEmpty() ? "empty" : s.length() == 1 ? "one" : "many";
+                          return result.toUpperCase();
+                      };
+                  }
+                  """,
+                """
+                  import java.util.function.Function;
+                  class Test {
+                      Function<String, String> f = s -> {
+                          String result;
+                          if (s.isEmpty()) {
+                              result = "empty";
+                          } else {
+                              result = s.length() == 1 ? "one" : "many";
+                          }
+                          return result.toUpperCase();
+                      };
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doNotReplaceNestedTernaryInFieldVarMultiVariableDeclarationOrComplexAssignmentTarget() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private final String field = Math.random() > 0.5 ? "a" : Math.random() > 0.5 ? "b" : "c";
+
+                      public void doThing(String a, String b, String[] arr, int i) {
+                          arr[i++] = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                          var inferred = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                          String first = a, second = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                          for (String s = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope"; s.isEmpty(); ) {
+                          }
+                          System.out.println(inferred + first + second);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doNotReplaceNonNestedTernaryAssignment() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void doThing(String a) {
+                          String result = "a".equals(a) ? "a" : "nope";
+                          result = "a".equals(a) ? "a" : "nope";
+                          System.out.println(result);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doReplaceMixedNumericTernaryAssignedToSamePrimitive() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      double doThing(boolean c, boolean d) {
+                          double result = c ? 1 : d ? 2.0 : 3;
+                          return result;
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      double doThing(boolean c, boolean d) {
+                          double result;
+                          if (c) {
+                              result = 1;
+                          } else {
+                              result = d ? 2.0 : 3;
+                          }
+                          return result;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryAssignedToObject() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      Object doThing(boolean c, boolean d, Integer n, Object previous) {
+                          Object declared = c ? 1 : d ? 2.0 : 3;
+                          previous = c ? n : d ? 1 : 2;
+                          return declared.equals(previous);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryInCompoundAssignment() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      String doThing(boolean c, boolean d, String s, int i) {
+                          s += c ? 'a' : d ? 1 : 2;
+                          i += c ? 1 : d ? 2.0 : 3;
+                          return s + i;
                       }
                   }
                   """
@@ -581,6 +859,113 @@ class TernaryOperatorsShouldNotBeNestedTest {
                         return "b".equals(b)
                                 ? "b"
                                 : null;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doReplaceMixedNumericTernaryReturningSamePrimitive() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    double determineSomething(boolean c, boolean d) {
+                      return c ? 1 : d ? 2.0 : 3;
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    double determineSomething(boolean c, boolean d) {
+                        if (c) {
+                            return 1;
+                        }
+                        return d ? 2.0 : 3;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryReturningObject() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    Object determineSomething(boolean c, boolean d) {
+                      return c ? 1 : d ? 2.0 : 3;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceTernaryUnboxingIntoObject() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    Object determineSomething(boolean c, boolean d, Integer n) {
+                      return c ? n : d ? 1 : 2;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryInLambda() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Supplier;
+                  class Test {
+                    Supplier<Object> determineSomething(boolean c, boolean d) {
+                      return () -> c ? 'a' : d ? 1 : 2;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryNestedInReferenceTernary() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    Object determineSomething(boolean c, boolean d, boolean e) {
+                      return c ? "a" : d ? 1 : e ? 2.0 : 3;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryWidenedToReturnType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    double determineSomething(boolean c, boolean d, boolean e) {
+                      return c ? 1.0 : d ? 16777217 : e ? 1f : 2;
                     }
                   }
                   """
@@ -1353,6 +1738,22 @@ class TernaryOperatorsShouldNotBeNestedTest {
                         public Set<String> makeASet() {
                            List<String> s = Arrays.asList("a","b","c","nope");
                            return s.stream().map(item -> item.startsWith("a") ? "a" : "nope").collect(Collectors.toSet());
+                        }
+                      }
+                      """
+                  )
+                );
+            }
+
+            @Test
+            void doNotReplaceMixedNumericTernaryReturningObjectWithSwitch() {
+                rewriteRun(
+                  //language=java
+                  java(
+                    """
+                      class Test {
+                        Object determineSomething(int x) {
+                          return x == 1 ? 1L : x == 2 ? 2 : 3L;
                         }
                       }
                       """

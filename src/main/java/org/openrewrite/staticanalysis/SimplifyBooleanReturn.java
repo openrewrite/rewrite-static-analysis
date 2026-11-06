@@ -26,7 +26,10 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -43,8 +46,8 @@ public class SimplifyBooleanReturn extends Recipe {
     final String displayName = "Simplify boolean return";
 
     @Getter
-    final String description = "Simplifies Boolean expressions by removing redundancies. " +
-            "For example, `a && true` simplifies to `a`. Wrapping a boolean expression " +
+    final String description = "Simplifies `if` statements that only return `true` or `false` to a single `return`. " +
+            "For example, `if (a) { return true; } return false;` simplifies to `return a;`. Wrapping a boolean expression " +
             "in an if-then-else just to return `true` or `false` adds unnecessary " +
             "control flow that obscures the straightforward intent of the expression.";
 
@@ -57,6 +60,15 @@ public class SimplifyBooleanReturn extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python and JavaScript truthiness and switch semantics differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J visitIf(J.If iff, ExecutionContext ctx) {
                 J.If i = visitAndCast(iff, ctx, super::visitIf);
@@ -73,37 +85,46 @@ public class SimplifyBooleanReturn extends Recipe {
                             .filter(r -> r.getComments().isEmpty())
                             .map(J.Return::getExpression);
 
-                    if (followingStatements.isEmpty() || singleFollowingStatement.map(r -> isLiteralFalse(r) || isLiteralTrue(r)).orElse(false)) {
+                    if (followingStatements.isEmpty() || singleFollowingStatement.map(r -> J.Literal.isLiteralValue(r, false) || J.Literal.isLiteralValue(r, true)).orElse(false)) {
                         J.Return return_ = getReturnIfOnlyStatementInThen(iff).orElse(null);
-                        assert return_ != null;
 
                         // Do not remove comments that are attached to the return statement
-                        if (!return_.getComments().isEmpty() || hasElseWithComment(i.getElsePart())) {
+                        if (return_ == null || !return_.getComments().isEmpty() || hasElseWithComment(i.getElsePart())) {
                             return i;
                         }
 
                         Expression ifCondition = i.getIfCondition().getTree().withPrefix(return_.getExpression().getPrefix());
+                        // The if condition unboxes Boolean, but a return to Boolean/Object need not.
+                        if (ifCondition.getType() != JavaType.Primitive.Boolean) {
+                            return i;
+                        }
 
-                        if (isLiteralTrue(return_.getExpression())) {
-                            if (singleFollowingStatement.map(this::isLiteralFalse).orElse(false) && i.getElsePart() == null) {
+                        if (J.Literal.isLiteralValue(return_.getExpression(), true)) {
+                            if (singleFollowingStatement.map(e -> J.Literal.isLiteralValue(e, false)).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 return maybeAutoFormat(return_, return_.withPrefix(i.getPrefix()).withExpression(ifCondition), ctx, parent);
                             }
                             if (!singleFollowingStatement.isPresent() &&
-                                    getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
+                                    getReturnExprIfOnlyStatementInElseThen(i).map(e -> J.Literal.isLiteralValue(e, false)).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
                                 }
                                 return maybeAutoFormat(return_, return_.withPrefix(i.getPrefix()).withExpression(ifCondition), ctx, parent);
                             }
-                        } else if (isLiteralFalse(return_.getExpression())) {
+                        } else if (J.Literal.isLiteralValue(return_.getExpression(), false)) {
+                            // Removing a negation of Boolean would also remove its unboxing.
+                            if (ifCondition instanceof J.Unary &&
+                                ((J.Unary) ifCondition).getOperator() == J.Unary.Type.Not &&
+                                ((J.Unary) ifCondition).getExpression().getType() != JavaType.Primitive.Boolean) {
+                                return i;
+                            }
                             boolean returnThenPart = false;
 
-                            if (singleFollowingStatement.map(this::isLiteralTrue).orElse(false) && i.getElsePart() == null) {
+                            if (singleFollowingStatement.map(e -> J.Literal.isLiteralValue(e, true)).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 returnThenPart = true;
                             } else if (!singleFollowingStatement.isPresent() && getReturnExprIfOnlyStatementInElseThen(i)
-                                    .map(this::isLiteralTrue).orElse(false)) {
+                                    .map(e -> J.Literal.isLiteralValue(e, true)).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
                                 }
@@ -135,7 +156,7 @@ public class SimplifyBooleanReturn extends Recipe {
 
             private boolean thenHasOnlyReturnStatement(J.If iff) {
                 return getReturnIfOnlyStatementInThen(iff)
-                        .map(return_ -> isLiteralFalse(return_.getExpression()) || isLiteralTrue(return_.getExpression()))
+                        .map(return_ -> J.Literal.isLiteralValue(return_.getExpression(), false) || J.Literal.isLiteralValue(return_.getExpression(), true))
                         .orElse(false);
             }
 
@@ -149,14 +170,6 @@ public class SimplifyBooleanReturn extends Recipe {
                         })
                         .skip(1)
                         .collect(toList());
-            }
-
-            private boolean isLiteralTrue(@Nullable J tree) {
-                return tree instanceof J.Literal && ((J.Literal) tree).getValue() == Boolean.valueOf(true);
-            }
-
-            private boolean isLiteralFalse(@Nullable J tree) {
-                return tree instanceof J.Literal && ((J.Literal) tree).getValue() == Boolean.valueOf(false);
             }
 
             private Optional<J.Return> getReturnIfOnlyStatementInThen(J.If iff) {

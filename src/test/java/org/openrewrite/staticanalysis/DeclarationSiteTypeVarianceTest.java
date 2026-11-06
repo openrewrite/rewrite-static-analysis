@@ -17,10 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.config.Environment;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
+import org.openrewrite.test.TypeValidation;
 
 import java.util.List;
 
@@ -90,10 +91,7 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
     @Test
     void commonVariances() {
         rewriteRun(
-          spec -> spec.recipe(Environment.builder()
-            .scanRuntimeClasspath("org.openrewrite.java")
-            .build()
-            .activateRecipes("org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances")),
+          spec -> spec.recipeFromResources("org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances"),
           //language=java
           java(
             """
@@ -195,6 +193,31 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
               import java.util.function.Function;
               class Test {
                   void test(Function<? super In, Out> f) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/277")
+    @Test
+    void overriddenMethodOfUnresolvedSuperclass() {
+        // The supertype is outside the source set, so `isOverride()` cannot see the declaration being
+        // implemented; the `@Override` annotation is the only remaining signal.
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              interface In {}
+              interface Out {}
+
+              class A extends SomeExternalClassThatCannotBeChanged {
+                  @Override
+                  public void test(Function<In, Out> f) {
                   }
               }
               """

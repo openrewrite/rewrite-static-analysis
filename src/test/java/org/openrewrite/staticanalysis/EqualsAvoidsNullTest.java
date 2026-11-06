@@ -17,12 +17,17 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.groovy.Assertions.groovy;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SequencedCollectionMethodCanBeUsed"})
 class EqualsAvoidsNullTest implements RewriteTest {
@@ -30,6 +35,141 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new EqualsAvoidsNull());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"literal\"", "CONSTANT"})
+    void preserveImplicitEqualsReceiver(String argument) {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  static final String CONSTANT = "literal";
+
+                  boolean test() {
+                      return equals(%s);
+                  }
+              }
+              """.formatted(argument)
+          )
+        );
+    }
+
+    @Test
+    void preserveImplicitOverriddenEqualsReceiver() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  @Override
+                  public boolean equals(Object other) {
+                      return other instanceof String;
+                  }
+
+                  boolean test() {
+                      return equals("literal");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void selectedComparisonsStillTransform() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  static final String CONSTANT = "literal";
+
+                  boolean test(String value) {
+                      return value.equals(CONSTANT) || value.equals("literal") || value.equals(null);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static final String CONSTANT = "literal";
+
+                  boolean test(String value) {
+                      return CONSTANT.equals(value) || "literal".equals(value) || value == null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveGroovyStandaloneEqualsNull() {
+        rewriteRun(groovy(
+          """
+            class Test {
+                void test(String value) {
+                    value.equals(null)
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveGroovyEqualsDispatch() {
+        rewriteRun(groovy(
+          """
+            class Test {
+                boolean test(String value) {
+                    value.equals("literal")
+                }
+            }
+            """
+        ));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
+      "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})
+    void preserveRefasterComparisonPattern(String annotation) {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.google.errorprone.refaster.annotation;
+              @java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+              public @interface BeforeTemplate {}
+              """
+          )),
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Test {
+                  %s
+                  boolean before(String string) {
+                      return string.equals("");
+                  }
+
+                  boolean helper(String string) {
+                      return string.equals("");
+                  }
+              }
+              """.formatted(annotation),
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Test {
+                  %s
+                  boolean before(String string) {
+                      return string.equals("");
+                  }
+
+                  boolean helper(String string) {
+                      return "".equals(string);
+                  }
+              }
+              """.formatted(annotation)
+          )
+        );
     }
 
     @DocumentExample
@@ -110,6 +250,29 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
+    void retainNullCheckBeforeContentEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void check(String s) {
+                      if (s != null && s.contentEquals("test")) {}
+                  }
+              }
+              """,
+            """
+              class A {
+                  void check(String s) {
+                      if (s != null && "test".contentEquals(s)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainNecessaryNullCheck() {
         rewriteRun(
           //language=java
@@ -182,6 +345,25 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       if ("null".equals(s)) {
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaLiteralEqualsFlipped() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(x: String): Boolean = x.equals("test")
+              }
+              """,
+            """
+              class A {
+                def foo(x: String): Boolean = "test".equals(x)
               }
               """
           )
@@ -530,7 +712,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @Test
         void literalAndConstant() {
             rewriteRun(
-              spec -> spec.recipe(new EqualsAvoidsNull()),
               // language=java
               java(
                 """
@@ -658,5 +839,22 @@ class EqualsAvoidsNullTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(String s) {
+                      s.equals(null);
+                  }
+              }
+              """
+          )
+        );
     }
 }

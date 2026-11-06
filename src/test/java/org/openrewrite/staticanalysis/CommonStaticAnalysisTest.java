@@ -1,0 +1,151 @@
+/*
+ * Copyright 2024 the original author or authors.
+ * <p>
+ * Licensed under the Moderne Source Available License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * https://docs.moderne.io/licensing/moderne-source-available-license
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.openrewrite.staticanalysis;
+
+import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
+import org.openrewrite.test.RewriteTest;
+
+import static org.openrewrite.java.Assertions.java;
+
+class CommonStaticAnalysisTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis");
+    }
+
+    @DocumentExample
+    @Test
+    void indexOfOnList() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  static boolean hasIndex(List<String> strList, String str) {
+                      if (strList.indexOf(str) > 0) {
+                      }
+                      return strList.indexOf(str) > 0;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  static boolean hasIndex(List<String> strList, String str) {
+                      strList.indexOf(str);
+                      return strList.indexOf(str) >= 1;
+                  }
+              }
+              """
+          )
+        );
+    }
+    @Test
+    void preserveUncommentedSwitchFallThrough() {
+        rewriteRun(
+          java(
+            """
+              class NumberParser {
+                  int parseInt(char[] digits, int offset, int length) {
+                      int value = 0;
+                      switch (length) {
+                          case 3:
+                              value += (digits[offset++] - '0') * 100;
+                          case 2:
+                              value += (digits[offset++] - '0') * 10;
+                          case 1:
+                              value += digits[offset] - '0';
+                      }
+                      return value;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveFinalizerCleanup() {
+        rewriteRun(
+          java(
+            """
+              class FinalizableCounter {
+                  static int count;
+
+                  FinalizableCounter() {
+                      count++;
+                  }
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      count--;
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveFreshWrapperIdentity() {
+        rewriteRun(
+          java(
+            """
+              import java.util.IdentityHashMap;
+              import java.util.Map;
+
+              class IdentityFixtures {
+                  public static final Integer FIRST = new Integer(1);
+                  public static final Integer SECOND = new Integer(1);
+
+                  public Map<Integer, String> fixtures() {
+                      Map<Integer, String> values = new IdentityHashMap<>();
+                      values.put(FIRST, "first");
+                      values.put(SECOND, "second");
+                      return values;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void convertImmediatelyUnboxedWrapper() {
+        rewriteRun(
+          java(
+            """
+              class PrimitiveFixture {
+                  public int number = new Integer(1);
+              }
+              """,
+            """
+              class PrimitiveFixture {
+                  public int number = Integer.valueOf(1);
+              }
+              """
+          )
+        );
+    }
+
+}

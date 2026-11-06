@@ -17,18 +17,23 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 class ExplicitCharsetOnStringGetBytesTest implements RewriteTest {
 
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new ExplicitCharsetOnStringGetBytes(null));
+    }
+
     @DocumentExample
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void addUtf8() {
         rewriteRun(
-          spec -> spec.recipe(new ExplicitCharsetOnStringGetBytes(null)),
           //language=java
           java(
             """

@@ -22,6 +22,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.RemoveMethodInvocationsVisitor;
 import org.openrewrite.java.search.UsesMethod;
@@ -90,19 +91,18 @@ public class RemoveUnneededAssertion extends Recipe {
         matchers.put(TEST_NG_ASSERT_TRUE_MATCHER, isTrue);
         matchers.put(TEST_NG_ASSERT_FALSE_MATCHER, isFalse);
 
-        return Preconditions.check(constraints, new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(constraints, new JavaVisitor<ExecutionContext>() {
             @Override
-            public J.CompilationUnit visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
-                J.CompilationUnit cu = super.visitCompilationUnit(compilationUnit, ctx);
+            public J visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
+                J.CompilationUnit cu = (J.CompilationUnit) super.visitCompilationUnit(compilationUnit, ctx);
                 return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(matchers)
                         .visitNonNull(cu, ctx, getCursor().getParentOrThrow());
             }
 
             @Override
-            @SuppressWarnings("NullableProblems")
-            public J.@Nullable Assert visitAssert(J.Assert _assert, ExecutionContext ctx) {
+            public @Nullable J visitAssert(J.Assert _assert, ExecutionContext ctx) {
                 if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
-                    return null;
+                    return StatementRemoval.remove(getCursor(), _assert);
                 }
                 return super.visitAssert(_assert, ctx);
             }

@@ -26,6 +26,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 
 import java.time.Duration;
 import java.util.List;
@@ -41,7 +42,8 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
     final String displayName = "Remove `@Nullable` and `@CheckForNull` annotations from primitives";
 
     @Getter
-    final String description = "Primitives can't be null anyway, so these annotations are " +
+    final String description = "Primitives can't be null anyway, so the `javax.annotation.Nullable` and " +
+            "`javax.annotation.CheckForNull` annotations are " +
             "not useful in this context. Leaving them in place gives the false " +
             "impression that a null value is possible, which can confuse readers " +
             "and static analysis tools alike.";
@@ -63,7 +65,21 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
                         if (md.getReturnTypeExpression() != null &&
                             !(md.getReturnTypeExpression() instanceof J.ArrayType) &&
                             md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
-                            md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), ctx);
+                            List<J.Annotation> kept = filterAnnotations(md.getLeadingAnnotations());
+                            if (kept != md.getLeadingAnnotations()) {
+                                String whitespace = md.getLeadingAnnotations().get(0).getPrefix().getWhitespace();
+                                md = md.withLeadingAnnotations(withFirstWhitespace(kept, whitespace));
+                                if (kept.isEmpty()) {
+                                    J.TypeParameters typeParameters = md.getPadding().getTypeParameters();
+                                    if (!md.getModifiers().isEmpty()) {
+                                        md = md.withModifiers(Space.formatFirstPrefix(md.getModifiers(), Space.firstPrefix(md.getModifiers()).withWhitespace(whitespace)));
+                                    } else if (typeParameters != null) {
+                                        md = md.getPadding().withTypeParameters(typeParameters.withPrefix(typeParameters.getPrefix().withWhitespace(whitespace)));
+                                    } else {
+                                        md = md.withReturnTypeExpression(md.getReturnTypeExpression().withPrefix(md.getReturnTypeExpression().getPrefix().withWhitespace(whitespace)));
+                                    }
+                                }
+                            }
                         }
                         return md;
                     }
@@ -72,19 +88,34 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
                     public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                         J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
                         if (varDecls.getType() instanceof JavaType.Primitive && varDecls.getVariables().stream().noneMatch(nv -> nv.getType() instanceof JavaType.Array)) {
-                            varDecls = varDecls.withLeadingAnnotations(filterAnnotations(varDecls.getLeadingAnnotations()));
+                            List<J.Annotation> kept = filterAnnotations(varDecls.getLeadingAnnotations());
+                            if (kept != varDecls.getLeadingAnnotations()) {
+                                String whitespace = varDecls.getLeadingAnnotations().get(0).getPrefix().getWhitespace();
+                                varDecls = varDecls.withLeadingAnnotations(withFirstWhitespace(kept, whitespace));
+                                if (kept.isEmpty()) {
+                                    if (!varDecls.getModifiers().isEmpty()) {
+                                        varDecls = varDecls.withModifiers(Space.formatFirstPrefix(varDecls.getModifiers(), Space.firstPrefix(varDecls.getModifiers()).withWhitespace(whitespace)));
+                                    } else if (varDecls.getTypeExpression() != null) {
+                                        varDecls = varDecls.withTypeExpression(varDecls.getTypeExpression().withPrefix(varDecls.getTypeExpression().getPrefix().withWhitespace(whitespace)));
+                                    }
+                                }
+                            }
                         }
                         return varDecls;
                     }
 
+                    private List<J.Annotation> withFirstWhitespace(List<J.Annotation> annotations, String whitespace) {
+                        return ListUtils.mapFirst(annotations, a -> a.withPrefix(a.getPrefix().withWhitespace(whitespace)));
+                    }
+
                     private List<J.Annotation> filterAnnotations(List<J.Annotation> annotations) {
-                        return ListUtils.map(annotations, anno -> {
+                        return ListUtils.filter(annotations, anno -> {
                             if (NULLABLE_ANNOTATION_MATCHER.matches(anno) || CHECK_FOR_NULL_ANNOTATION_MATCHER.matches(anno)) {
                                 maybeRemoveImport("javax.annotation.CheckForNull");
                                 maybeRemoveImport("javax.annotation.Nullable");
-                                return null;
+                                return false;
                             }
-                            return anno;
+                            return true;
                         });
                     }
                 }

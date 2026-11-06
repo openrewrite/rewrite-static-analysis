@@ -48,13 +48,16 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
      * Ignores any fall-through commented with a text matching the regex pattern.
      * This is currently non-user-configurable, though held within {@link FallThroughStyle}.
      */
-    private static final Pattern RELIEF_PATTERN = Pattern.compile("falls?[ -]?thr(u|ough)");
+    private static final Pattern RELIEF_PATTERN = Pattern.compile("\\b(?:falls?|drops?)[ -]?thr(?:u|ough)\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
+            comment instanceof TextComment &&
+                    RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
 
     private FallThroughStyle style;
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(FallThroughStyle.class, (SourceFile)tree, Checkstyle::fallThrough);
         }
@@ -71,6 +74,12 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = requireNonNull(getCursor().firstEnclosing(J.Switch.class));
+            // A comment just inside the switch's opening brace belongs to the first case's prefix.
+            // It documents fall-through for this switch, without relieving any nested switches.
+            List<Statement> cases = switch_.getCases().getStatements();
+            if (!cases.isEmpty() && cases.get(0).getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)) {
+                return c;
+            }
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
@@ -102,8 +111,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
-                statements.add(breakToAdd);
-                return case_.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                return case_.withStatements(ListUtils.map(ListUtils.concat(statements, breakToAdd), stmt -> autoFormat(stmt, p, getCursor())));
             }
             return case_;
         }
@@ -120,8 +128,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
-                statements.add(breakToAdd);
-                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                b = b.withStatements(ListUtils.map(ListUtils.concat(statements, breakToAdd), stmt -> autoFormat(stmt, p, getCursor())));
             }
             return b;
         }
@@ -130,35 +137,44 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     private static class FindLastLineBreaksOrFallsThroughComments {
 
-        /**
-         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
-         * A result is added to the set when the last line of the provided {@link J.Case} scope is either an acceptable "break"-able type,
-         * specifically {@link J.Return}, {@link J.Break}, {@link J.Continue}, or {@link J.Throw}, or a "fallthrough" {@link Comment} matching a regular expression.
-         *
-         * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
-         * @param scope           the {@link J.Case} to use as a target.
-         * @return A set representing whether the last {@link Statement} is an acceptable "break"-able type or has a "fallthrough" comment.
-         */
         private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
-            Set<J> references = new HashSet<>();
-            new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).visit(enclosingSwitch, references);
-            return references;
+            return new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).reduce(enclosingSwitch, new HashSet<>());
         }
 
         @RequiredArgsConstructor
         private static class FindLastLineBreaksOrFallsThroughCommentsVisitor extends JavaIsoVisitor<Set<J>> {
-            private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
-                    comment instanceof TextComment &&
-                            RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
             private final J.Case scope;
 
             private static boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
                         .map(s -> breaks(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                                guardsWithEarlyExit(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/460
                                 s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
                                 s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
                         ).orElse(false);
+            }
+
+            /**
+             * An {@code if} without an {@code else} whose then part completes abruptly guards the statements
+             * after it, so a fall-through past it is deliberate rather than an omission and adding a
+             * {@code break} would change behavior. Only blocks and labels are unwrapped; constructs such as
+             * {@code try} and {@code switch} are deliberately not, because they can complete normally even
+             * when every {@code if} they contain completes abruptly.
+             */
+            private static boolean guardsWithEarlyExit(Statement s) {
+                if (s instanceof J.Block) {
+                    List<Statement> statements = ((J.Block) s).getStatements();
+                    return !statements.isEmpty() && guardsWithEarlyExit(statements.get(statements.size() - 1));
+                }
+                if (s instanceof J.Label) {
+                    return guardsWithEarlyExit(((J.Label) s).getStatement());
+                }
+                if (s instanceof J.If) {
+                    J.If iff = (J.If) s;
+                    return iff.getElsePart() == null && breaks(iff.getThenPart());
+                }
+                return false;
             }
 
             private static boolean breaks(Statement s) {
@@ -250,13 +266,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private static class FindInfiniteLoops {
-        /**
-         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
-         * A result is added to the set when a loop in a {@link J.Case} scope is an infinite loop.
-         *
-         * @param case_ the {@link J.Case} to use as a target.
-         * @return A set representing all {@link Statement} which are infinite loops.
-         */
         public static boolean find(Cursor cursor, J.Case case_) {
             for (Statement statement : case_.getStatements()) {
                 Expression condition = null;
@@ -291,7 +300,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 @Override
                 public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean declaresFinalTrue) {
                     for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
-                        if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
+                        if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && J.Literal.isLiteralValue(v.getInitializer(), true)) {
                             declaresFinalTrue.set(true);
                             return vd;
                         }

@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 
 class MaskCreditCardNumbersTest implements RewriteTest {
@@ -63,6 +64,25 @@ class MaskCreditCardNumbersTest implements RewriteTest {
             """
               class A {
                   String cc = "1234 5678 XXXX XXXX";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaMaskLiteral() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                val card = "4111111111111111"
+              }
+              """,
+            """
+              class A {
+                val card = "41111111XXXXXXXX"
               }
               """
           )

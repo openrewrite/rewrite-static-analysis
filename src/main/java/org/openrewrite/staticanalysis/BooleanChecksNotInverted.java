@@ -16,11 +16,16 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
@@ -36,7 +41,8 @@ public class BooleanChecksNotInverted extends Recipe {
     final String description = "Ensures that boolean checks are not unnecessarily inverted. " +
             "Also fixes double negative boolean expressions. Negating a comparison and " +
             "then inverting it adds cognitive overhead; using the direct operator " +
-            "(e.g., `>=` instead of `!(... < ...)`) is clearer and easier to reason about.";
+            "(e.g., `>=` instead of `!(... < ...)`) is clearer and easier to reason about. " +
+            "Ordered floating-point comparisons retain their negation to preserve NaN behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1940");
@@ -49,6 +55,15 @@ public class BooleanChecksNotInverted extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
 
             @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
+            @Override
             @SuppressWarnings("ConstantConditions")
             public J visitUnary(J.Unary unary, ExecutionContext ctx) {
                 if (unary.getOperator() == J.Unary.Type.Not && unary.getExpression() instanceof J.Parentheses) {
@@ -57,6 +72,18 @@ public class BooleanChecksNotInverted extends Recipe {
                         J.Binary binary = (J.Binary) expr.getTree();
                         if (isComparison(binary.getLeft()) || isComparison(binary.getRight())) {
                             return super.visitUnary(unary, ctx);
+                        }
+                        switch (binary.getOperator()) {
+                            case LessThan:
+                            case GreaterThan:
+                            case LessThanOrEqual:
+                            case GreaterThanOrEqual:
+                                // A negated ordered comparison accepts NaN; its complementary operator does not.
+                                if (!isKnownIntegral(binary.getLeft().getType()) ||
+                                    !isKnownIntegral(binary.getRight().getType())) {
+                                    return super.visitUnary(unary, ctx);
+                                }
+                                break;
                         }
                         switch (binary.getOperator()) {
                             case LessThan:
@@ -80,6 +107,19 @@ public class BooleanChecksNotInverted extends Recipe {
                     }
                 }
                 return super.visitUnary(unary, ctx);
+            }
+
+            private boolean isKnownIntegral(@Nullable JavaType type) {
+                return type == JavaType.Primitive.Byte ||
+                       type == JavaType.Primitive.Short ||
+                       type == JavaType.Primitive.Int ||
+                       type == JavaType.Primitive.Long ||
+                       type == JavaType.Primitive.Char ||
+                       TypeUtils.isOfClassType(type, "java.lang.Byte") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Short") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Integer") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Long") ||
+                       TypeUtils.isOfClassType(type, "java.lang.Character");
             }
 
             private boolean isComparison(J expr) {

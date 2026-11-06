@@ -259,7 +259,6 @@ class NoFinalizedLocalVariablesTest implements RewriteTest {
         @Test
         void withNullRemovesFinal() {
             rewriteRun(
-              spec -> spec.recipe(new NoFinalizedLocalVariables(null)),
               //language=java
               java(
                 """

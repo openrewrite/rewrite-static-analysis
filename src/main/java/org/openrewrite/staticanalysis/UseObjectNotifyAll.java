@@ -32,7 +32,7 @@ import static java.util.Collections.singleton;
 
 public class UseObjectNotifyAll extends Recipe {
     @Getter
-    final String displayName = "Replaces `Object.notify()` with `Object.notifyAll()`";
+    final String displayName = "Replace `Object.notify()` with `Object.notifyAll()`";
 
     @Getter
     final String description = "`Object.notifyAll()` and `Object.notify()` both wake up " +

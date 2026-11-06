@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -49,6 +50,27 @@ class RedundantFileCreationTest implements RewriteTest {
               class Test {
                   void test() throws IOException {
                       new FileInputStream("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @SuppressWarnings("resource")
+    @Test
+    void doNotChangeFileFromUriOrAnonymousSubclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+              import java.net.URI;
+              class Test {
+                  void test(URI uri) throws IOException {
+                      new FileInputStream(new File(uri));
+                      new FileInputStream(new File("test") {});
                   }
               }
               """

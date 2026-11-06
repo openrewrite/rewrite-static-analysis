@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
@@ -33,24 +34,14 @@ import java.util.*;
 import static java.util.Collections.emptyList;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
-/**
- * This recipe converts private fields to camel case convention.
- * <p>
- * The first character is set to lower case and existing capital letters are preserved.
- * Special characters that are allowed in java field names `$` and `_` are removed.
- * If a special character is removed the next valid alpha-numeric will be capitalized.
- * <p>
- * Currently, unsupported:
- * - The recipe will not rename fields if the result already exists in a class or the result will be a java reserved keyword.
- */
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class RenamePrivateFieldsToCamelCase extends Recipe {
     private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
-    @Getter
-    final String displayName = "Reformat private field names to camelCase";
+    String displayName = "Reformat private field names to camelCase";
 
-    @Getter
-    final String description = "Reformat private field names to camelCase to comply with Java naming convention. " +
+    String description = "Reformat private field names to camelCase to comply with Java naming convention. " +
             "The recipe will not rename fields with default, protected or public access modifiers. " +
             "The recipe will not rename private constants. " +
             "The first character is set to lower case and existing capital letters are preserved. " +
@@ -61,11 +52,9 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             "Consistent naming conventions improve code readability and help developers quickly " +
             "understand the purpose and scope of fields.";
 
-    @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
+    Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -93,15 +82,10 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             }
 
             @Override
-            @SuppressWarnings("all")
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 Cursor parentScope = getCursorToParentScope(getCursor());
 
-                // Does support renaming fields in a J.ClassDeclaration.
-                // We must have a variable type to make safe changes.
-                // Only make changes to private fields that are not constants.
-                // Does not apply for instance variables of inner classes
-                // Only make a change if the variable does not conform to lower camelcase format.
+                // private fields of top-level classes (nested ones have a `$` in their name), except `static final` constants
                 JavaType.Variable type = variable.getVariableType();
                 if (parentScope.getParent() != null &&
                     parentScope.getParent().getValue() instanceof J.ClassDeclaration &&

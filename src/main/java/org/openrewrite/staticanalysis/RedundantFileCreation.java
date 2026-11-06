@@ -20,40 +20,41 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.JavaType;
+
+import static java.util.Collections.singletonList;
 
 public class RedundantFileCreation extends Recipe {
     @Getter
-    final String displayName = "Redundant file creation";
+    final String displayName = "Redundant `File` creation";
 
     @Getter
-    final String description = "Remove unnecessary intermediate creations of files.";
+    final String description = "Removes the unnecessary intermediate `File` from `new FileInputStream(new File(name))`.";
+
+    private static final MethodMatcher FILE_INPUT_STREAM_FROM_FILE = new MethodMatcher("java.io.FileInputStream <constructor>(java.io.File)");
+    private static final MethodMatcher FILE_FROM_STRING = new MethodMatcher("java.io.File <constructor>(java.lang.String)");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.io.FileInputStream", true), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(FILE_INPUT_STREAM_FROM_FILE), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = super.visitNewClass(newClass, ctx);
-                if (n.getClazz() != null && TypeUtils.isOfClassType(n.getClazz().getType(),
-                        "java.io.FileInputStream")) {
-                    n = n.withArguments(ListUtils.map(n.getArguments(), arg -> {
-                        if (arg instanceof J.NewClass) {
-                            J.NewClass newClassArg = (J.NewClass) arg;
-                            if (newClassArg.getClazz() != null &&
-                                TypeUtils.isOfClassType(newClassArg.getClazz().getType(), "java.io.File")) {
-                                if (newClassArg.getArguments().size() == 1 && !(newClassArg.getArguments().get(0) instanceof J.Empty)) {
-                                    maybeRemoveImport("java.io.File");
-                                    return newClassArg.getArguments().get(0);
-                                }
-                            }
-                        }
-                        return arg;
-                    }));
+                if (!FILE_INPUT_STREAM_FROM_FILE.matches(n) || !FILE_FROM_STRING.matches(n.getArguments().get(0))) {
+                    return n;
+                }
+                J.NewClass file = (J.NewClass) n.getArguments().get(0);
+                if (file.getBody() == null) {
+                    maybeRemoveImport("java.io.File");
+                    JavaType.Method constructorType = n.getConstructorType();
+                    return n
+                            .withArguments(file.getArguments())
+                            .withConstructorType(constructorType == null ? null :
+                                    constructorType.withParameterTypes(singletonList(JavaType.Primitive.String)));
                 }
                 return n;
             }

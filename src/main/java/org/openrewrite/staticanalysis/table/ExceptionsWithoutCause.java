@@ -43,5 +43,22 @@ public class ExceptionsWithoutCause extends DataTable<ExceptionsWithoutCause.Row
         @Column(displayName = "Thrown exception type",
                 description = "The type of the new exception thrown without referencing the caught exception.")
         String thrownType;
+
+        @Column(displayName = "Type resolved",
+                description = "Whether the caught and thrown types were read from type attribution. When `false` " +
+                              "both are the names as written in the source, which may be simple rather than qualified.")
+        boolean typeResolved;
+
+        @Column(displayName = "Line number",
+                description = "The line the `throw` statement begins on, counting from one.")
+        int lineNumber;
+
+        @Column(displayName = "Column number",
+                description = "The column the `throw` statement begins at, counting from zero.")
+        int columnNumber;
+
+        @Column(displayName = "Throw snippet",
+                description = "The `throw` statement as written, collapsed onto one line and truncated at 120 characters.")
+        String throwSnippet;
     }
 }

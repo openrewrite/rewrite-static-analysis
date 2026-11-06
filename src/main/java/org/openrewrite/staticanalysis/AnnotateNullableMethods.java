@@ -24,10 +24,11 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.*;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)
@@ -50,7 +51,7 @@ public class AnnotateNullableMethods extends Recipe {
     ));
 
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation to add. " +
+            description = "The fully qualified name of the `@Nullable` annotation to add. " +
                     "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
                     "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
@@ -60,7 +61,7 @@ public class AnnotateNullableMethods extends Recipe {
 
     String displayName = "Annotate methods which may return `null` with `@Nullable`";
 
-    String description = "Add `@Nullable` to non-private methods that may return `null`. " +
+    String description = "Add `@Nullable` to `public` methods that may return `null`. " +
             "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
             "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
             "Methods that already carry a known nullable annotation (matched by simple name) are skipped to avoid duplication. " +
@@ -151,7 +152,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return ann.getSimpleName().toLowerCase(Locale.ROOT).contains("null");
             }
         };
-        return Repeat.repeatUntilStable(javaIsoVisitor, 5);
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), Repeat.repeatUntilStable(javaIsoVisitor, 5));
     }
 
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
@@ -267,7 +268,7 @@ public class AnnotateNullableMethods extends Recipe {
                     if (p.get()) {
                         return method;
                     }
-                    if (targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
+                    if (TypeUtils.isOfType(targetMethod, method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
                         for (J.Annotation annotation : ((J.AnnotatedType) method.getReturnTypeExpression()).getAnnotations()) {
                             if (annotationMatcher.matches(annotation)) {
                                 p.set(true);

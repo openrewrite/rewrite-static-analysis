@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -32,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
   "InfiniteLoopStatement",
@@ -651,5 +653,47 @@ class NeedBracesTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Kotlin {
+        @Test
+        void addBracesForIfBranch() {
+            rewriteRun(
+              //language=kotlin
+              kotlin(
+                """
+                  fun getSymbol(num : Int) : String {
+                      if (num > 0) return "+"
+
+                      return "-"
+                  }
+                  """,
+                """
+                  fun getSymbol(num : Int) : String {
+                      if (num > 0) {
+                          return "+"
+                      }
+
+                      return "-"
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeForArguments() {
+            rewriteRun(
+              //language=kotlin
+              kotlin(
+                """
+                  fun run(foo: String, bar: String) {}
+                  var x = run( if (true) "" else "",
+                      if (true) "" else "")
+                  """
+              )
+            );
+        }
     }
 }

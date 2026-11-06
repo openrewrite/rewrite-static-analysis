@@ -46,7 +46,6 @@ public class OperatorWrap extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        //noinspection NotNullFieldNotInitialized
         return new JavaIsoVisitor<ExecutionContext>() {
             OperatorWrapStyle operatorWrapStyle;
 
@@ -66,7 +65,6 @@ public class OperatorWrap extends Recipe {
                         operatorWrapStyle = operatorWrapStyle.withWrapOption(wrapOption);
                     }
                 }
-                //noinspection DataFlowIssue
                 return super.visit(tree, ctx);
             }
 

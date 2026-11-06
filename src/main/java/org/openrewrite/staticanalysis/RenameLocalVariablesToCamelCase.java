@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
@@ -29,25 +30,13 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
-/**
- * This recipe converts local variables and method parameters to camel case convention.
- * The recipe will not rename variables declared in for loop controls or catches with a single character.
- * <br/>
- * The first character is set to lower case and existing capital letters are preserved.
- * Special characters that are allowed in java field names `$` and `_` are removed.
- * If a special character is removed the next valid alphanumeric will be capitalized.
- * <br/>
- * Currently, unsupported:
- * - The recipe will not rename variables declared in a class.
- * - The recipe will not rename variables if the result already exists in a class or the result will be a java reserved keyword.
- */
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class RenameLocalVariablesToCamelCase extends Recipe {
 
-    @Getter
-    final String displayName = "Reformat local variable names to camelCase";
+    String displayName = "Reformat local variable names to camelCase";
 
-    @Getter
-    final String description = "Reformat local variable and method parameter names to camelCase to comply " +
+    String description = "Reformat local variable names to camelCase to comply " +
             "with Java naming convention. The recipe will not rename variables declared in for loop " +
             "controls or catches with a single character. " +
             "The first character is set to lower case and existing capital letters are preserved. " +
@@ -60,11 +49,9 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             "Consistent naming conventions improve readability and reduce friction when " +
             "navigating unfamiliar code.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S117");
+    Set<String> tags = singleton("RSPEC-S117");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

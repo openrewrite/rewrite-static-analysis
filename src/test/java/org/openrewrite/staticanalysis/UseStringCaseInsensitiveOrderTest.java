@@ -86,7 +86,6 @@ class UseStringCaseInsensitiveOrderTest implements RewriteTest {
 
     @Test
     void reverseOrderUnchanged() {
-        // Argument order is reversed → semantically the inverse comparator. Must NOT rewrite.
         rewriteRun(
           //language=java
           java(
@@ -105,8 +104,7 @@ class UseStringCaseInsensitiveOrderTest implements RewriteTest {
 
     @Test
     void toLowerCaseCompareUnchanged() {
-        // Locale-aware case folding differs from String.CASE_INSENSITIVE_ORDER
-        // (which is internally locale-insensitive). Must NOT rewrite.
+        // Locale-aware case folding differs from the locale-insensitive String.CASE_INSENSITIVE_ORDER
         rewriteRun(
           //language=java
           java(
@@ -125,8 +123,6 @@ class UseStringCaseInsensitiveOrderTest implements RewriteTest {
 
     @Test
     void nonComparatorContextUnchanged() {
-        // Same lambda shape, but the target type is BiFunction — the rewrite to a
-        // Comparator constant would be a type error here. Must NOT rewrite.
         rewriteRun(
           //language=java
           java(
@@ -143,7 +139,6 @@ class UseStringCaseInsensitiveOrderTest implements RewriteTest {
 
     @Test
     void wrappedInNullsFirst() {
-        // The inner lambda should still be recognised inside a wrapping comparator factory.
         rewriteRun(
           //language=java
           java(

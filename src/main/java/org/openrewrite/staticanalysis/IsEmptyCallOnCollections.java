@@ -29,26 +29,28 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaCoordinates;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
+
 public class IsEmptyCallOnCollections extends Recipe {
     private static final MethodMatcher COLLECTION_SIZE = new MethodMatcher("java.util.Collection size()", true);
+    private static final MethodMatcher COLLECTION_IS_EMPTY = new MethodMatcher("java.util.Collection isEmpty()", true);
 
     @Getter
     final String displayName = "Use `Collection#isEmpty()` instead of comparing `size()`";
 
     @Getter
-    final String description = "Also check for _not_ `isEmpty()` when testing for not equal " +
-            "to zero size. Using `isEmpty()` communicates intent more clearly " +
+    final String description = "Replaces comparisons of `size()` to zero with `isEmpty()`, or with `!isEmpty()` " +
+            "when testing for a non-zero size. Using `isEmpty()` communicates intent more clearly " +
             "than comparing `size()` to zero, and for some collection " +
             "implementations `isEmpty()` can be more efficient since `size()` " +
             "may require traversal.";
 
     @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
+    final Set<String> tags = singleton("RSPEC-S1155");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
@@ -56,6 +58,16 @@ public class IsEmptyCallOnCollections extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTION_SIZE), new JavaVisitor<ExecutionContext>() {
+
+            @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                // The implementation can use size() as its base case. Replacing that call
+                // with isEmpty() would make the implementation call itself indefinitely.
+                if (COLLECTION_IS_EMPTY.matches(method.getMethodType())) {
+                    return method;
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
 
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
@@ -96,8 +108,7 @@ public class IsEmptyCallOnCollections extends Recipe {
             private J newIsEmptyCall(J.MethodInvocation method, JavaCoordinates coordinates, boolean negate) {
                 JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()").build();
                 if (method.getSelect() == null) {
-                    assert method.getMethodType() != null;
-                    J.Identifier this_ = JavaElementFactory.newThis(method.getMethodType().getDeclaringType());
+                    J.Identifier this_ = JavaElementFactory.newThis(requireNonNull(method.getMethodType()).getDeclaringType());
                     J isEmptyCall = isEmpty.apply(getCursor(), coordinates, negate ? "!" : "", this_);
                     if (negate) {
                         return ((J.Unary) isEmptyCall).withExpression(((J.MethodInvocation) ((J.Unary) isEmptyCall).getExpression()).withSelect(null));

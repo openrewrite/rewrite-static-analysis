@@ -165,4 +165,39 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
               )
             );
     }
+
+    @Test
+    void replaceSoleBodyStatementWithEmptyBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                      super.finalize();
+                  }
+
+                  void m(A a, boolean d) {
+                      if (d) a.finalize();
+                      do a.finalize(); while (d);
+                  }
+              }
+              """,
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                      super.finalize();
+                  }
+
+                  void m(A a, boolean d) {
+                      if (d) {}
+                      do {} while (d);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

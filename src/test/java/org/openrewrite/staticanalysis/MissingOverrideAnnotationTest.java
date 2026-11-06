@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings({"MethodMayBeStatic", "FunctionName"})
 class MissingOverrideAnnotationTest implements RewriteTest {
@@ -485,9 +486,8 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     }
 
     @Test
-    void whenIgnoreObjectMethodsIsFalseAndAMethodOverridesFromTheBaseObjectClass() {
+    void whenAMethodOverridesFromTheBaseObjectClass() {
         rewriteRun(
-          spec -> spec.recipe(new MissingOverrideAnnotation(null)),
           //language=java
           java(
             """
@@ -523,5 +523,22 @@ class MissingOverrideAnnotationTest implements RewriteTest {
             }
             """
           ));
+    }
+
+    @Test
+    void doNotChangePython() {
+        rewriteRun(
+          python(
+            """
+              class Scorer:
+                  def predict(self, query: str, snippet: str) -> float:
+                      return 0.0
+
+              class LengthScorer(Scorer):
+                  def predict(self, query: str, snippet: str) -> float:
+                      return float(len(snippet))
+              """
+          )
+        );
     }
 }

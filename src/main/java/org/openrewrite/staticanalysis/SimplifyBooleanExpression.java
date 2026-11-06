@@ -15,42 +15,63 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static java.util.Collections.singleton;
+import static java.util.Arrays.asList;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class SimplifyBooleanExpression extends Recipe {
+    private static final AnnotationMatcher BEFORE_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
+    private static final AnnotationMatcher AFTER_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.AfterTemplate");
 
-    @Getter
-    final String displayName = "Simplify boolean expression";
+    String displayName = "Simplify boolean expression";
 
-    @Getter
-    final String description = "Checks for overly complicated boolean expressions, such as " +
+    String description = "Checks for overly complicated boolean expressions, such as " +
             "`if (b == true)`, `b || true`, `!false`, etc. Needlessly complex boolean logic makes " +
             "code harder to reason about and increases the chance of introducing errors " +
             "during future modifications.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1125");
+    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1125", "RSPEC-S1940", "RSPEC-S9435"));
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        // Java boolean literal spelling and statement-expression rules do not apply to Python.
         return new SimplifyBooleanExpressionVisitor() {
+            @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream()
+                        .anyMatch(a -> BEFORE_TEMPLATE.matches(a) || AFTER_TEMPLATE.matches(a))) {
+                    return method;
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
 
             @Override
-            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                // NOTE: This method is required here for the `TreeVisitorAdapter` to work
-                return super.visit(tree, ctx);
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
             }
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
@@ -58,8 +79,8 @@ public class SimplifyBooleanExpression extends Recipe {
             // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                if (j instanceof J.MethodInvocation) {
-                    return !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                if (j instanceof Expression && ((Expression) j).unwrap().getMarkers().findFirst(IsNullSafe.class).isPresent()) {
+                    return false;
                 }
                 return super.shouldSimplifyEqualsOn(j);
             }

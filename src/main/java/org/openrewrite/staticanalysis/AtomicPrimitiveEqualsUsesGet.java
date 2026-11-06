@@ -46,7 +46,7 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
     );
 
     @Getter
-    final String displayName = "Atomic Boolean, Integer, and Long equality checks compare their values";
+    final String displayName = "`AtomicBoolean`, `AtomicInteger`, and `AtomicLong` equality checks compare their values";
 
     @Getter
     final String description = "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and " +
@@ -72,7 +72,8 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (mi.getSelect() != null && isAtomicEqualsType(mi.getSelect().getType()) && aiMethodMatcher.matches(mi) &&
-                    TypeUtils.isOfType(mi.getSelect().getType(), mi.getArguments().get(0).getType())) {
+                    TypeUtils.isOfType(mi.getSelect().getType(), mi.getArguments().get(0).getType()) &&
+                    !StatementRemoval.needsStatementExpression(getCursor())) {
                     JavaType.FullyQualified fqt = TypeUtils.asFullyQualified(mi.getSelect().getType());
                     if (fqt != null) {
                         String templateString = "#{any(" + fqt.getFullyQualifiedName() + ")}.get() == #{any(" + fqt.getFullyQualifiedName() + ")}.get()";

@@ -23,11 +23,11 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.10.0")
 public class IndexOfReplaceableByContains extends Recipe {
     private static final MethodMatcher STRING_INDEX_MATCHER = new MethodMatcher("java.lang.String indexOf(String)");
     private static final MethodMatcher LIST_INDEX_MATCHER = new MethodMatcher("java.util.List indexOf(Object)");
@@ -44,6 +44,9 @@ public class IndexOfReplaceableByContains extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2692");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

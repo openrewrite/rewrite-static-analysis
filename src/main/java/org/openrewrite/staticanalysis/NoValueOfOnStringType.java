@@ -25,7 +25,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
@@ -62,9 +61,9 @@ public class NoValueOfOnStringType extends Recipe {
                 }
 
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
+                if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1 && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Expression argument = mi.getArguments().get(0);
-                    if ((TypeUtils.isString(argument.getType()) && !(argument instanceof J.MethodInvocation)) || removeValueOfForStringConcatenation(argument)) {
+                    if ((TypeUtils.isString(argument.getType()) && isNeverNull(argument)) || removeValueOfForStringConcatenation(argument)) {
                         return maybeParenthesize(argument.withPrefix(mi.getPrefix()), updateCursor(mi));
                     }
                 }
@@ -72,19 +71,55 @@ public class NoValueOfOnStringType extends Recipe {
             }
 
             /**
-             * If the String#valueOf method is within a binary expression and the argument is a primitive, the valueOf
-             * can be removed if the binary expression's type is a String.
+             * {@code String.valueOf(s)} only equals {@code s} when {@code s} is not null; for a null {@code String}
+             * it yields {@code "null"} instead. Removing the call is therefore only safe for arguments that cannot
+             * be null. Method invocations were already excluded for this reason; identifiers, field accesses and
+             * casts are no safer, so require the argument to be demonstrably non-null instead.
+             *
+             * @param argument The argument of the valueOf method.
+             * @return True if the argument can never be null.
+             */
+            private boolean isNeverNull(Expression argument) {
+                Expression e = argument;
+                while (e instanceof J.Parentheses) {
+                    J tree = ((J.Parentheses<?>) e).getTree();
+                    if (!(tree instanceof Expression)) {
+                        return false;
+                    }
+                    e = (Expression) tree;
+                }
+                if (e instanceof J.Literal) {
+                    return ((J.Literal) e).getValue() != null;
+                }
+                // String concatenation always produces a non-null String.
+                return e instanceof J.Binary &&
+                        ((J.Binary) e).getOperator() == J.Binary.Type.Addition &&
+                        TypeUtils.isString(e.getType());
+            }
+
+            /**
+             * If the String#valueOf method is within a binary expression and the argument is a primitive or a String,
+             * the valueOf can be removed if the binary expression's type is a String. A String argument is safe here
+             * even when it is null, because concatenation renders a null operand as {@code "null"} exactly as
+             * String#valueOf would.
              *
              * @param argument The argument of the valueOf method.
              * @return True if the method can be removed.
              */
             private boolean removeValueOfForStringConcatenation(Expression argument) {
-                if (TypeUtils.asPrimitive(argument.getType()) != null) {
+                if (TypeUtils.asPrimitive(argument.getType()) != null || TypeUtils.isString(argument.getType())) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {
                         J.Binary b = (J.Binary) parent;
-                        JavaType otherType = b.getRight() == getCursor().getValue() ? b.getLeft().getType() : b.getRight().getType();
-                        return TypeUtils.isString(otherType) && b.getOperator() == J.Binary.Type.Addition;
+                        if (b.getRight() == getCursor().getValue()) {
+                            return TypeUtils.isString(b.getLeft().getType()) && b.getOperator() == J.Binary.Type.Addition;
+                        }
+                        // Keep this call when the right operand is a `String.valueOf(primitive)` that loses its own call,
+                        // as otherwise `String.valueOf(a) + String.valueOf(b)` would turn into a numeric `a + b`
+                        Expression right = b.getRight();
+                        boolean rightLosesValueOf = VALUE_OF.matches(right) &&
+                                TypeUtils.asPrimitive(((J.MethodInvocation) right).getArguments().get(0).getType()) != null;
+                        return TypeUtils.isString(right.getType()) && !rightLosesValueOf && b.getOperator() == J.Binary.Type.Addition;
                     }
                 }
                 return false;

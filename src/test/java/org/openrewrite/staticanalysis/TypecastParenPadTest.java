@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class TypecastParenPadTest implements RewriteTest {
 
@@ -61,6 +62,29 @@ class TypecastParenPadTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepFormattingOfCastExpression() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Object m(Object o) {
+                      return ( String )String.valueOf( o==null ? 1 : 2 );
+                  }
+              }
+              """,
+            """
+              class A {
+                  Object m(Object o) {
+                      return (String) String.valueOf( o==null ? 1 : 2 );
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/561")
     @Test
     void noChangeForGroovy() {
@@ -72,6 +96,20 @@ class TypecastParenPadTest implements RewriteTest {
                   void m(Object o) {
                       int l = ( o as String).length()
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun m(o: Any) {
+                  val l = (o as String).length
               }
               """
           )

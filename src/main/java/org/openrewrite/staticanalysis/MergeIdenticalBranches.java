@@ -19,7 +19,7 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -46,19 +46,18 @@ public class MergeIdenticalBranches extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J visitIf(J.If if_, ExecutionContext ctx) {
-                J.If if__ = (J.If) super.visitIf(if_, ctx);
+            public J.If visitIf(J.If if_, ExecutionContext ctx) {
+                J.If if__ = super.visitIf(if_, ctx);
 
                 // Only process the outermost if
                 if (getCursor().getParentTreeCursor().getValue() instanceof J.If.Else) {
                     return if__;
                 }
 
-                J.If merged = mergeConsecutiveIdentical(if__);
-                return merged != if__ ? merged : if__;
+                return mergeConsecutiveIdentical(if__);
             }
 
             private J.If mergeConsecutiveIdentical(J.If outerIf) {
@@ -72,7 +71,6 @@ public class MergeIdenticalBranches extends Recipe {
                     J.If elseIf = (J.If) elseBody;
 
                     if (SemanticallyEqual.areEqual(outerIf.getThenPart(), elseIf.getThenPart())) {
-                        // Merge: combine conditions with ||, skip the else-if
                         Expression combined = JavaElementFactory.newLogicalExpression(
                                 J.Binary.Type.Or,
                                 outerIf.getIfCondition().getTree(),
@@ -83,11 +81,9 @@ public class MergeIdenticalBranches extends Recipe {
                                 .withIfCondition(outerIf.getIfCondition().withTree(combined))
                                 .withElsePart(elseIf.getElsePart());
 
-                        // Continue merging in case the next branch also matches
                         return mergeConsecutiveIdentical(merged);
                     }
 
-                    // Recurse into the rest of the chain
                     J.If rebuiltElseIf = mergeConsecutiveIdentical(elseIf);
                     if (rebuiltElseIf != elseIf) {
                         return outerIf.withElsePart(outerIf.getElsePart().withBody(rebuiltElseIf));

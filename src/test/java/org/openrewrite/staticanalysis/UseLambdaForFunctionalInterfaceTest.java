@@ -15,9 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
@@ -33,12 +35,48 @@ import java.util.EnumSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 
 @SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef", "WriteOnlyObject", "Convert2Diamond", "Convert2MethodRef", "ResultOfMethodCallIgnored", "StatementWithEmptyBody", "ConstantValue", "NonFinalFieldInEnum", "LoopConditionNotUpdatedInsideLoop"})
 class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseLambdaForFunctionalInterface());
+    }
+
+    @Test
+    void removeOnlyTheImportsOfTheReplacedClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map;
+              import java.util.function.Function;
+
+              class Test {
+                  Integer lengthOf(Map<String, Integer> lengths, String key) {
+                      return lengths.computeIfAbsent(key, new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String s) {
+                              return s.length();
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              class Test {
+                  Integer lengthOf(Map<String, Integer> lengths, String key) {
+                      return lengths.computeIfAbsent(key, s -> s.length());
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -73,7 +111,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void castingAmbiguity() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
           java(
             """
@@ -114,13 +151,74 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void varargsArgumentAfterFixedArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(Object... args) {}
+                  void test(Object first) {
+                      of(first, new I() {
+                          @Override public int run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(Object... args) {}
+                  void test(Object first) {
+                      of(first, (I) () -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void functionalInterfaceVarargsNeedsNoCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(I... args) {}
+                  void test() {
+                      of(new I() {
+                          @Override public int run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(I... args) {}
+                  void test() {
+                      of(() -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/194")
     @SuppressWarnings("ConstantConditions")
     @Test
     void gson() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface())
-            .parser(JavaParser.fromJavaVersion().classpath("gson")),
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "gson-2")),
           //language=java
           java(
             """
@@ -308,7 +406,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void usedAsStatementWithNonInferrableType() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
           java(
             """
@@ -326,7 +423,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
+    @ExpectedToFail("Any `this` blocks the conversion, even a qualified `Test.this` that means the same inside a lambda")
     @Test
     void useLambdaThenSimplifyFurther() {
         rewriteRun(
@@ -817,7 +914,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-app/issues/17")
+    // Anonymous class passed to a generic constructor needs a cast on the lambda to keep type inference working
     @Test
     void lambdaWithComplexTypeInference() {
         rewriteRun(
@@ -1659,6 +1756,26 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
             spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
           )
         );
+    }
+
+    @Nested
+    class JavaScript {
+        @Test
+        void doNotCrashOnOptionalCatchBinding() {
+            rewriteRun(
+              javascript(
+                """
+                  function load() {
+                    try {
+                      doWork();
+                    } catch {
+                      return null;
+                    }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     /// Rewrite the type attribution the way a source derived from bytecode records it: `default` is not an

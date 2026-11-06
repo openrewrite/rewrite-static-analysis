@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +30,7 @@ class UseObjectNotifyAllTest implements RewriteTest {
         spec.recipe(new UseObjectNotifyAll());
     }
 
+    @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite/issues/1645")
     @Test
     void useObjectNotifyAll() {
@@ -52,7 +54,7 @@ class UseObjectNotifyAllTest implements RewriteTest {
                        }
                        time++;
                        lock.notify();
-                       Thread.notify();
+                       Thread.currentThread().notify();
                      }
                    } catch (InterruptedException ie) {
                      Thread.currentThread().interrupt(); // Reset interrupted status
@@ -82,7 +84,7 @@ class UseObjectNotifyAllTest implements RewriteTest {
                        }
                        time++;
                        lock.notifyAll();
-                       Thread.notifyAll();
+                       Thread.currentThread().notifyAll();
                      }
                    } catch (InterruptedException ie) {
                      Thread.currentThread().interrupt(); // Reset interrupted status

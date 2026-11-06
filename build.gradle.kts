@@ -12,6 +12,12 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
+recipeDependencies {
+    testParserClasspath("com.google.code.gson:gson:2.+")
+    testParserClasspath("junit:junit:4.13.2")
+    testParserClasspath("org.testng:testng:7.+")
+}
+
 val provided = configurations.named("provided")
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
@@ -21,7 +27,6 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
     // Limit transitive dependencies for downstream projects like rewrite-spring
@@ -29,6 +34,7 @@ dependencies {
     provided("org.openrewrite:rewrite-javascript:${rewriteVersion}")
     provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-scala:${rewriteVersion}")
     provided("org.openrewrite:rewrite-python:${rewriteVersion}")
     provided("org.openrewrite:rewrite-go:${rewriteVersion}")
 
@@ -40,16 +46,10 @@ dependencies {
     }
 
     testImplementation("org.openrewrite:rewrite-test")
-    testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("org.junit.platform:junit-platform-launcher")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.testng:testng:7.+")
     testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")
 
-    testImplementation("com.google.code.gson:gson:latest.release")
-
-    testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
 
@@ -58,7 +58,7 @@ dependencies {
 // into the same `~/.npm/_npx` directory, and the resulting overlap leaves the package half-written, so
 // the tests fail with "RPC process shut down early". Installing once up front keeps every spawn a
 // cache hit.
-val warmJavaScriptRpcCache by tasks.registering {
+val warmJavaScriptRpcCache = tasks.register("warmJavaScriptRpcCache") {
     description = "Installs the npm package that the JavaScript RPC tests spawn, so they never race on a cold npx cache."
     val rewriteJavaScriptJars = configurations.named("testRuntimeClasspath")
         .map { classpath -> classpath.filter { it.name.startsWith("rewrite-javascript-") } }

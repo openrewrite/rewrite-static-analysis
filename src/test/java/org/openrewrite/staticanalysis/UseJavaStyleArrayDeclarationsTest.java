@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -69,6 +70,28 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
                   int[] i = null;
                   public int[] getCount(int[] val) {
                       return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotChangeMultiVariableDeclarationsWithMismatchedDimensions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int a, b[];
+                  int c[], d;
+                  int e[], f[][];
+
+                  void m() {
+                      for (int i = 0, arr[] = {1, 2, 3}; i < arr.length; i++) {
+                      }
                   }
               }
               """

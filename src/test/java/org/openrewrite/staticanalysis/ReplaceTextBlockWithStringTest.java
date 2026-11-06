@@ -426,6 +426,32 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     }
 
     @Test
+    void backslash() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            package com.example;
+
+            public class Test {
+                String str =
+                        \"\"\"
+                        C:\\\\line1
+                        \"\"\";
+            }
+            """,
+            """
+            package com.example;
+
+            public class Test {
+                String str =
+                        "C:\\\\line1\\n";
+            }
+            """
+          ));
+    }
+
+    @Test
     void unicode() {
         rewriteRun(
           //language=java

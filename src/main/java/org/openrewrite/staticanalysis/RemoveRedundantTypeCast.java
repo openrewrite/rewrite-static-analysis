@@ -16,19 +16,20 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
-@Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
     private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
 
@@ -48,7 +49,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new JavaFileChecker<>(), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                 J visited = super.visitTypeCast(typeCast, ctx);
@@ -100,8 +101,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                 // `log(String, Throwable)` selected by `(Object) value`). Bail out before
                 // any other branch decides the cast is redundant.
                 if (parentValue instanceof MethodCall) {
-                    JavaType.Method methodType = ((MethodCall) parentValue).getMethodType();
+                    MethodCall methodCall = (MethodCall) parentValue;
+                    JavaType.Method methodType = methodCall.getMethodType();
                     if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    }
+                    // `null` is applicable to every reference parameter, so a cast on `null` is what picks
+                    // the overload. `hasMethodOverloading` only sees the declaring type, which misses
+                    // overloads inherited from a supertype or declared on the receiver's own type.
+                    if (J.Literal.isLiteralValue(typeCast.getExpression(), null) &&
+                            selectsOverload(methodCall, methodType, typeCast)) {
                         return visited;
                     }
                 }
@@ -127,10 +136,11 @@ public class RemoveRedundantTypeCast extends Recipe {
                 }
 
                 JavaType targetType = null;
-                if (castType.equals(expressionType)) {
+                if (TypeUtils.isOfType(castType, expressionType)) {
                     targetType = castType;
-                } else if (parentValue instanceof J.VariableDeclarations) {
-                    targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
+                } else if (parentValue instanceof J.VariableDeclarations &&
+                        parentTreeCursor.getValue() instanceof J.VariableDeclarations.NamedVariable) {
+                    targetType = ((J.VariableDeclarations.NamedVariable) parentTreeCursor.getValue()).getType();
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
@@ -138,7 +148,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
-                            if (arg == typeCast) {
+                            if (arg.unwrap() == typeCast) {
                                 // Preserve a semantically significant cast at the varargs position: a `null`
                                 // literal (array vs. single null element) or an array cast to a non-array type
                                 // (e.g. `(Object)`, marking the array as a single element rather than spread).
@@ -150,15 +160,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                                                         !(castType instanceof JavaType.Array))) {
                                     return visited;
                                 }
-                                targetType = getParameterType(methodType, i);
+                                targetType = getParameterType(methodType, i, castType);
                                 break;
                             }
                         }
                     }
-                    if (TypeUtils.isAssignableTo(castType, expressionType)) {
+                    // Not an argument, so the cast selects the receiver type (e.g. `((Bar) getChildBar()).getName()`).
+                    // An argument keeps the declared parameter type, against which a raw cast can be load-bearing.
+                    if (targetType == null && TypeUtils.isAssignableTo(castType, expressionType)) {
                         targetType = castType;
                     }
-                } else if (parentValue instanceof J.Return && expressionIsTypeCast((J.Return) parentValue, typeCast)) {
+                } else if (parentValue instanceof J.Return && Expression.unwrap(((J.Return) parentValue).getExpression()) == typeCast) {
                     parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
                                                           is instanceof J.MethodDeclaration ||
                                                           is instanceof J.ClassDeclaration ||
@@ -192,7 +204,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 // the cast might be necessary to control generic type inference
                 if (parentValue instanceof J.MethodInvocation &&
                         TypeUtils.isAssignableTo(castType, expressionType) &&
-                        !castType.equals(expressionType)) {
+                        !TypeUtils.isOfType(castType, expressionType)) {
                     // Check if the method returns a generic type
                     JavaType.Method methodType = ((J.MethodInvocation) parentValue).getMethodType();
                     if (methodType != null && methodType.getReturnType() instanceof JavaType.Parameterized) {
@@ -246,6 +258,63 @@ public class RemoveRedundantTypeCast extends Recipe {
                                 TypeUtils.isOfClassType(methodType.getDeclaringType(), "java.lang.invoke.VarHandle"));
             }
 
+            /// Whether some other method visible at the call site accepts `null` at the same argument
+            /// position with a different type, which is what the cast is there to disambiguate.
+            private boolean selectsOverload(MethodCall call, JavaType.Method methodType, J.TypeCast typeCast) {
+                int index = -1;
+                List<Expression> arguments = call.getArguments();
+                for (int i = 0; i < arguments.size(); i++) {
+                    if (arguments.get(i) == typeCast) {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index < 0 || index >= methodType.getParameterTypes().size()) {
+                    return false;
+                }
+                // Resolution starts at the type named at the call site, not at the declaring type: an
+                // anonymous class delegates to its supertype's constructors, and a subtype can declare
+                // overloads of a method it inherits.
+                JavaType.FullyQualified searchFrom = null;
+                if (call instanceof J.NewClass && ((J.NewClass) call).getClazz() != null) {
+                    searchFrom = TypeUtils.asFullyQualified(((J.NewClass) call).getClazz().getType());
+                } else if (call instanceof J.MethodInvocation && ((J.MethodInvocation) call).getSelect() != null) {
+                    searchFrom = TypeUtils.asFullyQualified(((J.MethodInvocation) call).getSelect().getType());
+                }
+                return declaresCompetingOverload(searchFrom == null ? methodType.getDeclaringType() : searchFrom,
+                        methodType, index, new HashSet<>());
+            }
+
+            private boolean declaresCompetingOverload(JavaType.@Nullable FullyQualified type, JavaType.Method methodType,
+                                                      int index, Set<String> seen) {
+                if (type == null || !seen.add(type.getFullyQualifiedName())) {
+                    return false;
+                }
+                JavaType parameterType = methodType.getParameterTypes().get(index);
+                for (JavaType.Method candidate : type.getMethods()) {
+                    if (candidate.getName().equals(methodType.getName()) &&
+                            candidate.getParameterTypes().size() == methodType.getParameterTypes().size()) {
+                        JavaType candidateType = candidate.getParameterTypes().get(index);
+                        // A primitive parameter is not a candidate for `null`; an identical one is an override.
+                        if (!(candidateType instanceof JavaType.Primitive) && !TypeUtils.isOfType(candidateType, parameterType)) {
+                            return true;
+                        }
+                    }
+                }
+                if (methodType.isConstructor()) {
+                    return false;
+                }
+                if (declaresCompetingOverload(type.getSupertype(), methodType, index, seen)) {
+                    return true;
+                }
+                for (JavaType.FullyQualified anInterface : type.getInterfaces()) {
+                    if (declaresCompetingOverload(anInterface, methodType, index, seen)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             private boolean returnsDeclaredTypeParameter(Expression expression) {
                 if (!(expression instanceof J.MethodInvocation)) {
                     return false;
@@ -266,28 +335,12 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return false;
             }
 
-            private JavaType getParameterType(JavaType.Method method, int arg) {
+            private JavaType getParameterType(JavaType.Method method, int arg, JavaType argType) {
                 List<JavaType> parameterTypes = method.getParameterTypes();
-                if (parameterTypes.size() > arg) {
-                    return parameterTypes.get(arg);
-                }
-                // varargs?
-                JavaType type = parameterTypes.get(parameterTypes.size() - 1);
-                return type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
-            }
-
-            private boolean expressionIsTypeCast(J.Return return_, J.TypeCast typeCast) {
-                if (return_.getExpression() instanceof J.Parentheses<?>) {
-                    return expressionIsTypeCast((J.Parentheses<?>) return_.getExpression(), typeCast);
-                }
-                return return_.getExpression() == typeCast;
-            }
-
-            private boolean expressionIsTypeCast(J.Parentheses<?> parentheses, J.TypeCast typeCast) {
-                if (parentheses.getTree() instanceof J.Parentheses) {
-                    return expressionIsTypeCast((J.Parentheses<?> ) parentheses.getTree(), typeCast);
-                }
-               return parentheses.getTree() == typeCast;
+                int last = parameterTypes.size() - 1;
+                JavaType type = parameterTypes.get(Math.min(arg, last));
+                boolean varargsElement = arg > last || arg == last && !(argType instanceof JavaType.Array);
+                return varargsElement && type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
         });
     }

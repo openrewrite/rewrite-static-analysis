@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -32,14 +31,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-@Incubating(since = "7.33.0")
 public class RemoveEmptyJavaDocParameters extends Recipe {
 
     @Getter
-    final String displayName = "Remove JavaDoc `@param`, `@return`, and `@throws` with no description";
+    final String displayName = "Remove Javadoc `@param`, `@return`, and `@throws` with no description";
 
     @Getter
-    final String description = "Removes `@param`, `@return`, and `@throws` with no description from JavaDocs.";
+    final String description = "Removes `@param` and `@return` tags with no description, and `@throws` tags with neither an exception type nor a description, from Javadoc comments.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
@@ -75,7 +73,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     boolean useNewBody = false;
 
                     List<Javadoc> body = new ArrayList<>(javadoc.getBody());
-                    // We add a trailing element, to fix elements on the first line without space
+                    // We add a leading element, to fix elements on the first line without space
                     // We can use null since this element is never going to be read, and nulls get filtered later on.
                     body.add(0, null);
 

@@ -15,10 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
@@ -26,12 +27,92 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class FinalizePrivateFieldsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new FinalizePrivateFields());
+    }
+
+    @Test
+    void assignmentsInNestedClassInitializersDoNotFinalizeOuterFields() {
+        rewriteRun(
+          java(
+            """
+              class Outer {
+                  private static boolean classInitializerRan;
+                  private boolean instanceInitializerRan;
+                  private boolean constructorRan;
+
+                  static class Plugin {
+                      static {
+                          classInitializerRan = true;
+                      }
+                  }
+
+                  class Inner {
+                      {
+                          instanceInitializerRan = true;
+                      }
+
+                      Inner() {
+                          constructorRan = true;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void assignmentsInOwnInitializersStillFinalizeFields() {
+        rewriteRun(
+          java(
+            """
+              class Outer {
+                  private static boolean classInitializerRan;
+                  private boolean instanceInitializerRan;
+                  private boolean constructorRan;
+
+                  static {
+                      classInitializerRan = true;
+                  }
+
+                  {
+                      instanceInitializerRan = true;
+                  }
+
+                  Outer() {
+                      constructorRan = true;
+                  }
+              }
+              """,
+            """
+              class Outer {
+                  private static final boolean classInitializerRan;
+                  private final boolean instanceInitializerRan;
+                  private final boolean constructorRan;
+
+                  static {
+                      classInitializerRan = true;
+                  }
+
+                  {
+                      instanceInitializerRan = true;
+                  }
+
+                  Outer() {
+                      constructorRan = true;
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample("Finalize private field.")
@@ -398,43 +479,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Disabled("Doesn't support multiple constructors, to be enhanced")
-    @Test
-    void fieldAssignedInAllAlternateConstructors() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private String name;
-
-                  A() {
-                    name = "XYZ";
-                  }
-
-                  A(String n) {
-                    name = n;
-                  }
-              }
-              """,
-            """
-              class A {
-                  private final String name;
-
-                  A() {
-                    name = "XYZ";
-                  }
-
-                  A(String n) {
-                    name = n;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Disabled("Doesn't support if-else conditions analysis, to be enhanced.")
+    @ExpectedToFail("Assignments are counted rather than analysed for definite assignment, so one per `if`/`else` branch counts as two")
     @Test
     void fieldAssignedInIfElseStatementsInConstructor() {
         rewriteRun(
@@ -463,41 +508,6 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                       } else {
                           name = "XYZ";
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Disabled("Multi constructors ignored")
-    @Issue("https://github.com/openrewrite/rewrite/issues/2865")
-    @Test
-    void fieldAssignedIndirectlyInAllAlternateConstructors() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private String name;
-
-                  A() {
-                    this("ABC");
-                  }
-                  A(String name) {
-                    this.name = name;
-                  }
-              }
-              """,
-            """
-              class A {
-                  private final String name;
-
-                  A() {
-                    this("ABC");
-                  }
-                  A(String name) {
-                    this.name = name;
                   }
               }
               """
@@ -949,6 +959,170 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     }
 
     @Test
+    void fieldReadByInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private int x;
+                  private int y = x + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private int x;
+                  private final int y = x + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldReadByInitializerBlockBeforeAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private int x;
+                  private int y;
+                  {
+                      System.out.println(this.x);
+                      y = 1;
+                  }
+                  private int z = y + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private int x;
+                  private final int y;
+                  {
+                      System.out.println(this.x);
+                      y = 1;
+                  }
+                  private final int z = y + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticFieldReadByInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private static int x;
+                  static {
+                      x = 5;
+                  }
+                  private int y = x + 1;
+              }
+              """,
+            """
+              class A {
+                  private static final int x;
+                  static {
+                      x = 5;
+                  }
+                  private final int y = x + 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinVarBecomesVal() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private var count = 0
+                  fun get() = count
+              }
+              """,
+            """
+              class A {
+                  private val count = 0
+                  fun get() = count
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinReassignedVarUnchanged() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private var count = 0
+                  fun inc() {
+                      count = count + 1
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinLateinitVarUnchanged() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private lateinit var name: String
+                  init {
+                      name = "A"
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotFinalizeGroovyPrivateFields() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class A {
+                  private int count = 0
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void keepIndentation() {
         rewriteRun(
           //language=java
@@ -976,5 +1150,31 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               }
               """
           ));
+    }
+
+    @Test
+    void doNotFinalizeTypeScriptPrivateFields() {
+        rewriteRun(
+          typescript(
+            """
+              class A {
+                  private name: string = "ABC";
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<Integer>() {
+                @Override
+                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer p) {
+                    assertThat(multiVariable.getModifiers()).noneSatisfy(
+                            m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
+                    for (J.VariableDeclarations.NamedVariable variable : multiVariable.getVariables()) {
+                        if (variable.getVariableType() != null) {
+                            assertThat(variable.getVariableType().getFlags()).doesNotContain(Flag.Final);
+                        }
+                    }
+                    return super.visitVariableDeclarations(multiVariable, p);
+                }
+            }.visit(cu, 0))
+          )
+        );
     }
 }

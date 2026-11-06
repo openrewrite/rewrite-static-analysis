@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -23,7 +24,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesField;
-import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
@@ -54,10 +54,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.and(
-                new UsesType<>("java.util.Collections", false),
-                new UsesField<>("java.util.Collections", "EMPTY_*")
-        ), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesField<>("java.util.Collections", "EMPTY_*"), new JavaVisitor<ExecutionContext>() {
             final Map<String, String> updateFields = new HashMap<>();
 
             {
@@ -68,11 +65,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
             @Override
             public J visitImport(J.Import anImport, ExecutionContext ctx) {
-                J.Identifier name = anImport.getQualid().getName();
-                if (anImport.isStatic() && updateFields.containsKey(name.getSimpleName()) &&
-                    TypeUtils.isOfClassType(anImport.getQualid().getTarget().getType(), "java.util.Collections")) {
-                    return anImport.withQualid(anImport.getQualid().withName(name.withSimpleName(updateFields.get(name.getSimpleName()))));
-                }
+                // Imports are updated only for converted uses; a cast may still need the constant.
                 return anImport;
             }
 
@@ -82,6 +75,9 @@ public class NoEmptyCollectionWithRawType extends Recipe {
                 JavaType.Variable varType = name.getFieldType();
                 if (varType != null && updateFields.containsKey(varType.getName()) &&
                     TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections")) {
+                    if (isDirectCastOperand()) {
+                        return fieldAccess;
+                    }
                     return JavaTemplate.builder("java.util.Collections." + updateFields.get(varType.getName()) + "()")
                             .contextSensitive() // context sensitive due to generics
                             .build()
@@ -96,7 +92,11 @@ public class NoEmptyCollectionWithRawType extends Recipe {
                 JavaType.Variable varType = identifier.getFieldType();
                 if (varType != null && updateFields.containsKey(varType.getName()) &&
                     TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections")) {
-
+                    if (isDirectCastOperand()) {
+                        return identifier;
+                    }
+                    maybeAddImport("java.util.Collections", updateFields.get(varType.getName()));
+                    maybeRemoveImport("java.util.Collections." + varType.getName());
                     return JavaTemplate.builder(updateFields.get(varType.getName()) + "()")
                             .contextSensitive() // context sensitive due to generics
                             .staticImports("java.util.Collections." + updateFields.get(varType.getName()))
@@ -104,6 +104,14 @@ public class NoEmptyCollectionWithRawType extends Recipe {
                             .apply(getCursor(), identifier.getCoordinates().replace());
                 }
                 return identifier;
+            }
+
+            private boolean isDirectCastOperand() {
+                Cursor parent = getCursor().getParentTreeCursor();
+                while (parent.getValue() instanceof J.Parentheses || parent.getValue() instanceof J.ControlParentheses) {
+                    parent = parent.getParentTreeCursor();
+                }
+                return parent.getValue() instanceof J.TypeCast;
             }
         });
     }

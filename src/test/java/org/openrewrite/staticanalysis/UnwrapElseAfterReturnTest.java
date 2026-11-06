@@ -30,6 +30,43 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
         spec.recipe(new UnwrapElseAfterReturn());
     }
 
+    @Test
+    void keepFormattingOfUnrelatedStatements() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      int x=1;
+                      if (condition) {
+                          return x;
+                      } else {
+                          if (x>0) {
+                              x=2;
+                          }
+                          return x;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      int x=1;
+                      if (condition) {
+                          return x;
+                      }
+                      if (x>0) {
+                          x=2;
+                      }
+                      return x;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simpleIfElseWithReturn() {
@@ -232,6 +269,33 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
     }
 
     @Test
+    void elseWithSingleStatementOnSameLine() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String foo(boolean condition) {
+                      if (condition) {
+                          return "yes";
+                      } else return "no";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String foo(boolean condition) {
+                      if (condition) {
+                          return "yes";
+                      }
+                      return "no";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void preserveComments() {
         rewriteRun(
           java(
@@ -259,6 +323,64 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       // Handle false condition
                       int result = 2;
                       return result;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentBeforeElseKeyword() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class MultilineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      else {
+                          return 2;
+                      }
+                  }
+              }
+              """,
+            """
+              class MultilineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      return 2;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class InlineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      else { return 2; }
+                  }
+              }
+              """,
+            """
+              class InlineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      return 2;
                   }
               }
               """

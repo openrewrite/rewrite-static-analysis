@@ -22,8 +22,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
@@ -44,11 +46,10 @@ import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
 @EqualsAndHashCode(callSuper = false)
-@Incubating(since = "7.36.0")
 @Value
 public class InstanceOfPatternMatch extends Recipe {
 
-    String displayName = "Changes code to use Java 17's `instanceof` pattern matching";
+    String displayName = "Change code to use Java 17's `instanceof` pattern matching";
 
     String description = "Adds pattern variables to `instanceof` expressions wherever " +
                "the same (side effect free) expression is referenced in a " +
@@ -89,7 +90,8 @@ public class InstanceOfPatternMatch extends Recipe {
             @Override
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, ctx);
-                if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty()) {
+                if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty() ||
+                    isUnconditionalPatternNotAllowed(instanceOf)) {
                     return instanceOf;
                 }
 
@@ -137,6 +139,34 @@ public class InstanceOfPatternMatch extends Recipe {
                     }
                 }
                 return instanceOf;
+            }
+
+            /**
+             * Before Java 21, a type pattern must not be unconditional: when the static type of the
+             * expression is already a subtype of the tested type, javac reports
+             * "expression type is a subtype of pattern type".
+             */
+            private boolean isUnconditionalPatternNotAllowed(J.InstanceOf instanceOf) {
+                JavaType testedType = ((TypedTree) instanceOf.getClazz()).getType();
+                JavaType expressionType = instanceOf.getExpression().getType();
+                if (testedType == null || expressionType == null ||
+                    !TypeUtils.isAssignableTo(testedType, expressionType)) {
+                    return false;
+                }
+                JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
+                return sourceFile == null || sourceFile.getMarkers().findFirst(JavaVersion.class)
+                        .map(v -> v.getMajorVersion() < 21)
+                        .orElse(true);
+            }
+
+            @Override
+            public J visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
+                J.Assignment a = (J.Assignment) super.visitAssignment(assignment, ctx);
+                InstanceOfPatternReplacements replacements = getCursor().getNearestMessage("flowTypeScope");
+                if (replacements != null) {
+                    replacements.invalidate(a.getVariable());
+                }
+                return a;
             }
 
             @Override
@@ -288,12 +318,16 @@ public class InstanceOfPatternMatch extends Recipe {
                     .stream()
                     .filter(e -> e.getValue() == instanceOf)
                     .findFirst()
-                    .map(e -> e.getKey().getType().equals(typeCast.getType()))
+                    .map(e -> TypeUtils.isOfType(e.getKey().getType(), typeCast.getType()))
                     .orElse(true);
         }
 
         public boolean isEmpty() {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
+        }
+
+        public void invalidate(Expression assignedTo) {
+            instanceOfs.entrySet().removeIf(e -> SemanticallyEqual.areEqual(e.getKey().getExpression(), assignedTo));
         }
 
         private boolean shouldDeleteVariableDeclaration(Cursor parent, J.InstanceOf instanceOf) {
@@ -519,6 +553,41 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
+        public J.Block visitBlock(J.Block block, Integer p) {
+            J.Block b = (J.Block) super.visitBlock(block, p);
+            if (b.getStatements().size() == block.getStatements().size()) {
+                return b;
+            }
+            List<Statement> statements = new ArrayList<>(b.getStatements());
+            int next = 0;
+            Space pending = null;
+            for (Statement original : block.getStatements()) {
+                if (next < statements.size() && original.getId().equals(statements.get(next).getId())) {
+                    if (pending != null) {
+                        Statement statement = statements.get(next);
+                        statements.set(next, statement.withPrefix(pending.withComments(
+                                ListUtils.concatAll(pending.getComments(), statement.getComments()))));
+                        pending = null;
+                    }
+                    next++;
+                } else if (!original.getComments().isEmpty()) {
+                    if (pending == null) {
+                        pending = original.getPrefix();
+                    } else {
+                        pending = pending.withComments(ListUtils.concatAll(pending.getComments(), original.getComments()));
+                    }
+                }
+            }
+            if (pending != null) {
+                Space end = b.getEnd();
+                b = b.withEnd(pending.withComments(end.getComments().isEmpty() ?
+                        ListUtils.mapLast(pending.getComments(), c -> c.withSuffix(end.getWhitespace())) :
+                        ListUtils.concatAll(pending.getComments(), end.getComments())));
+            }
+            return b.withStatements(statements);
+        }
+
+        @Override
         public J visitBinary(J.Binary binary, Integer p) {
             J.Binary b = binary.withLeft((Expression) visitNonNull(binary.getLeft(), p));
             if (b.getLeft() != binary.getLeft()) {
@@ -626,7 +695,6 @@ public class InstanceOfPatternMatch extends Recipe {
         public String variableName(@Nullable JavaType type) {
             // the instanceof operator only accepts classes (without generics) and arrays
             if (style == Style.EXACT) {
-                //noinspection DataFlowIssue
                 return name;
             }
             if (type instanceof JavaType.FullyQualified) {

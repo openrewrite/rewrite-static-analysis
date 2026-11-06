@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     @Override
@@ -298,6 +299,23 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeKotlinFiles() {
+        rewriteRun(
+          version(
+            //language=kotlin
+            kotlin(
+              """
+                class A {
+                    fun method() {
+                        val process = Runtime.getRuntime().exec("ls -a")
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
     void javadoc() {
         rewriteRun(
           version(
@@ -314,4 +332,35 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void multipleInvocationsOfSameOverload() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime, String command) throws IOException {
+                        runtime.exec("ls -a");
+                        runtime.exec("ls -l");
+                        runtime.exec(command);
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime, String command) throws IOException {
+                        runtime.exec(new String[]{"ls", "-a"});
+                        runtime.exec(new String[]{"ls", "-l"});
+                        runtime.exec(command.split(" "));
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
 }

@@ -20,7 +20,9 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
@@ -31,6 +33,8 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class NoToStringOnStringType extends Recipe {
+    private static final AnnotationMatcher BEFORE_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
     private static final MethodMatcher TO_STRING = new MethodMatcher("java.lang.String toString()");
 
     @Getter
@@ -50,9 +54,18 @@ public class NoToStringOnStringType extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(TO_STRING), new JavaVisitor<ExecutionContext>() {
             @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream().anyMatch(BEFORE_TEMPLATE::matches)) {
+                    return method;
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
+
+            @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (mi.getSelect() != null && TO_STRING.matches(mi)) {
+                if (mi.getSelect() != null && TO_STRING.matches(mi) && (!StatementRemoval.needsStatementExpression(getCursor()) ||
+                        mi.getSelect() instanceof J.MethodInvocation || mi.getSelect() instanceof J.NewClass)) {
                     return mi.getSelect().withPrefix(mi.getPrefix());
                 }
                 return mi;

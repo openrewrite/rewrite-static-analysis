@@ -20,8 +20,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
-import org.openrewrite.test.TypeValidation;
 
+import static org.openrewrite.golang.Assertions.go;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 class FinalizeMethodArgumentsTest implements RewriteTest {
@@ -144,68 +145,23 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void doNotReplaceWithFinalModifier() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
           //language=java
           java(
             """
-              package responsive.utils.subevent;
+              import java.util.List;
 
-               import responsive.enums.subevent.SubeventTypes;
-               import responsive.model.dto.card.SubEvent;
-               import java.util.List;
-               import org.springframework.beans.factory.annotation.Value;
-               import org.springframework.stereotype.Component;
+              class Test {
+                  private final List<Integer> ids;
 
-               import static responsive.enums.matchdata.MatchDataTitleSeparator.AT;
-               import static responsive.enums.matchdata.MatchDataTitleSeparator.VS;
-               import static java.lang.String.format;
-               import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
+                  Test(@SuppressWarnings("unused") final List<Integer> ids) {
+                      this.ids = ids;
+                  }
 
-               /**
-                * Created by mza05 on 13/10/2017.
-                */
-               @Component
-               class SubeventUtils {
-
-                   private static final String SUBEVENT_FORMAT = "%s%s%s";
-                   private final List<Integer> categoryGroupIdForChangeSubeventName;
-
-                   public SubeventUtils(
-                           @Value("#{'${responsive.category.group.id.change.subevent.name}'.split(',')}")  final List<Integer> categoryGroupIdForChangeSubeventName) {
-                       this.categoryGroupIdForChangeSubeventName = categoryGroupIdForChangeSubeventName;
-                   }
-
-                   public static boolean isSubeventOfSpecifiedType(final SubEvent subEvent, final List<SubeventTypes> requiredTypes) {
-
-                       if (subEvent.getType() == null) {
-                           return false;
-                       }
-                       return requiredTypes.stream()
-                               .anyMatch(requiredType -> requiredType.getType().equalsIgnoreCase(subEvent.getType()));
-
-                   }
-
-                   /**
-                    * Change SubeventName by CategoryGroupId and rebub
-                    * @param subeventName
-                    * @param categoryGroupId
-                    * @return
-                    */
-                   public String getSubeventNameForCategoryGroupId(final String subeventName, final Integer categoryGroupId) {
-
-                       if  (subeventName != null && categoryGroupId != null
-                               && subeventName.contains(AT.getSeparator())
-                               && categoryGroupIdForChangeSubeventName.contains(categoryGroupId)) {
-                           final var subeventTeamSplit = splitByWholeSeparator(subeventName, AT.getSeparator());
-                           if (subeventTeamSplit.length > 0) {
-                               return format(SUBEVENT_FORMAT, subeventTeamSplit[0], VS.getSeparator(), subeventTeamSplit[1]);
-                           }
-                       }
-
-                       return subeventName;
-                   }
-               }
-               """
+                  static boolean anyMatch(final List<String> names, final String name) {
+                      return names.stream().anyMatch(n -> n.equalsIgnoreCase(name));
+                  }
+              }
+              """
           )
         );
     }
@@ -274,6 +230,90 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
                   accumulator += add;
                   return accumulator;
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finalizeGroovyParameters() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class Test {
+                  void greet(String name) {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void greet(final String name) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func RandomString(n int) string {
+                  return ""
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotFinalizeParameterIncrementedThroughParentheses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void f(int a) {
+                      (a)++;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void assignmentInAnotherMethodDoesNotCount() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void f(int a) {
+                  }
+
+                  void g() {
+                      int a = 0;
+                      a++;
+                  }
+              }
+              """,
+            """
+              class A {
+                  void f(final int a) {
+                  }
+
+                  void g() {
+                      int a = 0;
+                      a++;
+                  }
               }
               """
           )

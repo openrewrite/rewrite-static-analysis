@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 class InlineVariableTest implements RewriteTest {
     @Override
@@ -355,6 +356,84 @@ class InlineVariableTest implements RewriteTest {
     }
 
     @Test
+    void removeOnlyTheDeclarationLeftUnusedByInlining() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int counter;
+
+                  void unrelated() {
+                      int unused = 42;
+                      int incremented = counter++;
+                  }
+
+                  int test(int a) {
+                      int r, other = 0;
+                      int kept = counter++;
+                      kept = 0;
+                      r = a * 2;
+                      return r;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int counter;
+
+                  void unrelated() {
+                      int unused = 42;
+                      int incremented = counter++;
+                  }
+
+                  int test(int a) {
+                      int other = 0;
+                      int kept = counter++;
+                      kept = 0;
+                      return a * 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepDeclarationStillReferencedAfterInlining() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String result;
+                      if (condition) {
+                          result = "a";
+                          System.out.println(result);
+                      }
+                      result = "b";
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String result;
+                      if (condition) {
+                          result = "a";
+                          System.out.println(result);
+                      }
+                      return "b";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotInlineFieldAssignment() {
         rewriteRun(
           //language=java
@@ -672,6 +751,121 @@ class InlineVariableTest implements RewriteTest {
                       }
                       return result;
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineWhenDeclaredTypeDiffersFromInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object primitiveWidening() {
+                      long v = 1;
+                      return v;
+                  }
+
+                  Object assignmentPrimitiveWidening(long v) {
+                      v = 1;
+                      return v;
+                  }
+
+                  Object unboxing(Integer x) {
+                      int v = x;
+                      return v;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineLambdaOrMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object lambda() {
+                      Runnable r = () -> {};
+                      return r;
+                  }
+
+                  Object methodReference() {
+                      Runnable r = this::lambda;
+                      return r;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineAssignmentReadInFinallyOrCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int compute() {
+                      return 42;
+                  }
+
+                  void log(int v) {
+                  }
+
+                  int readInFinally(int res) {
+                      try {
+                          res = compute();
+                          return res;
+                      } finally {
+                          log(res);
+                      }
+                  }
+
+                  RuntimeException readInCatch(RuntimeException ex) {
+                      try {
+                          ex = new RuntimeException();
+                          throw ex;
+                      } catch (RuntimeException e) {
+                          return ex;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaInlineReturnedLocal() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(): Int = {
+                  val x = compute()
+                  x
+                }
+                def compute(): Int = 1
+              }
+              """,
+            """
+              class A {
+                def foo(): Int = {
+                  compute()
+                }
+                def compute(): Int = 1
               }
               """
           )

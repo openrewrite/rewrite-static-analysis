@@ -16,12 +16,16 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.FallThroughStyle;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.TextComment;
 import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +33,7 @@ import org.openrewrite.test.RewriteTest;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"EnhancedSwitchMigration", "ConstantConditions", "StatementWithEmptyBody", "SwitchStatementWithTooFewBranches", "ReassignedVariable", "UnusedAssignment"})
@@ -36,6 +41,170 @@ class FallThroughTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new FallThrough());
+    }
+
+    @Test
+    void switchHeaderDocumentsCountdownFallThrough() {
+        rewriteRun(
+          java(
+            """
+              class SmallMap {
+                  void copy(int size, java.util.Map<String, String> map) {
+                      switch (size) { // drop through
+                          case 3:
+                              map.put("three", "3");
+                          case 2:
+                              map.put("two", "2");
+                          case 1:
+                              map.put("one", "1");
+                      }
+                  }
+                  int hash(int size) {
+                      int hash = 0;
+                      switch (size) { // drop through
+                          case 3:
+                              hash += 3;
+                          case 2:
+                              hash += 2;
+                          case 1:
+                              hash += 1;
+                      }
+                      return hash;
+                  }
+                  String format(int size) {
+                      StringBuilder result = new StringBuilder();
+                      switch (size) { // drop through
+                          case 3:
+                              result.append("three,");
+                          case 2:
+                              result.append("two,");
+                          case 1:
+                              result.append("one");
+                      }
+                      return result.toString();
+                  }
+              }
+              """,
+            spec -> spec.beforeRecipe(cu -> {
+                var type = cu.getClasses().get(0);
+                var method = (J.MethodDeclaration) type.getBody().getStatements().get(0);
+                var sw = (J.Switch) method.getBody().getStatements().get(0);
+                assertThat(sw.getCases().getStatements().get(0).getComments())
+                  .singleElement().satisfies(comment -> assertThat(
+                    ((TextComment) comment).getText()).isEqualTo(" drop through"));
+            })
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"drop through", "drop-through", "DROP THROUGH", "drops through", "fall through", "FALL-THROUGH", "$FALL-THROUGH$"})
+    void switchHeaderReliefVariations(String comment) {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void test(int size) {
+                      switch (size) { // %s
+                          case 3:
+                              System.out.println(3);
+                          case 2:
+                              System.out.println(2);
+                          case 1:
+                              System.out.println(1);
+                      }
+                      switch (size) {
+                          case 2:
+                              System.out.println(2); // %s
+                          case 1:
+                              System.out.println(1);
+                      }
+                  }
+              }
+              """.formatted(comment, comment)
+          )
+        );
+    }
+
+    @Test
+    void headerReliefDoesNotRelieveNestedSwitch() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void test(int size, int nested) {
+                      switch (size) { // drop through
+                          case 3:
+                              switch (nested) {
+                                  case 1:
+                                      System.out.println(1);
+                                  case 2:
+                                      System.out.println(2);
+                              }
+                          case 2:
+                              System.out.println(2);
+                          case 1:
+                              System.out.println(1);
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void test(int size, int nested) {
+                      switch (size) { // drop through
+                          case 3:
+                              switch (nested) {
+                                  case 1:
+                                      System.out.println(1);
+                                      break;
+                                  case 2:
+                                      System.out.println(2);
+                              }
+                          case 2:
+                              System.out.println(2);
+                          case 1:
+                              System.out.println(1);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"copy entries", "raindrop through the roof", "waterfall through rocks"})
+    void unrelatedHeaderStillAddsBreak(String comment) {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void test(int size) {
+                      switch (size) { // %s
+                          case 2:
+                              System.out.println(2);
+                          case 1:
+                              System.out.println(1);
+                      }
+                  }
+              }
+              """.formatted(comment),
+            """
+              class A {
+                  void test(int size) {
+                      switch (size) { // %s
+                          case 2:
+                              System.out.println(2);
+                              break;
+                          case 1:
+                              System.out.println(1);
+                      }
+                  }
+              }
+              """.formatted(comment)
+          )
+        );
     }
 
     @DocumentExample
@@ -444,6 +613,116 @@ class FallThroughTest implements RewriteTest {
                               default:
                                   System.out.println("default");
                           }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/460")
+    @Test
+    void doNotAddBreakAfterGuardedEarlyExit() {
+        // Reduced from quarkus JavadocToAsciidocTransformer.appendEscapedAsciiDoc; the `]` case
+        // deliberately falls through to the shared escaping branch when not in inline macro mode.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void escape(String text, boolean inlineMacroMode) {
+                      StringBuilder sb = new StringBuilder();
+                      boolean escaping = false;
+                      for (int i = 0; i < text.length(); i++) {
+                          char ch = text.charAt(i);
+                          switch (ch) {
+                              case ']':
+                                  if (inlineMacroMode) {
+                                      sb.append("&#93;");
+                                      break;
+                                  }
+                              case '#':
+                              case '*':
+                                  if (!escaping) {
+                                      sb.append("++");
+                                      escaping = true;
+                                  }
+                                  sb.append(ch);
+                                  break;
+                              default:
+                                  sb.append(ch);
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/460")
+    @Test
+    void doNotAddBreakAfterGuardedEarlyExitInsideBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void n(int i, boolean b) {
+                      switch (i) {
+                          case 0: {
+                              if (b) {
+                                  System.out.println("zero");
+                                  break;
+                              }
+                          }
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/460")
+    @Test
+    void addBreakWhenCodeFollowsGuardedEarlyExit() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void n(int i, boolean b) {
+                      switch (i) {
+                          case 0:
+                              if (b) {
+                                  break;
+                              }
+                              System.out.println("zero");
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void n(int i, boolean b) {
+                      switch (i) {
+                          case 0:
+                              if (b) {
+                                  break;
+                              }
+                              System.out.println("zero");
+                              break;
+                          case 1:
+                              System.out.println("one");
+                              break;
                       }
                   }
               }

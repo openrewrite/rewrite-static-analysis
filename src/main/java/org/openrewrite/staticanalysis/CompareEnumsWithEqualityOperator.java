@@ -30,12 +30,11 @@ import static java.util.Collections.singleton;
 public class CompareEnumsWithEqualityOperator extends Recipe {
 
     @Getter
-    final String displayName = "Enum values should be compared with \"==\"";
+    final String displayName = "Enum values should be compared with `==`";
 
     @Getter
-    final String description = "Replaces `Enum equals(java.lang.Object)` with " +
-            "`Enum == java.lang.Object`. An `!Enum equals(java.lang.Object)` will " +
-            "change to `!=`. Using `==` for enum comparison is null-safe, catches type " +
+    final String description = "Replaces `a.equals(b)` with `a == b` when `a` is an enum, and " +
+            "`!a.equals(b)` with `a != b`. Using `==` for enum comparison is null-safe, catches type " +
             "mismatches at compile time, and is idiomatic since each enum constant is " +
             "guaranteed to be a singleton.";
 
@@ -49,7 +48,7 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (enumEquals.matches(m) && m.getSelect() != null) {
+                if (enumEquals.matches(m) && m.getSelect() != null && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.Unary || is instanceof J.Block || is instanceof J.Binary || is instanceof J.Ternary || is instanceof J.Lambda);
                     boolean isNot = parent.getValue() instanceof J.Unary && ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
                     boolean needsParentheses = false;

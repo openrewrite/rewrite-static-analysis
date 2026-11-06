@@ -70,43 +70,31 @@ public class ReorderAnnotations extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration d = super.visitClassDeclaration(classDecl, ctx);
-                if (1 < d.getLeadingAnnotations().size()) {
-                    List<J.Annotation> sortedAnnotations = new ArrayList<>(d.getLeadingAnnotations());
-                    sortedAnnotations.sort(comparator);
-                    if (!sortedAnnotations.equals(d.getLeadingAnnotations())) {
-                        return d.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
-                                (i, a) -> a.withPrefix(d.getLeadingAnnotations().get(i).getPrefix())));
-                    }
-                }
-                return d;
+                return d.withLeadingAnnotations(sort(d.getLeadingAnnotations()));
             }
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations d = super.visitVariableDeclarations(multiVariable, ctx);
-                if (1 < d.getLeadingAnnotations().size()) {
-                    List<J.Annotation> sortedAnnotations = new ArrayList<>(d.getLeadingAnnotations());
-                    sortedAnnotations.sort(comparator);
-                    if (!sortedAnnotations.equals(d.getLeadingAnnotations())) {
-                        return d.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
-                                (i, a) -> a.withPrefix(d.getLeadingAnnotations().get(i).getPrefix())));
-                    }
-                }
-                return d;
+                return d.withLeadingAnnotations(sort(d.getLeadingAnnotations()));
             }
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration d = super.visitMethodDeclaration(method, ctx);
-                if (1 < d.getLeadingAnnotations().size()) {
-                    List<J.Annotation> sortedAnnotations = new ArrayList<>(d.getLeadingAnnotations());
-                    sortedAnnotations.sort(comparator);
-                    if (!sortedAnnotations.equals(d.getLeadingAnnotations())) {
-                        return d.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
-                                (i, a) -> a.withPrefix(d.getLeadingAnnotations().get(i).getPrefix())));
-                    }
+                return d.withLeadingAnnotations(sort(d.getLeadingAnnotations()));
+            }
+
+            private List<J.Annotation> sort(List<J.Annotation> annotations) {
+                if (annotations.size() < 2) {
+                    return annotations;
                 }
-                return d;
+                List<J.Annotation> sortedAnnotations = new ArrayList<>(annotations);
+                sortedAnnotations.sort(comparator);
+                if (sortedAnnotations.equals(annotations)) {
+                    return annotations;
+                }
+                return ListUtils.map(sortedAnnotations, (i, a) -> a.withPrefix(annotations.get(i).getPrefix()));
             }
         };
     }

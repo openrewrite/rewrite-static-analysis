@@ -23,6 +23,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -44,6 +45,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     return m;
                 }
 
+                // Functional arguments are target typed by the witness, even when the method returns a
+                // non-generic type. Removing it can widen lambda parameters or change overload resolution.
+                if (hasTargetTypedArguments(m)) {
+                    return m;
+                }
+
                 Object enclosing = getCursor().getParentTreeCursor().getValue();
 
                 if (enclosing instanceof J.Ternary) {
@@ -54,13 +61,10 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (enclosing instanceof J.MethodInvocation) {
                     J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
                     if (enclosingMethod.getSelect() == method) {
-                        // This invocation is the select (receiver) of the enclosing invocation, so the
-                        // enclosing call provides no target type to drive inference of this call's type
-                        // variables. Retain the witness unless those type variables can be inferred from
-                        // this call's own arguments.
-                        if (!canInferTypeArgumentsFromArguments(methodType)) {
-                            return m;
-                        }
+                        // A receiver gets no target type from the enclosing invocation. Even when
+                        // arguments constrain inference, removing a witness can narrow it (e.g.
+                        // singletonList<Interface>(implementation).iterator() to Iterator<Implementation>).
+                        return m;
                     } else {
                         // As above, retain unless inferable from this call's own arguments (static or not).
                         if (!canInferTypeArgumentsFromArguments(methodType)) {
@@ -90,8 +94,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         }
                     }
                     inferredType = methodType.getReturnType();
+                } else if (enclosing instanceof J.Assignment) {
+                    inferredType = ((J.Assignment) enclosing).getVariable().getType();
                 } else if (enclosing instanceof Expression) {
-                    inferredType = ((Expression) enclosing).getType();
+                    // Casts, field receivers and other enclosing expressions do not establish a
+                    // target type merely because their attributed result happens to match this call.
+                    return m;
                 } else if (enclosing instanceof NameTree) {
                     if (enclosing instanceof J.VariableDeclarations.NamedVariable) {
                         J.VariableDeclarations decl = getCursor().getParentTreeCursor().getParentTreeCursor().getValue();
@@ -124,6 +132,30 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 }
 
                 return m;
+            }
+
+            private boolean hasTargetTypedArguments(J.MethodInvocation method) {
+                AtomicBoolean found = new AtomicBoolean();
+                JavaIsoVisitor<AtomicBoolean> visitor = new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean result) {
+                        result.set(true);
+                        return lambda;
+                    }
+
+                    @Override
+                    public J.MemberReference visitMemberReference(J.MemberReference reference, AtomicBoolean result) {
+                        result.set(true);
+                        return reference;
+                    }
+                };
+                for (Expression argument : method.getArguments()) {
+                    visitor.visit(argument, found);
+                    if (found.get()) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private JavaType.@Nullable Method findMethodIfUnambiguous(JavaType.FullyQualified type) {

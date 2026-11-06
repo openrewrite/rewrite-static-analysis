@@ -23,7 +23,8 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.staticanalysis.go.GoFileChecker;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.Set;
 
@@ -35,9 +36,9 @@ public class WhileInsteadOfFor extends Recipe {
     final String displayName = "Prefer `while` over `for` loops";
 
     @Getter
-    final String description = "When only the condition expression is defined in a for " +
+    final String description = "When only the condition expression is defined in a `for` " +
             "loop, and the initialization and increment expressions are missing, " +
-            "a while loop should be used instead to increase readability. A `for` " +
+            "a `while` loop should be used instead to increase readability. A `for` " +
             "loop with empty init and update sections signals iteration mechanics " +
             "that do not exist, whereas `while` clearly communicates a simple " +
             "conditional loop.";
@@ -47,7 +48,8 @@ public class WhileInsteadOfFor extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new GoFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        // Java templates cannot preserve other languages' native statement padding and markers.
+        return Preconditions.check(Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 if (forLoop.getControl().getInit().get(0) instanceof J.Empty &&

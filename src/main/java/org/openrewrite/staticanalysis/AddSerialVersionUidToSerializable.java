@@ -22,6 +22,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
@@ -58,18 +59,18 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesType<>("java.io.Serializable", true), new JavaIsoVisitor<ExecutionContext>() {
             final JavaTemplate template = JavaTemplate.builder(String.format("private static final long serialVersionUID = %s;", uid != null ? uid : "1")).build();
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                // Anonymous classes are not of interest
+                // classes declared in method bodies are not of interest
                 return method;
             }
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
-                // Anonymous classes are not of interest
+                // nor are classes declared in field initializers
                 return multiVariable;
             }
 
@@ -139,7 +140,8 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                         return typeParametersSerializable;
                     }
                     //All other parameterized types fall through
-                } else if (type instanceof JavaType.FullyQualified) {
+                }
+                if (type instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
                     if (fq.getKind() == JavaType.Class.Kind.Enum) {
                         return false;
@@ -152,6 +154,6 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                 }
                 return false;
             }
-        };
+        });
     }
 }

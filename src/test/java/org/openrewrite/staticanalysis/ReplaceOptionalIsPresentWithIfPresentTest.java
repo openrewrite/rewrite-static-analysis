@@ -15,7 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -68,97 +68,6 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
                           };
                       });
                       return s.get();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNothingIfIsPresentNotFound() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.ArrayList;
-              import java.util.List;
-              public class A {
-                  void method() {
-                      List<Integer> list = new ArrayList<>();
-                      Optional<Integer> o = Optional.of(2);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNothingIfPresentPartOfElseIf() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.ArrayList;
-              import java.util.List;
-              public class A {
-                  void method() {
-                      boolean x=false;
-                      List<Integer> list = new ArrayList<>();
-                      Optional<Integer> o = Optional.of(2);
-                      if(x){
-                          System.out.println("hello");
-                      }else if(o.isPresent()){
-                          list.add(o.get());
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNothingIfElsePartPresent() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.ArrayList;
-              import java.util.List;
-              public class A {
-                  void method() {
-                      List<Integer> list = new ArrayList<>();
-                      Optional<Integer> o = Optional.of(2);
-                      if(o.isPresent()){
-                          list.add(o.get());
-                      }else{
-                          System.out.println("else part");
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNothingIfContainsReturn() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              public class A {
-                  Integer method(Optional<Integer> o) {
-                      if (o.isPresent()){
-                          return o.get();
-                      }
-                      return -1;
                   }
               }
               """
@@ -245,98 +154,6 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     }
 
     @Test
-    void doNothingIfContainsThrow() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              public class A {
-                  Integer method(Optional<Integer> o) {
-                      if (o.isPresent()){
-                          throw new RuntimeException();
-                      }
-                      return -1;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNothingIfLocalVariableAssignedInsideIfBlock() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.ArrayList;
-              import java.util.List;
-              public class A {
-                  void method() {
-                      int x;
-                      List<Integer> list = new ArrayList<>();
-                      Optional<Integer> o = Optional.of(2);
-                      if(o.isPresent()){
-                          x=o.get();
-                          list.add(o.get());
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNothingIfNonEffectivelyFinalVariableAccessed() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.ArrayList;
-              import java.util.List;
-              public class A {
-                  void method() {
-                      int x=10;
-                      List<Integer> list = new ArrayList<>();
-                      Optional<Integer> o = Optional.of(2);
-                      if(o.isPresent()){
-                          int y=x;
-                          list.add(o.get());
-                      }
-                      x=20;
-                  }
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.ArrayList;
-              import java.util.List;
-              public class B {
-                  void method() {
-                      int x;
-                      x=10;
-                      List<Integer> list = new ArrayList<>();
-                      Optional<Integer> o = Optional.of(2);
-                      if(o.isPresent()){
-                          int y=x;
-                          list.add(o.get());
-                      }
-                      x=20;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void nestedOptionalsUnlessHandledCorrectly() {
         rewriteRun(
           //language=java
@@ -412,7 +229,6 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
         );
     }
 
-    @Disabled("Due to limitation of FinalizeLocalVariables functionality")
     @Test
     void replace2() {
         rewriteRun(
@@ -700,52 +516,265 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
         );
     }
 
-    @Test
-    void doNothingIfIsPresentOnMethodInvocation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-
-              public class Foo {
-                  public static void main(String[] args) {
-                      if (next().isPresent()) {
-                          System.out.println("Message: " + next().get());
+    @Nested
+    class NoChange {
+        @Test
+        void doNothingIfIsPresentNotFound() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  public class A {
+                      void method() {
+                          List<Integer> list = new ArrayList<>();
+                          Optional<Integer> o = Optional.of(2);
                       }
                   }
-                  private static Optional<String> next() {
-                      // not guaranteed to return the same value every time, so best not to change above code
-                      return Optional.of("foo");
-                  }
-              }
-              """
-          )
-        );
-    }
+                  """
+              )
+            );
+        }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/435")
-    @Test
-    void doNothingIfMethodThrowsException() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              public class Foo {
-                  public void foo() throws Exception {
-                      Optional<String> optional = Optional.empty();
-                      if (optional.isPresent()) {
-                          bar(optional.get());
+        @Test
+        void doNothingIfPresentPartOfElseIf() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  public class A {
+                      void method() {
+                          boolean x=false;
+                          List<Integer> list = new ArrayList<>();
+                          Optional<Integer> o = Optional.of(2);
+                          if(x){
+                              System.out.println("hello");
+                          }else if(o.isPresent()){
+                              list.add(o.get());
+                          }
                       }
                   }
+                  """
+              )
+            );
+        }
 
-                  private void bar(String s) throws Exception {
-                      throw new Exception("bar");
+        @Test
+        void doNothingIfElsePartPresent() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  public class A {
+                      void method() {
+                          List<Integer> list = new ArrayList<>();
+                          Optional<Integer> o = Optional.of(2);
+                          if(o.isPresent()){
+                              list.add(o.get());
+                          }else{
+                              System.out.println("else part");
+                          }
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfContainsReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  public class A {
+                      Integer method(Optional<Integer> o) {
+                          if (o.isPresent()){
+                              return o.get();
+                          }
+                          return -1;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfContainsThrow() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  public class A {
+                      Integer method(Optional<Integer> o) {
+                          if (o.isPresent()){
+                              throw new RuntimeException();
+                          }
+                          return -1;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfLocalVariableAssignedInsideIfBlock() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  public class A {
+                      void method() {
+                          int x;
+                          List<Integer> list = new ArrayList<>();
+                          Optional<Integer> o = Optional.of(2);
+                          if(o.isPresent()){
+                              x=o.get();
+                              list.add(o.get());
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfNonEffectivelyFinalVariableAccessed() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  public class A {
+                      void method() {
+                          int x=10;
+                          List<Integer> list = new ArrayList<>();
+                          Optional<Integer> o = Optional.of(2);
+                          if(o.isPresent()){
+                              int y=x;
+                              list.add(o.get());
+                          }
+                          x=20;
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  public class B {
+                      void method() {
+                          int x;
+                          x=10;
+                          List<Integer> list = new ArrayList<>();
+                          Optional<Integer> o = Optional.of(2);
+                          if(o.isPresent()){
+                              int y=x;
+                              list.add(o.get());
+                          }
+                          x=20;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfSameNamedVariableInSiblingBlockIsEffectivelyFinal() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  public class A {
+                      void method(Optional<Integer> o) {
+                          {
+                              int x = 1;
+                              System.out.println(x);
+                          }
+                          {
+                              int x = 1;
+                              x++;
+                              if (o.isPresent()) {
+                                  System.out.println(x);
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfIsPresentOnMethodInvocation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+
+                  public class Foo {
+                      public static void main(String[] args) {
+                          if (next().isPresent()) {
+                              System.out.println("Message: " + next().get());
+                          }
+                      }
+                      private static Optional<String> next() {
+                          // not guaranteed to return the same value every time, so best not to change above code
+                          return Optional.of("foo");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/435")
+        @Test
+        void doNothingIfMethodThrowsException() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  public class Foo {
+                      public void foo() throws Exception {
+                          Optional<String> optional = Optional.empty();
+                          if (optional.isPresent()) {
+                              bar(optional.get());
+                          }
+                      }
+
+                      private void bar(String s) throws Exception {
+                          throw new Exception("bar");
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

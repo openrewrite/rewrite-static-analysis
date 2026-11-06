@@ -20,6 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.marker.JavaVersion;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.openrewrite.Tree.randomId;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +38,145 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseDiamondOperator());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1.5", "1.6"})
+    void retainExplicitTypesBeforeJava7(String source) {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", source, source))),
+          java(
+            """
+              import java.util.List;
+              import java.util.ArrayList;
+              class Test {
+                  List<String> values = new ArrayList<String>();
+                  List<String> create() {
+                      values = new ArrayList<String>();
+                      accept(new ArrayList<String>());
+                      return new ArrayList<String>();
+                  }
+                  void accept(List<String> values) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useDiamondAtSource7WithNewerCompiler() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "1.7", "1.7"))),
+          java(
+            "import java.util.*; class Test { List<String> values = new ArrayList<String>(); }",
+            "import java.util.*; class Test { List<String> values = new ArrayList<>(); }"
+          )
+        );
+    }
+
+    @Test
+    void retainAnonymousTypeArgumentsAtSource8WithNewerCompiler() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "1.8", "1.8"))),
+          java("import java.util.*; class Test { List<String> values = new ArrayList<String>() {}; }")
+        );
+    }
+
+    @Test
+    void retainAnonymousTypeArgumentsAtSource9() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "9", "9"))),
+          java(
+            "import java.util.*; class Test { List<String> values = new ArrayList<String>() {}; }"
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"8", "9", "25.0.5+8-LTS"})
+    void retainAnonymousTypeArgumentsWithRelease8OrJsoupModel(String source) {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "25.0.5+8-LTS", "Eclipse Adoptium", source, source.startsWith("25.") ? source : "8"))),
+          java(
+            """
+              import java.util.Iterator;
+              class Test {
+                  Iterator<String> values = new Iterator<String>() {
+                      public boolean hasNext() { return false; }
+                      public String next() { return null; }
+                  };
+                  Iterator<String> create() {
+                      values = new Iterator<String>() {
+                          public boolean hasNext() { return false; }
+                          public String next() { return null; }
+                      };
+                      accept(new Iterator<String>() {
+                          public boolean hasNext() { return false; }
+                          public String next() { return null; }
+                      });
+                      return new Iterator<String>() {
+                          public boolean hasNext() { return false; }
+                          public String next() { return null; }
+                      };
+                  }
+                  void accept(Iterator<String> values) {}
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"6", "7"})
+    void respectReleaseForOrdinaryDiamond(String release) {
+        String before = "import java.util.*; class Test { List<String> values = new ArrayList<String>(); }";
+        String after = "6".equals(release) ? before : before.replace("new ArrayList<String>()", "new ArrayList<>()");
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "25", "test", "25", release))),
+          before.equals(after) ? java(before) : java(before, after)
+        );
+    }
+
+    @Test
+    void retainVarargsConstructorWithGenericArrayFactory() {
+        rewriteRun(
+          java(
+            """
+              interface Predicate<T> {}
+              class AllPredicate<T> implements Predicate<T> {
+                  AllPredicate(Predicate<? super T>... predicates) {}
+                  static <T> T[] copy(T... values) { return values.clone(); }
+                  static <T> Predicate<T> all(Predicate<? super T>... predicates) {
+                      Predicate<T> result = new AllPredicate<T>(copy(predicates));
+                      result = new AllPredicate<T>(copy(predicates));
+                      return new AllPredicate<T>(copy(predicates));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useDiamondWithNonGenericArrayFactory() {
+        rewriteRun(
+          java(
+            """
+              class Box<T> {
+                  Box(T... values) {}
+                  static String[] values() { return new String[0]; }
+                  static Box<String> create() { return new Box<String>(values()); }
+              }
+              """,
+            """
+              class Box<T> {
+                  Box(T... values) {}
+                  static String[] values() { return new String[0]; }
+                  static Box<String> create() { return new Box<>(values()); }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -105,7 +249,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Test
-    void useDiamondOperatorTest2() {
+    void diamondWhereTargetTypeIsKnown() {
         rewriteRun(
           //language=java
           java(
@@ -383,7 +527,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Test
-    void anonymousNewClassJava9Plus() {
+    void retainAnonymousNewClassJava9Plus() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(11))),
           java(
@@ -393,20 +537,13 @@ class UseDiamondOperatorTest implements RewriteTest {
               class Foo {
                   List<String> l = new ArrayList<String>() {};
               }
-              """,
-            """
-              import java.util.*;
-
-              class Foo {
-                  List<String> l = new ArrayList<>() {};
-              }
               """
           )
         );
     }
 
     @Test
-    void anonymousNewClassInferTypesJava9Plus() {
+    void retainAnonymousArgumentsJava9Plus() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(11))),
           java(
@@ -433,29 +570,8 @@ class UseDiamondOperatorTest implements RewriteTest {
                           }
                       });
 
-                      // Concrete type, OK to use diamond operator
+                      // Concrete type, retain explicit arguments for anonymous classes
                       Printer.setSerializerConcreteType(new Serializer<Integer>() {
-                          @Override
-                          public byte[] serialize(Integer integer) {
-                              return new byte[0];
-                          }
-                      });
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void method() {
-                      // Generic type, no infer type, can NOT use diamond operator
-                      Printer.setSerializerGenericType(new Serializer<Integer>() {
-                          @Override
-                          public byte[] serialize(Integer integer) {
-                              return new byte[0];
-                          }
-                      });
-
-                      // Concrete type, OK to use diamond operator
-                      Printer.setSerializerConcreteType(new Serializer<>() {
                           @Override
                           public byte[] serialize(Integer integer) {
                               return new byte[0];
@@ -468,8 +584,99 @@ class UseDiamondOperatorTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotUseDiamondForAnonymousClassWithWildcardTarget() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  // `new Consumer<>() {...}` would infer `Consumer<Object>`, so `accept(String)` no longer overrides
+                  Consumer<?> field = new Consumer<String>() {
+                      @Override
+                      public void accept(String s) {
+                      }
+                  };
+
+                  void assign(Consumer<?> c, Consumer<? extends CharSequence> e, List<?> l) {
+                      c = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // `new Consumer<>() {...}` would infer `Consumer<CharSequence>`
+                      e = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // Not an anonymous class, so the diamond is still fine
+                      l = new ArrayList<String>();
+                  }
+
+                  Consumer<? extends CharSequence> ret() {
+                      return new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  // `new Consumer<>() {...}` would infer `Consumer<Object>`, so `accept(String)` no longer overrides
+                  Consumer<?> field = new Consumer<String>() {
+                      @Override
+                      public void accept(String s) {
+                      }
+                  };
+
+                  void assign(Consumer<?> c, Consumer<? extends CharSequence> e, List<?> l) {
+                      c = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // `new Consumer<>() {...}` would infer `Consumer<CharSequence>`
+                      e = new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+
+                      // Not an anonymous class, so the diamond is still fine
+                      l = new ArrayList<>();
+                  }
+
+                  Consumer<? extends CharSequence> ret() {
+                      return new Consumer<String>() {
+                          @Override
+                          public void accept(String s) {
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
-    class kotlinTest {
+    class Kotlin {
         @Test
         void doNotChange() {
             rewriteRun(

@@ -22,8 +22,11 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
@@ -31,6 +34,7 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -53,9 +57,9 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
+            public J.ForLoop visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 Statement init = forLoop.getControl().getInit().get(0);
                 if (init instanceof J.VariableDeclarations) {
                     J.VariableDeclarations initVars = (J.VariableDeclarations) init;
@@ -72,14 +76,15 @@ public class ForLoopIncrementInUpdate extends Recipe {
                         return super.visitForLoop(forLoop, ctx);
                     }
 
-                    if (lastStatement instanceof J.Unary) {
+                    if (lastStatement instanceof J.Unary && !hasContinueTargeting(body)) {
                         J.Unary unary = (J.Unary) lastStatement;
-                        if (unary.getExpression() instanceof J.Identifier) {
+                        if (unary.getExpression() instanceof J.Identifier &&
+                            !isModifiedElsewhere(body, unary, ((J.Identifier) unary.getExpression()).getSimpleName())) {
                             String unaryTarget = ((J.Identifier) unary.getExpression()).getSimpleName();
                             for (J.VariableDeclarations.NamedVariable initVar : initVars.getVariables()) {
                                 if (initVar.getSimpleName().equals(unaryTarget)) {
                                     J.ForLoop f = forLoop.withControl(forLoop.getControl().withUpdate(ListUtils.insertInOrder(
-                                            ListUtils.map(forLoop.getControl().getUpdate(), u -> u instanceof J.Empty ? null : u),
+                                            ListUtils.filter(forLoop.getControl().getUpdate(), u -> !(u instanceof J.Empty)),
                                             unary.withPrefix(Space.format(" ")),
                                             Comparator.comparing(s -> s.printTrimmed(getCursor()), Comparator.naturalOrder())
                                     )));
@@ -98,6 +103,59 @@ public class ForLoopIncrementInUpdate extends Recipe {
                 }
 
                 return super.visitForLoop(forLoop, ctx);
+            }
+
+            /**
+             * A {@code continue} targeting this loop skips the trailing increment, so moving it to the update would change behavior.
+             */
+            private boolean hasContinueTargeting(Statement body) {
+                Object parent = getCursor().getParentTreeCursor().getValue();
+                String label = parent instanceof J.Label ? ((J.Label) parent).getLabel().getSimpleName() : null;
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean found) {
+                        if (continueStatement.getLabel() == null ?
+                                getCursor().firstEnclosing(Loop.class) == null :
+                                continueStatement.getLabel().getSimpleName().equals(label)) {
+                            found.set(true);
+                        }
+                        return continueStatement;
+                    }
+                }.reduce(body, new AtomicBoolean()).get();
+            }
+
+            /// Moving one of several updates of the same variable to the loop's update clause splits them up,
+            /// leaving the loop harder to read than before.
+            private boolean isModifiedElsewhere(Statement body, J.Unary trailingIncrement, String variable) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Unary visitUnary(J.Unary unary, AtomicBoolean found) {
+                        if (unary != trailingIncrement && unary.getOperator().isModifying() && isVariable(unary.getExpression())) {
+                            found.set(true);
+                        }
+                        return super.visitUnary(unary, found);
+                    }
+
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean found) {
+                        if (isVariable(assignment.getVariable())) {
+                            found.set(true);
+                        }
+                        return super.visitAssignment(assignment, found);
+                    }
+
+                    @Override
+                    public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, AtomicBoolean found) {
+                        if (isVariable(assignOp.getVariable())) {
+                            found.set(true);
+                        }
+                        return super.visitAssignmentOperation(assignOp, found);
+                    }
+
+                    private boolean isVariable(Expression expression) {
+                        return expression instanceof J.Identifier && ((J.Identifier) expression).getSimpleName().equals(variable);
+                    }
+                }.reduce(body, new AtomicBoolean()).get();
             }
         };
     }

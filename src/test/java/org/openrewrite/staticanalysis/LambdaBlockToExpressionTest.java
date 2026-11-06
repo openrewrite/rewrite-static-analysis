@@ -182,4 +182,19 @@ class LambdaBlockToExpressionTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("CodeBlock2Expr")
+    @Test
+    void doNotChangeLambdaWithEmptyReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Runnable r = () -> { return; };
+              }
+              """
+          )
+        );
+    }
 }

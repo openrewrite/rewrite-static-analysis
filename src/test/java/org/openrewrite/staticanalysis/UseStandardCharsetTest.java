@@ -110,7 +110,7 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/29")
+    // Charset name is not a compile-time constant
     @Test
     void nonConstantCharset() {
         rewriteRun(
@@ -122,6 +122,25 @@ class UseStandardCharsetTest implements RewriteTest {
               class Test {
                   void m(String charsetName) {
                       Charset cs = Charset.forName(charsetName);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.charset.Charset;
+
+              class A {
+                  void foo() {
+                      Charset.forName("UTF-8");
                   }
               }
               """

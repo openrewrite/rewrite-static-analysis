@@ -62,7 +62,7 @@ public class SillyEqualsCheck extends Recipe {
 
                 // Case: x.equals(null) -> x == null
                 if (J.Literal.isLiteralValue(arg, null)) {
-                    return replaceWithEqualityCheck(mi);
+                    return StatementRemoval.needsStatementExpression(getCursor()) ? mi : replaceWithEqualityCheck(mi);
                 }
 
                 JavaType selectType = mi.getSelect().getType();

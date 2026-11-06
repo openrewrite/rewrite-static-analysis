@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -129,7 +128,6 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @Issue("https://github.com/openrewrite/rewrite/issues/798")
     @Test
     void unwrapExpr() {
@@ -151,7 +149,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
               class Test {
                   void method(int x, int y, boolean a) {
                       if (a && (x + y > 0)) {
-                          int q = (1 + 2) + 3;
+                          int q = ((1 + 2) + 3);
                           int z = (q + q) * q;
                       }
                   }

@@ -24,13 +24,9 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static java.util.stream.Collectors.toList;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -40,7 +36,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
     String displayName = "Replace `Optional#isPresent()` with `Optional#ifPresent()`";
 
-    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. Please note that this recipe is only suitable for if-blocks that lack an Else-block and have a single condition applied.";
+    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. This recipe only applies to `if` statements without an `else` branch and with a single condition.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -48,14 +44,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
     }
 
     private static class ReplaceOptionalIsPresentWithIfPresentVisitor extends JavaVisitor<ExecutionContext> {
-        private final List<J.Identifier> lambdaAccessibleVariables = new ArrayList<>();
-
-        @Override
-        public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-            collectLambdaAccessibleVariables(cu, ctx);
-            return super.visitCompilationUnit(cu, ctx);
-        }
-
         @Override
         public J visitIf(J.If _if, ExecutionContext ctx) {
             J.If before = _if;
@@ -67,35 +55,26 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            /* skip if `if-else` part is present */
             if (_if.getElsePart() != null) {
                 return _if;
             }
 
-            /* check if parent is else-if */
             if (getCursor().getParentTreeCursor().getValue() instanceof J.If.Else) {
                 return _if;
             }
 
-            /* handle J.If ancestors */
-            if (!(_if.getIfCondition().getTree() instanceof J.MethodInvocation) || !OPTIONAL_IS_PRESENT.matches((J.MethodInvocation) _if.getIfCondition().getTree())) {
-                return _if;
-            }
-
-            Expression select = ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
-            if (!(select instanceof J.Identifier) || !isStatementLambdaConvertible(_if.getThenPart())) {
-                return _if;
-            }
-
-            /* replace if block with Optional#ifPresent and lambda expression */
-            J.Identifier optionalVariable = (J.Identifier) select;
-            String methodSelector = optionalVariable.getSimpleName();
-
             Cursor nameScope = getCursor();
-
             if (updated) {
                 nameScope = new Cursor(getCursor().getParentOrThrow(), after);
             }
+
+            Expression select = ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
+            if (!(select instanceof J.Identifier) || !isStatementLambdaConvertible(_if.getThenPart(), nameScope)) {
+                return _if;
+            }
+
+            J.Identifier optionalVariable = (J.Identifier) select;
+            String methodSelector = optionalVariable.getSimpleName();
 
             String uniqueLambdaParameterName = VariableNameUtils.generateVariableName("obj", nameScope,
                     VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER);
@@ -109,29 +88,35 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                             _if.getThenPart()
                     );
 
-            /* replace Optional#get to lambda parameter */
             J.Identifier lambdaParameterIdentifier =
                     ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
                             .getParameters().getParameters().get(0)).getVariables().get(0).getName();
-            lambdaAccessibleVariables.add(lambdaParameterIdentifier);
             return ReplaceMethodCallWithVariableVisitor.replace(ifPresentMi, ctx, lambdaParameterIdentifier,
                     optionalVariable);
         }
 
-        private boolean isStatementLambdaConvertible(Statement statement) {
+        private static boolean isStatementLambdaConvertible(Statement statement, Cursor parent) {
             return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.Identifier visitIdentifier(J.Identifier id, AtomicBoolean convertible) {
-                    if (id.getType() == null || id.getFieldType() == null || id.getFieldType().getOwner() instanceof JavaType.Class) {
-                        return id;
-                    }
-
-                    if (lambdaAccessibleVariables.stream().noneMatch(v -> id.getFieldType().equals(v.getFieldType()) &&
-                                                                          v.getSimpleName().equals(id.getSimpleName()))) {
+                    if (isLocal(id) && !VariableReferences.isEffectivelyFinal(getCursor())) {
                         convertible.set(false);
                     }
-
                     return id;
+                }
+
+                @Override
+                public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean convertible) {
+                    // A lambda can't assign a captured local, even an effectively final one, so any local assignment blocks the conversion
+                    Expression target = assignment.getVariable().unwrap();
+                    if (target instanceof J.Identifier && isLocal((J.Identifier) target)) {
+                        convertible.set(false);
+                    }
+                    return super.visitAssignment(assignment, convertible);
+                }
+
+                private boolean isLocal(J.Identifier id) {
+                    return id.getType() != null && id.getFieldType() != null && !(id.getFieldType().getOwner() instanceof JavaType.Class);
                 }
 
                 @Override
@@ -184,45 +169,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                     }
                     return super.visitBlock(block, convertible);
                 }
-            }.reduce(statement, new AtomicBoolean(true)).get();
-        }
-
-        private void collectLambdaAccessibleVariables(J.CompilationUnit cu, ExecutionContext ctx) {
-            J.CompilationUnit finalizeLocalVariablesCu = (J.CompilationUnit) new FinalizeLocalVariables().getVisitor().visit(cu, ctx);
-            J.CompilationUnit finalizeMethodArgumentsCu = (J.CompilationUnit) new FinalizeMethodArguments().getVisitor().visit(cu, ctx);
-            JavaIsoVisitor<List<J.Identifier>> finalVariablesCollector = new JavaIsoVisitor<List<J.Identifier>>() {
-                @Override
-                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable,
-                                                                        List<J.Identifier> identifiers) {
-                    if (multiVariable.hasModifier(J.Modifier.Type.Final)) {
-                        identifiers.addAll(multiVariable.getVariables().stream()
-                                .map(J.VariableDeclarations.NamedVariable::getName)
-                                .collect(toList()));
-                    }
-                    return super.visitVariableDeclarations(multiVariable, identifiers);
-                }
-
-                @Override
-                public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,
-                                                                List<J.Identifier> identifiers) {
-                    identifiers.addAll(collectFields(classDecl));
-                    return super.visitClassDeclaration(classDecl, identifiers);
-                }
-            };
-            finalVariablesCollector.visit(finalizeLocalVariablesCu, lambdaAccessibleVariables);
-            finalVariablesCollector.visit(finalizeMethodArgumentsCu, lambdaAccessibleVariables);
-        }
-
-        private static List<J.Identifier> collectFields(J.ClassDeclaration classDecl) {
-            return classDecl.getBody()
-                    .getStatements()
-                    .stream()
-                    .filter(J.VariableDeclarations.class::isInstance)
-                    .map(J.VariableDeclarations.class::cast)
-                    .map(J.VariableDeclarations::getVariables)
-                    .flatMap(Collection::stream)
-                    .map(J.VariableDeclarations.NamedVariable::getName)
-                    .collect(toList());
+            }.reduce(statement, new AtomicBoolean(true), parent).get();
         }
     }
 
@@ -239,12 +186,11 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
         @Override
         public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-            /* Only replace method invocations that has same method selector as present in if condition */
             if (OPTIONAL_GET.matches(mi) && mi.getSelect() instanceof J.Identifier) {
                 J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();
                 if (methodSelector.getSimpleName().equals(selectToBeReplaced.getSimpleName()) &&
                         methodSelector.getFieldType() != null &&
-                        methodSelector.getFieldType().equals(selectToBeReplaced.getFieldType())) {
+                        TypeUtils.isOfType(methodSelector.getFieldType(), selectToBeReplaced.getFieldType())) {
                     return lambdaParameterIdentifier.withPrefix(method.getPrefix());
                 }
             }

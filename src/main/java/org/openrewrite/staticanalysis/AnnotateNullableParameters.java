@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
@@ -35,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -56,7 +56,7 @@ public class AnnotateNullableParameters extends Recipe {
     ));
 
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation to add. " +
+            description = "The fully qualified name of the `@Nullable` annotation to add. " +
                     "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
                     "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
@@ -68,7 +68,7 @@ public class AnnotateNullableParameters extends Recipe {
             displayName = "Additional null-checking methods",
             description = "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. " +
                     "These will be added to the built-in list of known null-checking methods. " +
-                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`",
+                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`.",
             example = "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
             required = false)
     @Nullable
@@ -109,7 +109,11 @@ public class AnnotateNullableParameters extends Recipe {
                     return md;
                 }
 
-                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md));
+                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = md.getParameters().stream()
+                        .filter(J.VariableDeclarations.class::isInstance)
+                        .map(J.VariableDeclarations.class::cast)
+                        .filter(vd -> !hasNullRelatedAnnotation(vd))
+                        .collect(toMap(vd -> vd, vd -> vd.getVariables().get(0).getName()));
 
                 NullCheckAndDereferenceVisitor visitor = new NullCheckAndDereferenceVisitor(candidateIdentifiers.values(), additionalNullCheckingMethods);
                 visitor.visit(md.getBody(), ctx);
@@ -143,8 +147,8 @@ public class AnnotateNullableParameters extends Recipe {
                                     if (nullableAnnotation != null) {
                                         J.Annotation finalAnnotation = nullableAnnotation;
                                         J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
-                                        annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
-                                                a -> a == finalAnnotation ? null : a));
+                                        annotated = annotated.withLeadingAnnotations(ListUtils.filter(annotated.getLeadingAnnotations(),
+                                                a -> a != finalAnnotation));
                                         arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
                                         if (annotated.getLeadingAnnotations().isEmpty()) {
                                             arrayType = arrayType.withPrefix(Space.EMPTY);
@@ -174,25 +178,6 @@ public class AnnotateNullableParameters extends Recipe {
         return identifiers.stream().anyMatch(identifier -> SemanticallyEqual.areEqual(identifier, target));
     }
 
-    /**
-     * Finds method parameters that are candidates for @Nullable annotation.
-     * A parameter is a candidate if it doesn't already have any annotation whose simple name
-     * contains "null" (case-insensitive). This catches @Nullable, @CheckForNull, @NullableDecl,
-     * @NonNull, @NotNull, etc. from any framework, preventing duplication and conflicts.
-     */
-    private static List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md) {
-        List<J.VariableDeclarations> candidates = new ArrayList<>();
-        for (Statement parameter : md.getParameters()) {
-            if (parameter instanceof J.VariableDeclarations) {
-                J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
-                if (!hasNullRelatedAnnotation(vd)) {
-                    candidates.add(vd);
-                }
-            }
-        }
-        return candidates;
-    }
-
     private static boolean hasNullRelatedAnnotation(J.VariableDeclarations vd) {
         for (J.Annotation ann : vd.getLeadingAnnotations()) {
             if (isNullAnnotation(ann)) {
@@ -211,19 +196,12 @@ public class AnnotateNullableParameters extends Recipe {
         }.reduce(vd.getTypeExpression(), new AtomicBoolean(false)).get();
     }
 
+    /**
+     * Any annotation whose simple name contains "null" (case-insensitive) counts, which catches @Nullable,
+     * @CheckForNull, @NullableDecl, @NonNull, @NotNull, etc. from any framework, preventing duplication and conflicts.
+     */
     private static boolean isNullAnnotation(J.Annotation ann) {
         return ann.getSimpleName().toLowerCase(Locale.ROOT).contains("null");
-    }
-
-    private Map<J.VariableDeclarations, J.Identifier> buildIdentifierMap(List<J.VariableDeclarations> parameters) {
-        Map<J.VariableDeclarations, J.Identifier> identifierMap = new HashMap<>();
-        for (J.VariableDeclarations vd : parameters) {
-            vd.getVariables().stream()
-                    .map(J.VariableDeclarations.NamedVariable::getName)
-                    .findFirst()
-                    .ifPresent(identifier -> identifierMap.put(vd, identifier));
-        }
-        return identifierMap;
     }
 
     /**

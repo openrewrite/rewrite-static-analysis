@@ -15,8 +15,13 @@
  */
 package org.openrewrite.staticanalysis;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Option;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -35,15 +40,34 @@ import static java.util.Collections.singleton;
 public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
 
     @Getter
+    @Option(displayName = "Only if immediately unboxed",
+            description = "Only replace constructors whose result is immediately unboxed in a primitive variable " +
+                    "initializer, primitive cast, or primitive value accessor. This preserves fresh wrapper identity " +
+                    "when references can escape. Defaults to false for the standalone migration; enabled by CommonStaticAnalysis.",
+            required = false)
+    @Nullable
+    final Boolean onlyIfImmediatelyUnboxed;
+
+    public PrimitiveWrapperClassConstructorToValueOf() {
+        this(null);
+    }
+
+    @JsonCreator
+    public PrimitiveWrapperClassConstructorToValueOf(@JsonProperty("onlyIfImmediatelyUnboxed") @Nullable Boolean onlyIfImmediatelyUnboxed) {
+        this.onlyIfImmediatelyUnboxed = onlyIfImmediatelyUnboxed;
+    }
+
+    @Getter
     final String displayName = "Use primitive wrapper `valueOf` method";
 
     @Getter
-    final String description = "The constructor of all primitive types has been deprecated in favor of using the static " +
+    final String description = "The constructors of all primitive wrapper types have been deprecated in favor of using the static " +
             "factory method `valueOf` available for each of the primitive type wrappers. " +
             "Using `valueOf` enables object caching for frequently used values, reducing unnecessary heap allocations. " +
             "Note that this changes identity semantics: `valueOf` may return cached instances (such as `Boolean.TRUE` or " +
             "`Integer` values in `[-128, 127]`), so code that compares boxed values with `==`/`!=`, relies on " +
-            "`System.identityHashCode`, or synchronizes on the boxed value may behave differently after this change.";
+            "`System.identityHashCode`, or synchronizes on the boxed value may behave differently after this change. " +
+            "Enable `onlyIfImmediatelyUnboxed` to preserve allocations in contexts where wrapper identity can be observed.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2129");
@@ -65,7 +89,8 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass nc = (J.NewClass) super.visitNewClass(newClass, ctx);
                 JavaType.FullyQualified type = TypeUtils.asFullyQualified(nc.getType());
-                if (type != null && nc.getArguments().size() == 1) {
+                if (type != null && nc.getArguments().size() == 1 &&
+                        (!Boolean.TRUE.equals(onlyIfImmediatelyUnboxed) || isImmediatelyUnboxed())) {
                     Expression arg = nc.getArguments().get(0);
                     JavaTemplate.Builder valueOf;
                     switch (type.getFullyQualifiedName()) {
@@ -92,8 +117,9 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                             break;
                         case "java.lang.Float":
                             if (arg instanceof J.Literal && JavaType.Primitive.Double == ((J.Literal) arg).getType()) {
-                                arg = ((J.Literal) arg).withType(JavaType.Primitive.String);
-                                arg = ((J.Literal) arg).withValueSource("\"" + ((J.Literal) arg).getValue() + "\"");
+                                String value = String.valueOf(((J.Literal) arg).getValue());
+                                arg = ((J.Literal) arg).withType(JavaType.Primitive.String).withValue(value)
+                                        .withValueSource("\"" + value + "\"");
                             }
 
                             JavaType argType = arg.getType();
@@ -111,6 +137,38 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                     return valueOf.build().apply(updateCursor(nc), nc.getCoordinates().replace(), arg);
                 }
                 return nc;
+            }
+
+            private boolean isImmediatelyUnboxed() {
+                // Dynamic languages may dispatch on the wrapper rather than unbox as Java does.
+                if (getCursor().firstEnclosing(J.CompilationUnit.class) == null) {
+                    return false;
+                }
+                Cursor parent = getCursor().getParentTreeCursor();
+                while (parent.getValue() instanceof J.Parentheses) {
+                    parent = parent.getParentTreeCursor();
+                }
+                Object context = parent.getValue();
+                if (context instanceof J.VariableDeclarations.NamedVariable) {
+                    return isPrimitiveValue(((J.VariableDeclarations.NamedVariable) context).getType());
+                }
+                if (context instanceof J.TypeCast) {
+                    return isPrimitiveValue(((J.TypeCast) context).getType());
+                }
+                if (context instanceof J.MethodInvocation) {
+                    J.MethodInvocation method = (J.MethodInvocation) context;
+                    // Only the known wrapper accessors consume no reference and return a primitive value.
+                    return method.getSelect() != null &&
+                            (method.getArguments().isEmpty() || method.getArguments().get(0) instanceof J.Empty) &&
+                            method.getSimpleName().matches("(?:boolean|byte|short|char|int|long|float|double)Value") &&
+                            method.getMethodType() != null && isPrimitiveValue(method.getMethodType().getReturnType());
+                }
+                return false;
+            }
+
+            private boolean isPrimitiveValue(@Nullable JavaType type) {
+                return type instanceof JavaType.Primitive && type != JavaType.Primitive.String &&
+                        type != JavaType.Primitive.Void && type != JavaType.Primitive.Null && type != JavaType.Primitive.None;
             }
         });
     }

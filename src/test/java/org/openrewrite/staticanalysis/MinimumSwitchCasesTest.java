@@ -15,13 +15,17 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
@@ -33,6 +37,56 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @DocumentExample
+    @ParameterizedTest
+    @ValueSource(strings = {"next()", "counter++"})
+    void preserveSelectorEvaluationAcrossTwoCases(String selector) {
+        rewriteRun(java("""
+          class Example {
+              int counter;
+              int next() { return ++counter; }
+              void use(int value) {}
+              void test() {
+                  switch (%s) {
+                      case 1: use(1); break;
+                      case 2: use(2); break;
+                  }
+              }
+          }
+          """.formatted(selector)));
+    }
+
+    @Test
+    void preserveMultipleColonCaseLabels() {
+        rewriteRun(java(
+          """
+            class Example {
+                void f(int n) {
+                    switch (n) {
+                        case 1, 2:
+                            System.out.println(n);
+                            break;
+                    }
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveDefaultOnlySelectorEvaluation() {
+        rewriteRun(java("""
+          class Example {
+              int counter;
+              int next() { return ++counter; }
+              void test() {
+                  switch (next()) {
+                      default: System.out.println(counter);
+                  }
+              }
+          }
+          """));
+    }
+
     @Test
     void caseWithReturnInsteadOfBreak() {
         rewriteRun(
@@ -570,6 +624,161 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveDefaultOnlyRuleBody() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default -> System.out.println(n);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyScope() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default:
+                              int value = n;
+                              System.out.println(value);
+                              break;
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyNullSelectorCheck() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  enum Kind { ONE }
+                  void string(String value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void boxed(Integer value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void enumeration(Kind value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyLocalClassScope() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default:
+                              class Local {}
+                              System.out.println(new Local());
+                              break;
+                      }
+                      class Local {}
+                      System.out.println(new Local());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlySelectorExceptions() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  int value;
+                  void division(int denominator) {
+                      switch (1 / denominator) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void field(A holder) {
+                      switch (holder.value) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"n", "1"})
+    void defaultOnlySafePrimitiveSelector(String selector) {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (%s) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """.formatted(selector),
+            """
+              class A {
+                  void f(int n) {
+                      System.out.println("body");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveExplicitNullCase() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(String value) {
+                      switch (value) {
+                          case null: System.out.println("null"); break;
+                          default: System.out.println("other"); break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     @Test
     void defaultOnly() {
@@ -889,7 +1098,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label is a statically imported String constant from a nested class
     @Test
     void switchOnStringWithStaticConstant() {
         rewriteRun(
@@ -940,7 +1149,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label is a statically imported int constant from a nested class
     @Test
     void switchOnIntWithStaticConstant() {
         rewriteRun(
@@ -991,7 +1200,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    // Case label from a nested enum must be qualified with its outer class in the resulting if
     @Test
     void switchOnEnumWithNestedClass() {
         rewriteRun(
@@ -1125,7 +1334,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
             """
               class Test {
                   void test(Unresolved u) {
-                      switch (u.getCode()) {
+                      switch (u.code) {
                           case 1:
                               doSomething();
                               break;
@@ -1141,9 +1350,9 @@ class MinimumSwitchCasesTest implements RewriteTest {
             """
               class Test {
                   void test(Unresolved u) {
-                      if (u.getCode() == 1) {
+                      if (u.code == 1) {
                           doSomething();
-                      } else if (u.getCode() == 2) {
+                      } else if (u.code == 2) {
                           doSomethingElse();
                       }
                   }
@@ -1202,8 +1411,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
               import static com.example.Constants.BLUE;
 
               class Test {
-                  void test(Widget w) {
-                      switch (w.getColor()) {
+                  void test(Widget.Color color) {
+                      switch (color) {
                           case RED:
                               doSomething();
                               break;
@@ -1223,10 +1432,10 @@ class MinimumSwitchCasesTest implements RewriteTest {
               import static com.example.Constants.BLUE;
 
               class Test {
-                  void test(Widget w) {
-                      if (w.getColor() == Widget.Color.RED) {
+                  void test(Widget.Color color) {
+                      if (color == Widget.Color.RED) {
                           doSomething();
-                      } else if (w.getColor() == Widget.Color.BLUE) {
+                      } else if (color == Widget.Color.BLUE) {
                           doSomethingElse();
                       }
                   }
@@ -1325,7 +1534,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
     @Test
     void skipsTransformationWhenTypeInfoMissing() {
         // When type info is missing (e.g., incomplete classpath), the recipe should NOT transform
@@ -1333,7 +1541,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
         // Without this check, the recipe would produce broken code like `if (x == YES)` instead of
         // `if (x == Dialog.PredefinedButton.YES)`.
         rewriteRun(
-          spec -> spec.typeValidationOptions(org.openrewrite.test.TypeValidation.none()),
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
           //language=java
           java(
             """
@@ -1380,5 +1588,92 @@ class MinimumSwitchCasesTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Groovy {
+        @DocumentExample
+        @Test
+        void twoCases() {
+            rewriteRun(
+              //language=groovy
+              groovy(
+                """
+                  def s = "prod"
+                  switch(s) {
+                      case "prod":
+                          println("prod")
+                          break
+                      default:
+                          println("default")
+                          break
+                  }
+                  """,
+                """
+                  def s = "prod"
+                  if ("prod".equals(s)) {
+                      println("prod")
+                  } else {
+                      println("default")
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2566")
+        @SuppressWarnings("GrMethodMayBeStatic")
+        @Test
+        void nonIdentifierEnum() {
+            rewriteRun(
+              //language=groovy
+              groovy(
+                """
+                  import java.nio.file.*
+                  class Test {
+                      void test(OpenOption o) {
+                          switch(o) {
+                              case StandardOpenOption.READ:
+                                  System.out.println("read")
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.nio.file.*
+                  class Test {
+                      void test(OpenOption o) {
+                          if (o == StandardOpenOption.READ) {
+                              System.out.println("read")
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void threeCases() {
+            rewriteRun(
+              //language=groovy
+              groovy(
+                """
+                  def s = "prod"
+                  switch(s) {
+                      case "prod":
+                          println("prod")
+                          break
+                      case "test":
+                          println("test")
+                          break
+                      default:
+                          println("default")
+                          break
+                  }
+                  """
+              )
+            );
+        }
     }
 }

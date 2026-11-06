@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -103,44 +104,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
-    void lowerCaseWithLeadingDollarCharacter() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private String $t = "";
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/2294")
-    @Test
-    void nameConflict() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private final String _var = "";
-                  private void a() {
-                      if (true) {
-                          Thread t = new Thread() {
-                              public void run() {
-                                  String var = "a";
-                              }
-                          };
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Issue("https://github.com/openrewrite/rewrite/issues/2285")
     @Test
     void doesNotRenameAssociatedIdentifiers() {
@@ -184,31 +147,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeStaticImports() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              package p;
-              public class B {
-                  public static int _staticImport_ = 0;
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import static p.B._staticImport_;
-
-              class Test {
-                  private int member = _staticImport_;
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void doNotChangeInheritedFields() {
         rewriteRun(
           //language=java
@@ -229,45 +167,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
             """
               class Test extends A {
                   private int inheritedField = super._inheritedField_;
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeIfToNameExists() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  int test_value;
-
-                  public int addTen(int testValue) {
-                      return test_value + testValue;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeExistsInOnlyOneMethod() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private int DoNoTChange;
-
-                  public int addTwenty(String doNoTChange) {
-                      return DoNoTChange + 20;
-                  }
-                  public int addTen(String value) {
-                      return DoNoTChange + 10;
-                  }
               }
               """
           )
@@ -310,25 +209,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     }
 
     @Test
-    void doNotRenameInnerClassesMembers() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private int test = new InnerClass().DoNotChange + new InnerClass().DoNotChange2;
-
-                  private class InnerClass{
-                      public int DoNotChange = 10;
-                      private int DoNotChange2 = 10;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void renameUsageInInnerClasses() {
         rewriteRun(
           //language=java
@@ -348,35 +228,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
 
                   private class InnerClass{
                       private int test = doChange + 1;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotRenameAnonymousInnerClasses() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              interface Book{}
-              """
-          ),
-          //language=java
-          java(
-            """
-              class B {
-                  B(){
-                      new Book() {
-                        private String DoChange;
-
-                        @Override
-                        public String toString() {
-                          return DoChange;
-                        }
-                      };
                   }
               }
               """
@@ -437,23 +288,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeWhenSameMethodParam() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private int _variable;
-                  public void getInstance(int _variable) {
-                      this._variable = _variable;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void renameWhenSameMethodExists() {
         rewriteRun(
           //language=java
@@ -472,24 +306,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                   public boolean hasMethod() {
                       return hasMethod;
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
-    @Test
-    void doNotRenameUnderscoreNumber() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private boolean _20th;
-                   public boolean method() {
-                       return _20th;
-                   }
               }
               """
           )
@@ -540,84 +356,272 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
-    @Test
-    void doNotRenameUnderscoresOnly() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private boolean __;
-                   public boolean method() {
-                       return __;
-                   }
-              }
-              """
-          )
-        );
-    }
+    @Nested
+    class NoChange {
+        @Test
+        void lowerCaseWithLeadingDollarCharacter() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private String $t = "";
+                  }
+                  """
+              )
+            );
+        }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2526")
-    @Test
-    void recordCompactConstructor() {
-        rewriteRun(
-          spec -> spec.beforeRecipe(cu -> {
-              var javaRuntimeVersion = System.getProperty("java.runtime.version");
-              var javaVendor = System.getProperty("java.vm.vendor");
-              if (new JavaVersion(UUID.randomUUID(), javaRuntimeVersion, javaVendor, javaRuntimeVersion, javaRuntimeVersion).getMajorVersion() != 17) {
-                  spec.recipe(Recipe.noop());
-              }
-          }),
-          //language=java
-          java(
-            """
-              public record MyRecord(
-                 boolean bar,
-                 String foo
-              ) {
-                 public MyRecord {
-                    if (foo == null) {
-                        foo = "defaultValue";
+        @Issue("https://github.com/openrewrite/rewrite/issues/2294")
+        @Test
+        void nameConflict() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      private final String _var = "";
+                      private void a() {
+                          if (true) {
+                              Thread t = new Thread() {
+                                  public void run() {
+                                      String var = "a";
+                                  }
+                              };
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeStaticImports() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package p;
+                  public class B {
+                      public static int _staticImport_ = 0;
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import static p.B._staticImport_;
+
+                  class Test {
+                      private int member = _staticImport_;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeIfToNameExists() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      int test_value;
+
+                      public int addTen(int testValue) {
+                          return test_value + testValue;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeExistsInOnlyOneMethod() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private int DoNoTChange;
+
+                      public int addTwenty(String doNoTChange) {
+                          return DoNoTChange + 20;
+                      }
+                      public int addTen(String value) {
+                          return DoNoTChange + 10;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotRenameInnerClassesMembers() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private int test = new InnerClass().DoNotChange + new InnerClass().DoNotChange2;
+
+                      private class InnerClass{
+                          public int DoNotChange = 10;
+                          private int DoNotChange2 = 10;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotRenameAnonymousInnerClasses() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  interface Book{}
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  class B {
+                      B(){
+                          new Book() {
+                            private String DoChange;
+
+                            @Override
+                            public String toString() {
+                              return DoChange;
+                            }
+                          };
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeWhenSameMethodParam() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      private int _variable;
+                      public void getInstance(int _variable) {
+                          this._variable = _variable;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
+        @Test
+        void doNotRenameUnderscoreNumber() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      private boolean _20th;
+                       public boolean method() {
+                           return _20th;
+                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
+        @Test
+        void doNotRenameUnderscoresOnly() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      private boolean __;
+                       public boolean method() {
+                           return __;
+                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2526")
+        @Test
+        void recordCompactConstructor() {
+            rewriteRun(
+              spec -> spec.beforeRecipe(cu -> {
+                  var javaRuntimeVersion = System.getProperty("java.runtime.version");
+                  var javaVendor = System.getProperty("java.vm.vendor");
+                  if (new JavaVersion(UUID.randomUUID(), javaRuntimeVersion, javaVendor, javaRuntimeVersion, javaRuntimeVersion).getMajorVersion() != 17) {
+                      spec.recipe(Recipe.noop());
+                  }
+              }),
+              //language=java
+              java(
+                """
+                  public record MyRecord(
+                     boolean bar,
+                     String foo
+                  ) {
+                     public MyRecord {
+                        if (foo == null) {
+                            foo = "defaultValue";
+                        }
                     }
-                }
-              }
-              """
-          )
-        );
-    }
+                  }
+                  """
+              )
+            );
+        }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
-    @Test
-    void doNotChangeLombokAnnotatedClasses() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
-          //language=java
-          java(
-            """
-              @lombok.RequiredArgsConstructor
-              class Test {
-                  private String D_TYPE_CONNECT = "";
-              }
-              """
-          )
-        );
-    }
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+        @Test
+        void doNotChangeLombokAnnotatedClasses() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+              //language=java
+              java(
+                """
+                  @lombok.RequiredArgsConstructor
+                  class Test {
+                      private String D_TYPE_CONNECT = "";
+                  }
+                  """
+              )
+            );
+        }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
-    @Test
-    void doNotChangeLombokAnnotatedFields() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
-          //language=java
-          java(
-            """
-              class Test {
-                  @lombok.Setter
-                  private String D_TYPE_CONNECT = "";
-              }
-              """
-          )
-        );
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+        @Test
+        void doNotChangeLombokAnnotatedFields() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+              //language=java
+              java(
+                """
+                  class Test {
+                      @lombok.Setter
+                      private String D_TYPE_CONNECT = "";
+                  }
+                  """
+              )
+            );
+        }
     }
 }

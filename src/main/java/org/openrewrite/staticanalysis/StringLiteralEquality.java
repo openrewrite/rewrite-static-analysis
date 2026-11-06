@@ -60,7 +60,6 @@ public class StringLiteralEquality extends Recipe {
                         after = asNegatedUnary(asEqualsMethodInvocation(binary)).withPrefix(binary.getPrefix());
                     }
                     if (after != null) {
-                        doAfterVisit(new EqualsAvoidsNull().getVisitor());
                         return after;
                     }
                 }
@@ -72,19 +71,20 @@ public class StringLiteralEquality extends Recipe {
             }
 
             /**
-             * Transform a binary expression into a method invocation on String.equals. For example,
-             * <p>
-             * {@code "foo" == "bar"} into {@code "foo".equals("bar")}
+             * Makes the literal the receiver, so that a {@code null} operand cannot throw.
              */
             private J.MethodInvocation asEqualsMethodInvocation(J.Binary binary) {
+                boolean literalFirst = isStringLiteral(binary.getLeft()) || !isStringLiteral(binary.getRight());
+                Expression receiver = literalFirst ? binary.getLeft() : binary.getRight();
+                Expression argument = literalFirst ? binary.getRight() : binary.getLeft();
                 return new J.MethodInvocation(
                         Tree.randomId(),
                         Space.EMPTY,
                         Markers.EMPTY,
-                        new JRightPadded<>(binary.getLeft().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY),
+                        new JRightPadded<>(receiver.withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY),
                         null,
                         new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "equals", null, null),
-                        JContainer.build(singletonList(new JRightPadded<>(binary.getRight().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY))),
+                        JContainer.build(singletonList(new JRightPadded<>(argument.withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY))),
                         new JavaType.Method(
                                 null,
                                 Flag.Public.getBitMask(),
@@ -98,11 +98,6 @@ public class StringLiteralEquality extends Recipe {
                 );
             }
 
-            /**
-             * Wrap a method invocation within a negated unary expression. For example,
-             * <p>
-             * {@code "foo".equals("bar")} into {@code !"foo".equals("bar")}
-             */
             private J.Unary asNegatedUnary(J.MethodInvocation mi) {
                 return new J.Unary(
                         Tree.randomId(),

@@ -25,6 +25,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -35,7 +36,7 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
     private static final MethodMatcher GET_BYTES = new MethodMatcher("java.lang.String getBytes()");
 
     @Option(displayName = "Default encoding",
-            description = "The default encoding to supply to the `getBytes` call",
+            description = "The default encoding to supply to the `getBytes` call.",
             example = "UTF_8",
             required = false)
     @Nullable
@@ -49,7 +50,9 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
                "produce different results across environments, leading to subtle data " +
                "corruption bugs.";
 
-    Set<String> tags = singleton("RSPEC-S4719");
+    Set<String> tags = singleton("RSPEC-S1943");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,8 +15,13 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
@@ -26,7 +31,9 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"unchecked", "RedundantCast", "SimplifyStreamApiCallChains", "Convert2MethodRef", "CodeBlock2Expr", "RedundantOperationOnEmptyContainer", "ResultOfMethodCallIgnored", "rawtypes", "UnusedAssignment", "OptionalGetWithoutIsPresent"})
 class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
@@ -34,6 +41,122 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceLambdaWithMethodReference());
+    }
+
+    @Test
+    void retainExplicitLambdaParameterWithWildcardTarget() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class Test {
+                  Consumer<?> field = (String value) -> value.trim();
+                  void accept(Consumer<?> consumer) {}
+                  void test() {
+                      accept((String value) -> value.trim());
+                      Consumer<?> local = (String value) -> value.trim();
+                      local = (String value) -> value.trim();
+                  }
+                  Consumer<?> create() { return (String value) -> value.trim(); }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
+      "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})
+    void preserveRefasterBeforeTemplate(String annotation) {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.google.errorprone.refaster.annotation;
+              @java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+              public @interface BeforeTemplate {}
+              """
+          )),
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              import java.util.Comparator;
+
+              class Test {
+                  %s
+                  Comparator<String> fromLambda() {
+                      return (a, b) -> a.compareToIgnoreCase(b);
+                  }
+              }
+              """.formatted(annotation)
+          )
+        );
+    }
+
+    @Test
+    void preserveNullableBoundReceiverTiming() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  final Object field = null;
+                  Supplier<String> parameter(Object value) {
+                      return () -> value.toString();
+                  }
+                  Supplier<String> local() {
+                      Object value = null;
+                      return () -> value.toString();
+                  }
+                  Supplier<String> field() {
+                      return () -> field.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveStaticQualifierEvaluation() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  static class Target { static String f() { return "value"; } }
+                  static class Holder { final Target target = null; }
+                  Supplier<String> field(Holder holder) {
+                      return () -> holder.target.f();
+                  }
+                  Supplier<String> array(Target[] values, int index) {
+                      return () -> values[index].f();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void stableNonNullBoundReceivers() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  Supplier<String> literal() { return () -> " text ".trim(); }
+                  Supplier<String> type() { return () -> String.class.getName(); }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+              class A {
+                  Supplier<String> literal() { return " text "::trim; }
+                  Supplier<String> type() { return String.class::getName; }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -81,135 +204,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   @FunctionalInterface
                   interface ChangeListener<T> {
                       void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void dontSelectCastFromTypeVariable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Supplier;
-              class Test<T> {
-                  Supplier<T> test() {
-                        return () -> (T) this;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/1926")
-    @Test
-    void multipleMethodInvocations() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.nio.file.Path;
-              import java.nio.file.Paths;
-              import java.util.List;
-              import java.util.stream.Collectors;
-
-              class Test {
-                  Path path = Paths.get("");
-                  List<String> method(List<String> l) {
-                      return l.stream()
-                          .filter(s -> path.getFileName().toString().equals(s))
-                          .collect(Collectors.toList());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/96")
-    @Test
-    void ignoreAmbiguousMethodReference() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.stream.Stream;
-
-              class Test {
-                  Stream<String> method() {
-                      return Stream.of(1, 32, 12, 15, 23).map(x -> Integer.toString(x));
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void containsMultipleStatements() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.List;
-              import java.util.stream.Collectors;
-
-              class Test {
-                  List<Integer> even(List<Integer> l) {
-                      return l.stream().map(n -> {
-                          if (n % 2 == 0) return n;
-                          return n * 2;
-                      }).collect(Collectors.toList());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/1772")
-    @Test
-    void typeCastOnMethodInvocationReturnType() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.List;
-              import java.util.stream.Collectors;
-              import java.util.stream.Stream;
-
-              class Test {
-                  public void foo() {
-                      List<String> bar = Stream.of("A", "b")
-                              .map(s -> (String) s.toLowerCase())
-                              .collect(Collectors.toList());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
-    @Test
-    void typeCastOnConstructorCall() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.List;
-              import java.util.stream.Collectors;
-              import java.util.stream.Stream;
-
-              class Test {
-                  public void foo() {
-                      List<Object> bar = Stream.of("A", "b")
-                              .map(s -> (Object) new String(s + ":"))
-                              .collect(Collectors.toList());
                   }
               }
               """
@@ -366,72 +360,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2875")
-    @Test
-    void instanceOfLeftHandIsNotLambdaParameter() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              package org.test;
-              public class CheckType {
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.List;
-              import java.util.Optional;
-              import java.util.stream.Collectors;
-
-              import org.test.CheckType;
-
-              class Test {
-                  List<Optional<Object>> method(List<Optional<Object>> input) {
-                      return input.stream().filter(n -> n.get() instanceof CheckType).collect(Collectors.toList());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
-    @Test
-    void doNotChangeBiPredicateInstanceOf() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.BiPredicate;
-
-              class Test {
-                  BiPredicate<String, Throwable> pred = (r, t) -> t instanceof IllegalArgumentException;
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
-    @Test
-    void doNotChangeInstanceOfOnCapturedVariable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Predicate;
-
-              class Test {
-                  Object field;
-                  Predicate<String> pred = s -> field instanceof String;
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void nonStaticMethods() {
         rewriteRun(
@@ -465,7 +393,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
                   void foo() {
                       Test t = new Test();
-                      Runnable r = t::run;
+                      Runnable r = () -> t.run();
                   }
               }
               """
@@ -507,7 +435,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
-    void systemOutPrint() {
+    void preserveSystemOutPrintReceiver() {
         rewriteRun(
           //language=java
           java(
@@ -518,21 +446,13 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       input.forEach(x -> System.out.println(x));
                   }
               }
-              """,
-            """
-              import java.util.List;
-              class Test {
-                  void method(List<Integer> input) {
-                      input.forEach(System.out::println);
-                  }
-              }
               """
           )
         );
     }
 
     @Test
-    void systemOutPrintInBlock() {
+    void preserveSystemOutPrintReceiverInBlock() {
         rewriteRun(
           //language=java
           java(
@@ -541,14 +461,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class Test {
                   void method(List<Integer> input) {
                       input.forEach(x -> { System.out.println(x); });
-                  }
-              }
-              """,
-            """
-              import java.util.List;
-              class Test {
-                  void method(List<Integer> input) {
-                      input.forEach(System.out::println);
                   }
               }
               """
@@ -825,31 +737,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/873")
-    @Test
-    void zeroArgNullCheckLambdaCannotBecomeObjectsNonNull() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.concurrent.Callable;
-
-              public class Main {
-                  private Object importerSource;
-
-                  void awaitReady(final ConditionFactory await) {
-                      await.until(() -> importerSource != null);
-                  }
-
-                  interface ConditionFactory {
-                      void until(Callable<Boolean> condition);
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @SuppressWarnings("Convert2MethodRef")
     @Test
     void isEqualToNull() {
@@ -944,6 +831,107 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void nestedLambdaCallsOwnAndInheritedMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  void log(String s) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A extends Base {
+                  void own(String s) {}
+
+                  void run(List<List<String>> ls) {
+                      ls.forEach(l -> l.forEach(s -> log(s)));
+                      ls.forEach(l -> l.forEach(s -> own(s)));
+                  }
+
+                  class Inner {
+                      void caller(List<List<String>> ls) {
+                          ls.forEach(l -> l.forEach(s -> log(s)));
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A extends Base {
+                  void own(String s) {}
+
+                  void run(List<List<String>> ls) {
+                      ls.forEach(l -> l.forEach(this::log));
+                      ls.forEach(l -> l.forEach(this::own));
+                  }
+
+                  class Inner {
+                      void caller(List<List<String>> ls) {
+                          ls.forEach(l -> l.forEach(A.this::log));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inheritedMethodOfGenericSuperclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base<T> {
+                  void log(T t) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class A extends Base<String> {
+                  void run(List<String> l) {
+                      l.forEach(s -> log(s));
+                  }
+
+                  class Inner {
+                      void caller(List<String> l) {
+                          l.forEach(s -> log(s));
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class A extends Base<String> {
+                  void run(List<String> l) {
+                      l.forEach(this::log);
+                  }
+
+                  class Inner {
+                      void caller(List<String> l) {
+                          l.forEach(A.this::log);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void functionReference() {
         rewriteRun(
@@ -970,75 +958,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
                   String execute(Integer i) {
                       return i.toString();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void returnExpressionIsNotAMethodInvocation() {
-        rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.builder().methodInvocations(false).build()),
-          //language=java
-          java(
-            """
-              class T {
-                  public void killBatchJob() {
-                      return deleteSparkBatchRequest()
-                              .map(resp -> {
-                                  return this;
-                              })
-                              .defaultIfEmpty(this);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void lambdaReturnsFunctionalInterface() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              package abc;
-              @FunctionalInterface
-              public interface MyFunction {
-                  String get();
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              package abc;
-
-              class M {
-                  MyFunction getFunction(String fcn) {
-                      return () -> fcn;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/2178")
-    @Test
-    void doNotReplaceInvocationWhichAcceptsArgument() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.*;
-
-              class A {
-                  void foo() {
-                      new ArrayList<List<Integer>>().stream()
-                              .map(it -> it.addAll(List.of(1, 2, 3)));
                   }
               }
               """
@@ -1088,162 +1007,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       s = java.util.HashSet::new;
                       Function<Integer, ?> f;
                       f = ArrayList::new;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void notReplacedConstructorCalls() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.ArrayList;
-              import java.util.function.Function;
-              import java.util.function.Supplier;
-
-              class A {
-                  void foo() {
-                      Supplier<?> s;
-                      s = () -> new Object() {};
-                      s = () -> new java.util.ArrayList(1);
-
-                      Function<Integer, ?> f;
-                      f = i -> new ArrayList();
-                      f = i -> new ArrayList(i) {};
-
-                      Object o;
-                      o = i -> new ArrayList(1);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
-    @Test
-    void multipleConstructors() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Predicate;
-
-              class B {
-                  B () {}
-                  B (Predicate<String> predicate) {}
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              import java.util.function.Supplier;
-
-              class A {
-                  void method(Supplier<B> supplier) {}
-                  void method(Function<B, B> function) {}
-
-                  void test() {
-                      method(() -> new B());            // OK
-                      method(() -> new B(t -> false));  // OK
-                      method((x) -> new B(t -> false)); // OK
-                      // method(B::new);                // Error
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void multipleConstructorsOnGenericTypeWithDiamond() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class B<T> {
-                  B() {}
-                  B(boolean flag) {}
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              import java.util.function.Supplier;
-
-              class A {
-                  void method(Supplier<B<?>> supplier) {}
-                  void method(Function<A, B<?>> function) {}
-
-                  void test() {
-                      method(() -> new B<>());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
-    @Test
-    void anotherMultipleConstructorsCaseEasyUnderstanding() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class B {
-                  B () {}
-                  B (String name) {}
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              import java.util.function.Supplier;
-
-              class A {
-                  void method(Supplier<B> supplier) {}
-                  void method(Function<String, B> function) {}
-
-                  void test() {
-                      method(() -> new B());         // OK
-                      method(name -> new B(name));   // OK
-                      // method(B::new);             // Error
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
-    @SuppressWarnings("StringOperationCanBeSimplified")
-    @Test
-    void anotherSimplerMultipleConstructorsCase() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              import java.util.function.Supplier;
-
-              public class A {
-                  void method(Supplier<String> visitor) {}
-                  void method(Function<String, String> visitor) {}
-
-                  void test() {
-                      method(() -> new String());
-                      // method(String::new); // Error
                   }
               }
               """
@@ -1402,191 +1165,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
-    @Test
-    void dontReplaceLambdaSupplierOfMethodReference() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.function.Function;
-
-              class A {
-                public void testCase() {
-                  Function<String, Integer> function = str -> 1;
-                  Optional.of(function).orElseGet(() -> this::foo);
-                }
-
-                private Integer foo(String bar) {
-                  return 1;
-                }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void newClassSelector() {
-        //language=java
-        rewriteRun(
-          java(
-            """
-              class A {
-                  int seen = 0;
-                  String lower(String s) {
-                      seen++;
-                      return s.toLowerCase();
-                  }
-              }
-              """
-          ),
-          java(
-            """
-              import java.util.stream.Stream;
-              class B {
-                  void bar(Stream<String> stream) {
-                      stream.map(s -> new A().lower(s));
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
-    @Test
-    void groupingByGetClass() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.*;
-              import java.util.stream.*;
-
-              class Animal {}
-              class Cat extends Animal {}
-              class Dog extends Animal {}
-
-              class Test {
-                public void groupOnGetClass() {
-                  List<Animal> animals = List.of(new Cat(), new Dog());
-                  Map<Class<? extends Animal>, List<Animal>> collect;
-                  collect = animals.stream().collect(Collectors.groupingBy(a -> a.getClass()));
-                }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void dontReplaceNullableFieldReferences() {
-        //language=java
-        rewriteRun(
-          java(
-            """
-              import java.util.function.Supplier;
-              class A {
-                  Object field;
-                  void foo() {
-                      // Runtime exception when replaced with field::toString
-                      Supplier<String> supplierA = () -> field.toString();
-                      Supplier<String> supplierB = () -> this.field.toString();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void noMethodReferenceForParentheses() {
-        rewriteRun(
-          java(
-            """
-              @FunctionalInterface
-              interface Foo {
-                  void foo();
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.function.Consumer;
-              import java.util.function.Function;
-              class Test {
-                  void onChange(Foo a, Foo b, boolean c) {
-                      Consumer<?> processor = () -> (c ? a : b).foo();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
-    @Test
-    void doNotReplaceInAnonymousInnerClass() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  public void foo() {
-                      B b = new B() {
-                          @Override
-                          public void run() {
-                              new Thread(() -> run()).start();
-                          }
-                      };
-                  }
-                  
-                  interface B {
-                      void run();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
-    @Test
-    void doNotReplaceInAnonymousInnerClassWithOtherMethods() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  public void foo() {
-                      B b = new B() {
-                          @Override
-                          public void run() {
-                              execute(() -> doSomething());
-                          }
-                          
-                          private void doSomething() {
-                              System.out.println("doing something");
-                          }
-                          
-                          private void execute(Runnable r) {
-                              r.run();
-                          }
-                      };
-                  }
-                  
-                  interface B {
-                      void run();
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
     @Test
     void stillReplaceInRegularInnerClass() {
@@ -1697,31 +1275,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               public class Foo {
                   private void foo() {
                       List.of().stream().map(Entry.class::cast);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/774")
-    @Test
-    void methodRefWithGenerics() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.function.Supplier;
-
-              class Foo {
-                  <R> R fold(final Supplier<R> supplier) {return null;}
-
-                  void foo(String l) {}
-                  void foo(Optional<String> l) {}
-
-                  void bar() {
-                      foo(fold(() -> Optional.empty()));
                   }
               }
               """
@@ -1970,24 +1523,797 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
-    @Test
-    void castToTypeParameterInLambda() {
-        // given / when / then
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class SequenceFileReader<K, V> {
-                  interface Converter<T> {
-                      T convert(Object o);
+    @Nested
+    class NoChange {
+        @Test
+        void dontSelectCastFromTypeVariable() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Supplier;
+                  class Test<T> {
+                      Supplier<T> test() {
+                            return () -> (T) this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/1926")
+        @Test
+        void multipleMethodInvocations() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.nio.file.Path;
+                  import java.nio.file.Paths;
+                  import java.util.List;
+                  import java.util.stream.Collectors;
+
+                  class Test {
+                      Path path = Paths.get("");
+                      List<String> method(List<String> l) {
+                          return l.stream()
+                              .filter(s -> path.getFileName().toString().equals(s))
+                              .collect(Collectors.toList());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/96")
+        @Test
+        void ignoreAmbiguousMethodReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.stream.Stream;
+
+                  class Test {
+                      Stream<String> method() {
+                          return Stream.of(1, 32, 12, 15, 23).map(x -> Integer.toString(x));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void containsMultipleStatements() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  import java.util.stream.Collectors;
+
+                  class Test {
+                      List<Integer> even(List<Integer> l) {
+                          return l.stream().map(n -> {
+                              if (n % 2 == 0) return n;
+                              return n * 2;
+                          }).collect(Collectors.toList());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/1772")
+        @Test
+        void typeCastOnMethodInvocationReturnType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  import java.util.stream.Collectors;
+                  import java.util.stream.Stream;
+
+                  class Test {
+                      public void foo() {
+                          List<String> bar = Stream.of("A", "b")
+                                  .map(s -> (String) s.toLowerCase())
+                                  .collect(Collectors.toList());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
+        @Test
+        void typeCastOnConstructorCall() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  import java.util.stream.Collectors;
+                  import java.util.stream.Stream;
+
+                  class Test {
+                      public void foo() {
+                          List<Object> bar = Stream.of("A", "b")
+                                  .map(s -> (Object) new String(s + ":"))
+                                  .collect(Collectors.toList());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2875")
+        @Test
+        void instanceOfLeftHandIsNotLambdaParameter() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package org.test;
+                  public class CheckType {
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  import java.util.Optional;
+                  import java.util.stream.Collectors;
+
+                  import org.test.CheckType;
+
+                  class Test {
+                      List<Optional<Object>> method(List<Optional<Object>> input) {
+                          return input.stream().filter(n -> n.get() instanceof CheckType).collect(Collectors.toList());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+        @Test
+        void doNotChangeBiPredicateInstanceOf() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.BiPredicate;
+
+                  class Test {
+                      BiPredicate<String, Throwable> pred = (r, t) -> t instanceof IllegalArgumentException;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+        @Test
+        void doNotChangeInstanceOfOnCapturedVariable() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Predicate;
+
+                  class Test {
+                      Object field;
+                      Predicate<String> pred = s -> field instanceof String;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/873")
+        @Test
+        void zeroArgNullCheckLambdaCannotBecomeObjectsNonNull() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.concurrent.Callable;
+
+                  public class Main {
+                      private Object importerSource;
+
+                      void awaitReady(final ConditionFactory await) {
+                          await.until(() -> importerSource != null);
+                      }
+
+                      interface ConditionFactory {
+                          void until(Callable<Boolean> condition);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void returnExpressionIsNotAMethodInvocation() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.builder().methodInvocations(false).build()),
+              //language=java
+              java(
+                """
+                  class T {
+                      public void killBatchJob() {
+                          return deleteSparkBatchRequest()
+                                  .map(resp -> {
+                                      return this;
+                                  })
+                                  .defaultIfEmpty(this);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void lambdaReturnsFunctionalInterface() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package abc;
+                  @FunctionalInterface
+                  public interface MyFunction {
+                      String get();
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package abc;
+
+                  class M {
+                      MyFunction getFunction(String fcn) {
+                          return () -> fcn;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2178")
+        @Test
+        void doNotReplaceInvocationWhichAcceptsArgument() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.*;
+
+                  class A {
+                      void foo() {
+                          new ArrayList<List<Integer>>().stream()
+                                  .map(it -> it.addAll(List.of(1, 2, 3)));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void notReplacedConstructorCalls() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.ArrayList;
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+
+                  class A {
+                      void foo() {
+                          Supplier<?> s;
+                          s = () -> new Object() {};
+                          s = () -> new java.util.ArrayList(1);
+
+                          Function<Integer, ?> f;
+                          f = i -> new ArrayList();
+                          f = i -> new ArrayList(i) {};
+
+                          Object o;
+                          o = i -> new ArrayList(1);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2949")
+        @Test
+        void multipleConstructors() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Predicate;
+
+                  class B {
+                      B () {}
+                      B (Predicate<String> predicate) {}
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+
+                  class A {
+                      void method(Supplier<B> supplier) {}
+                      void method(Function<B, B> function) {}
+
+                      void test() {
+                          method(() -> new B());            // OK
+                          method(() -> new B(t -> false));  // OK
+                          method((x) -> new B(t -> false)); // OK
+                          // method(B::new);                // Error
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void multipleConstructorsOnGenericTypeWithDiamond() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class B<T> {
+                      B() {}
+                      B(boolean flag) {}
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+
+                  class A {
+                      void method(Supplier<B<?>> supplier) {}
+                      void method(Function<A, B<?>> function) {}
+
+                      void test() {
+                          method(() -> new B<>());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2949")
+        @Test
+        void anotherMultipleConstructorsCaseEasyUnderstanding() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class B {
+                      B () {}
+                      B (String name) {}
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+
+                  class A {
+                      void method(Supplier<B> supplier) {}
+                      void method(Function<String, B> function) {}
+
+                      void test() {
+                          method(() -> new B());         // OK
+                          method(name -> new B(name));   // OK
+                          // method(B::new);             // Error
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/2949")
+        @SuppressWarnings("StringOperationCanBeSimplified")
+        @Test
+        void anotherSimplerMultipleConstructorsCase() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+
+                  public class A {
+                      void method(Supplier<String> visitor) {}
+                      void method(Function<String, String> visitor) {}
+
+                      void test() {
+                          method(() -> new String());
+                          // method(String::new); // Error
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
+        @Test
+        void dontReplaceLambdaSupplierOfMethodReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.function.Function;
+
+                  class A {
+                    public void testCase() {
+                      Function<String, Integer> function = str -> 1;
+                      Optional.of(function).orElseGet(() -> this::foo);
+                    }
+
+                    private Integer foo(String bar) {
+                      return 1;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void newClassSelector() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  class A {
+                      int seen = 0;
+                      String lower(String s) {
+                          seen++;
+                          return s.toLowerCase();
+                      }
+                  }
+                  """
+              ),
+              java(
+                """
+                  import java.util.stream.Stream;
+                  class B {
+                      void bar(Stream<String> stream) {
+                          stream.map(s -> new A().lower(s));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
+        @Test
+        void groupingByGetClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.*;
+                  import java.util.stream.*;
+
+                  class Animal {}
+                  class Cat extends Animal {}
+                  class Dog extends Animal {}
+
+                  class Test {
+                    public void groupOnGetClass() {
+                      List<Animal> animals = List.of(new Cat(), new Dog());
+                      Map<Class<? extends Animal>, List<Animal>> collect;
+                      collect = animals.stream().collect(Collectors.groupingBy(a -> a.getClass()));
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void dontReplaceNullableFieldReferences() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  import java.util.function.Supplier;
+                  class A {
+                      Object field;
+                      void foo() {
+                          // Runtime exception when replaced with field::toString
+                          Supplier<String> supplierA = () -> field.toString();
+                          Supplier<String> supplierB = () -> this.field.toString();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noMethodReferenceForParentheses() {
+            rewriteRun(
+              java(
+                """
+                  @FunctionalInterface
+                  interface Foo {
+                      void foo();
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.function.Consumer;
+                  import java.util.function.Function;
+                  class Test {
+                      void onChange(Foo a, Foo b, boolean c) {
+                          Consumer<?> processor = () -> (c ? a : b).foo();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+        @Test
+        void doNotReplaceInAnonymousInnerClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      public void foo() {
+                          B b = new B() {
+                              @Override
+                              public void run() {
+                                  new Thread(() -> run()).start();
+                              }
+                          };
+                      }
+
+                      interface B {
+                          void run();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+        @Test
+        void doNotReplaceInAnonymousInnerClassWithOtherMethods() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      public void foo() {
+                          B b = new B() {
+                              @Override
+                              public void run() {
+                                  execute(() -> doSomething());
+                              }
+
+                              private void doSomething() {
+                                  System.out.println("doing something");
+                              }
+
+                              private void execute(Runnable r) {
+                                  r.run();
+                              }
+                          };
+                      }
+
+                      interface B {
+                          void run();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/774")
+        @Test
+        void methodRefWithGenerics() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  import java.util.function.Supplier;
+
+                  class Foo {
+                      <R> R fold(final Supplier<R> supplier) {return null;}
+
+                      void foo(String l) {}
+                      void foo(Optional<String> l) {}
+
+                      void bar() {
+                          foo(fold(() -> Optional.empty()));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
+        @Test
+        void castToTypeParameterInLambda() {
+            // given / when / then
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class SequenceFileReader<K, V> {
+                      interface Converter<T> {
+                          T convert(Object o);
+                      }
+
+                      private Converter<K> keyConverter = o -> (K) o;
+                      private Converter<V> valConverter = o -> (V) o;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+        @Test
+        void doNotReplaceWhenEnclosingOwnerIsAnonymousClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class Base {
+                      void log(String s) {}
                   }
 
-                  private Converter<K> keyConverter = o -> (K) o;
-                  private Converter<V> valConverter = o -> (V) o;
-              }
-              """
-          )
-        );
+                  class A extends Base {
+                      void m(List<String> l) {
+                          new Base() {
+                              class Local {
+                                  void f() {
+                                      l.forEach(s -> log(s));
+                                  }
+                              }
+                          };
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Kotlin {
+        @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
+        @Test
+        void toQualifiedMethodReference() {
+            rewriteRun(
+              kotlin(
+                """
+                  interface Pet {
+                      fun move() {
+                      }
+                  }
+
+                  class Cat : Pet {
+                      override fun move() {
+                          println("Cat is moving")
+                      }
+                  }
+
+                  class Dog : Pet {
+                      override fun move() {
+                          println("Dog is moving")
+                      }
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  fun main() {
+                      val pets = listOf(Cat(), Dog())
+                      pets.forEach { it.move() }
+                  }
+                  """,
+                """
+                  fun main() {
+                      val pets = listOf(Cat(), Dog())
+                      pets.forEach ( Pet::move )
+                  }
+                  """
+              )
+            );
+        }
+
+        @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
+        @Test
+        void toUnqualifiedMethodReference() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun isEven(number: Int): Boolean {
+                      return number % 2 == 0
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  val numbers = listOf(1, 2, 3, 4, 5)
+                  val evenNumbers = numbers.filter{isEven(it)}
+                  """
+                ,
+                """
+                  val numbers = listOf(1, 2, 3, 4, 5)
+                  val evenNumbers = numbers.filter(::isEven)
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Groovy {
+        @Issue("https://github.com/openrewrite/rewrite/issues/2566")
+        @Test
+        void groovyLangClosure() {
+            rewriteRun(
+              groovy(
+                """
+                  repositories {
+                      mavenLocal()
+                  }
+                  """
+              )
+            );
+        }
     }
 }

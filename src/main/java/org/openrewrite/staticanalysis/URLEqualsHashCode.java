@@ -23,19 +23,19 @@ import java.net.URI;
 import java.net.URL;
 
 @RecipeDescriptor(
-        name = "URL Equals and Hash Code",
+        name = "`URL#equals()` and `URL#hashCode()`",
         description = "Uses of `equals()` and `hashCode()` cause `java.net.URL` to make blocking internet connections. " +
                       "Instead, use `java.net.URI`.",
-        tags = {"RSPEC-2112"}
+        tags = {"RSPEC-S2112"}
 )
 @SuppressWarnings("UrlHashCode")
 public class URLEqualsHashCode {
 
     @RecipeDescriptor(
-            name = "URL Equals",
+            name = "`URL#equals()`",
             description = "Uses of `equals()` cause `java.net.URL` to make blocking internet connections. " +
                           "Instead, use `java.net.URI`.",
-            tags = {"RSPEC-2112"}
+            tags = {"RSPEC-S2112"}
     )
     public static class URLEquals {
         @BeforeTemplate
@@ -50,10 +50,10 @@ public class URLEqualsHashCode {
     }
 
     @RecipeDescriptor(
-            name = "URL Hash Code",
+            name = "`URL#hashCode()`",
             description = "Uses of `hashCode()` cause `java.net.URL` to make blocking internet connections. " +
                           "Instead, use `java.net.URI`.",
-            tags = {"RSPEC-2112"}
+            tags = {"RSPEC-S2112"}
     )
     public static class URLHashCode {
         @BeforeTemplate

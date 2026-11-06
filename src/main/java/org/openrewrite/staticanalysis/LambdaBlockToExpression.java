@@ -55,18 +55,11 @@ public class LambdaBlockToExpression extends Recipe {
                                 Space prefix = statement.getPrefix();
                                 if (statement instanceof J.Return) {
                                     Expression expression = ((J.Return) statement).getExpression();
-                                    if (prefix.getComments().isEmpty()) {
-                                        //noinspection DataFlowIssue
-                                        return l.withBody(expression);
-                                    }
                                     if (expression != null) {
-                                        return l.withBody(expression.withPrefix(prefix));
+                                        return l.withBody(prefix.getComments().isEmpty() ? expression : expression.withPrefix(prefix));
                                     }
                                 } else if (statement instanceof J.MethodInvocation) {
-                                    if (prefix.getComments().isEmpty()) {
-                                        return l.withBody(statement);
-                                    }
-                                    return l.withBody(statement.withPrefix(prefix));
+                                    return l.withBody(statement);
                                 }
                             }
                         }

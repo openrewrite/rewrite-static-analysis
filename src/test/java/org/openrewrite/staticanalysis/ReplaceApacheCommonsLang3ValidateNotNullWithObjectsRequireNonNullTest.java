@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
-import org.openrewrite.config.Environment;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -32,16 +31,41 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
           .parser(JavaParser.fromJavaVersion()
             .logCompilationWarningsAndErrors(true)
             .classpath("commons-lang3"))
-          .recipe(Environment.builder()
-            .scanRuntimeClasspath("org.openrewrite.java")
-            .build()
-            .activateRecipes("org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull"));
+          .recipeFromResources("org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull");
     }
 
     @DocumentExample
     @Test
     void replaceWithOneArgument() {
         rewriteRun(
+          //language=java
+          java(
+            """
+              import org.apache.commons.lang3.Validate;
+
+              class Test {
+                  void test(Object obj) {
+                      Validate.notNull(obj);
+                  }
+              }
+              """,
+            """
+              import java.util.Objects;
+
+              class Test {
+                  void test(Object obj) {
+                      Objects.requireNonNull(obj);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceWithOneArgumentThroughSingleArgRecipe() {
+        rewriteRun(
+          spec -> spec.recipeFromResources("org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull"),
           //language=java
           java(
             """

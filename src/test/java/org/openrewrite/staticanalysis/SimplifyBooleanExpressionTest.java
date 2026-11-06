@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -22,6 +23,8 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings("ALL")
 class SimplifyBooleanExpressionTest implements RewriteTest {
@@ -463,5 +466,244 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void scalaAndTrue() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(a: Boolean): Boolean = a && true
+              }
+              """,
+            """
+              class A {
+                def foo(a: Boolean): Boolean = a
+              }
+              """
+          )
+        );
+    }
+
+    @Nested
+    class Kotlin {
+        @Test
+        void distinctNullableStringGuards() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun credentials(username: String?, password: String?): Boolean =
+                      !username.isNullOrBlank() && !password.isNullOrBlank()
+                  """
+              )
+            );
+        }
+
+        @Test
+        void distinctNullableStringGuardsInGradleKotlinDsl() {
+            rewriteRun(
+              kotlin(
+                """
+                  val codegenomeUsername: String? = System.getenv("CODEGENOME_USERNAME")
+                  val codegenomePassword: String? = System.getenv("CODEGENOME_TOKEN")
+                  if (!codegenomeUsername.isNullOrBlank() && !codegenomePassword.isNullOrBlank()) {
+                      println("configured")
+                  }
+                  """,
+                spec -> spec.path("build.gradle.kts")
+              )
+            );
+        }
+
+        @Test
+        void simplifyKotlinWhilePreservingDistinctReceivers() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun credentials(username: String?, password: String?): Boolean =
+                      true && (!username.isNullOrBlank() && !password.isNullOrBlank())
+                  fun missing(username: String?, password: String?): Boolean =
+                      false || (username.isNullOrBlank() || password.isNullOrBlank())
+                  """,
+                """
+                  fun credentials(username: String?, password: String?): Boolean =
+                      (!username.isNullOrBlank() && !password.isNullOrBlank())
+                  fun missing(username: String?, password: String?): Boolean =
+                      (username.isNullOrBlank() || password.isNullOrBlank())
+                  """
+              )
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void regular() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun getSymbol() : String? {
+                      return null
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  val isPositive = getSymbol().equals("+") == true
+                  """,
+                """
+                  val isPositive = getSymbol().equals("+")
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeWithNullable() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun getSymbol() : String? {
+                      return null
+                  }
+
+                  val isPositive = getSymbol()?.equals("+") == true
+                  """
+              )
+            );
+        }
+
+        @Test
+        void nullableChain() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun getSymbol() : String? {
+                      return null
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  val isPositive1 = getSymbol()?.plus("").equals("+") == true
+                  val isPositive2 = getSymbol()?.plus("")?.equals("+") == true
+                  """,
+                """
+                  val isPositive1 = getSymbol()?.plus("").equals("+")
+                  val isPositive2 = getSymbol()?.plus("")?.equals("+") == true
+                  """
+              )
+            );
+        }
+
+        @Test
+        void preserveSafeBooleanPropertyComparisons() {
+            rewriteRun(
+              kotlin(
+                """
+                  class State(val failed: Boolean)
+                  fun failed(state: State?) = state?.failed == true
+                  fun notFailed(state: State?) = state?.failed != true
+                  fun clear(state: State?) = state?.failed == false
+                  fun notClear(state: State?) = state?.failed != false
+                  fun grouped(state: State?) = (state?.failed) == true
+                """
+              )
+            );
+        }
+
+        @Test
+        void nullableVariable() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun main() {
+                      val name : String? = null
+                      val isPositive1 = name?.equals("+") == true
+                      val isPositive2 = name.equals("+") == true
+                  }
+                  """,
+                """
+                  fun main() {
+                      val name : String? = null
+                      val isPositive1 = name?.equals("+") == true
+                      val isPositive2 = name.equals("+")
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+        @Test
+        void nullableBooleanReceiverEqualsTrue() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun Boolean?.toLegacyFlag() = if (this == true) "1" else "0"
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+        @Test
+        void nullableBooleanFieldEqualsTrue() {
+            rewriteRun(
+              kotlin(
+                """
+                  data class Todo(val completed: Boolean?)
+                  fun main() {
+                      val todo = Todo(null)
+                      val isCompleted: Boolean = todo.completed == true
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void nullableBooleanFunctionEqualsTrue() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun flag(): Boolean? = null
+
+                  fun check() {
+                      if (flag() == true) println("true")
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+        @Test
+        void nullableBooleanParameterEqualsFalse() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun check(b: Boolean?) {
+                      if (b == false) println("false or null")
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+        @Test
+        void nullableBooleanParameterNotEqualTrue() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun check(b: Boolean?) {
+                      if (b != true) println("not true")
+                  }
+                  """
+              )
+            );
+        }
     }
 }

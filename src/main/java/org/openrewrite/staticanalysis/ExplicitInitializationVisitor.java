@@ -45,7 +45,6 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(ExplicitInitializationStyle.class, (SourceFile)tree, Checkstyle::explicitInitialization);
         }
@@ -87,14 +86,16 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         if (service(AnnotationService.class).matches(variableDeclsCursor, LOMBOK_BUILDER_DEFAULT)) {
             return v;
         }
-        if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
+        // C# const fields require an initializer even when it is the type's default value.
+        if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final) &&
+                variableDecls.getModifiers().stream().noneMatch(modifier -> "const".equals(modifier.getKeyword()))) {
             J.Literal literalInit = (J.Literal) variable.getInitializer();
             if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null == literalInit.getType()) {
                 v = v.withInitializer(null);
             } else if (primitive != null && !Boolean.TRUE.equals(style.getOnlyObjectReferences())) {
                 switch (primitive) {
                     case Boolean:
-                        if (literalInit.getValue() == Boolean.valueOf(false)) {
+                        if (J.Literal.isLiteralValue(literalInit, false)) {
                             v = v.withInitializer(null);
                         }
                         break;
@@ -106,7 +107,7 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
                     case Int:
                     case Long:
                     case Short:
-                        if (literalInit.getValue() instanceof Number && ((Number) literalInit.getValue()).intValue() == 0) {
+                        if (literalInit.getValue() instanceof Number && ((Number) literalInit.getValue()).longValue() == 0) {
                             v = v.withInitializer(null);
                         }
                         break;

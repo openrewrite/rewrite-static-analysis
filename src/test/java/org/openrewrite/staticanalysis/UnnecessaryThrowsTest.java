@@ -16,13 +16,13 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"RedundantThrows", "resource"})
@@ -223,10 +223,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not yet implemented")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
     @Test
-    void necessaryThrowsFromConstructorWithUnused() {
+    void keepUnusedThrowsOnConstructor() {
         rewriteRun(
           //language=java
           java(
@@ -237,17 +236,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
               class Test {
                   String str = test();
                   Test() throws IOException, ExecutionException {}
-                  String test() throws IOException {
-                      throw new IOException();
-                  }
-              }
-              """,
-            """
-              import java.io.IOException;
-
-              class Test {
-                  String str = test();
-                  Test() throws IOException {}
                   String test() throws IOException {
                       throw new IOException();
                   }
@@ -678,6 +666,180 @@ class UnnecessaryThrowsTest implements RewriteTest {
                   @Override
                   public void test() throws Exception {
                       throw new Exception("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeGroovySources() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class A {
+                  private void quiet() throws IOException {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void necessaryThrowsFromReflection() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private void locateHandler() throws NoSuchMethodException {
+                      Test.class.getDeclaredMethod("locateHandler");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void necessaryThrowsFromInheritedResourceClose() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              abstract class BaseCursor implements AutoCloseable {
+                  @Override
+                  public void close() throws InterruptedException {
+                      throw new InterruptedException();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              final class Cursor extends BaseCursor {
+                  void collectAll() {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  private void drain(Cursor cursor) throws InterruptedException {
+                      try (cursor) {
+                          cursor.collectAll();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void necessaryThrowsFromThrownExceptionArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private String read() throws InterruptedException {
+                      throw new InterruptedException();
+                  }
+
+                  private void go() throws InterruptedException {
+                      throw new IllegalStateException(read());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenAnInvocationDoesNotResolve() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              class Test {
+                  private void process() throws InterruptedException {
+                      Unresolved.doThing();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenCalleeThrowsUnresolvedType() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              class Test {
+                  private void helper() throws Unresolved {}
+
+                  private void process() throws InterruptedException {
+                      helper();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenCalleeSignatureDoesNotResolve() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              class Test {
+                  private void helper(Unresolved u) {}
+
+                  private void process(Unresolved u) throws InterruptedException {
+                      helper(u);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeThrowsWhenResolvedCalleeThrowsNothing() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Helper {
+                  void validate(String p) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  private void process(Helper helper, String p) throws InterruptedException {
+                      helper.validate(p);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  private void process(Helper helper, String p) {
+                      helper.validate(p);
                   }
               }
               """

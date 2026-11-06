@@ -26,7 +26,7 @@ import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TypecastParenPadStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.style.Style;
 
 public class TypecastParenPad extends Recipe {
@@ -39,9 +39,8 @@ public class TypecastParenPad extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        //noinspection NotNullFieldNotInitialized
         return Preconditions.check(
-                Preconditions.not(new GroovyFileChecker<>()),
+                new JavaFileChecker<>(),
                 new JavaIsoVisitor<ExecutionContext>() {
                     SpacesStyle spacesStyle;
                     TypecastParenPadStyle typecastParenPadStyle;
@@ -61,7 +60,7 @@ public class TypecastParenPad extends Recipe {
                     @Override
                     public J.TypeCast visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                         J.TypeCast tc = super.visitTypeCast(typeCast, ctx);
-                        return (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, tc)
+                        return (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, IntelliJ.wrappingAndBraces(), tc.getClazz())
                                 .visitNonNull(tc, ctx, getCursor().getParentTreeCursor().fork());
                     }
                 }

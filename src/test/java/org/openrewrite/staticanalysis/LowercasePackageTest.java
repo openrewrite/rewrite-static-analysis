@@ -25,6 +25,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 class LowercasePackageTest implements RewriteTest {
 
@@ -64,6 +65,27 @@ class LowercasePackageTest implements RewriteTest {
               """,
             spec -> spec.afterRecipe(cu ->
               assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Path.of("com/lowercase/A.java"))).isTrue())
+          )
+        );
+    }
+
+    @Test
+    void scalaUppercasePackage() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              package Com.Example
+
+              class A {
+              }
+              """,
+            """
+              package com.example
+
+              class A {
+              }
+              """
           )
         );
     }

@@ -24,8 +24,7 @@ import java.util.Comparator;
 @RecipeDescriptor(
         name = "Use `String.CASE_INSENSITIVE_ORDER`",
         description = "Replaces case-insensitive string comparator lambdas and method references " +
-                      "with the JDK constant `String.CASE_INSENSITIVE_ORDER`. Improves readability " +
-                      "and removes one closure allocation per call site."
+                      "with the JDK constant `String.CASE_INSENSITIVE_ORDER`. Improves readability."
 )
 public class UseStringCaseInsensitiveOrder {
 

@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.J;
 import java.util.Iterator;
 
 @EqualsAndHashCode(callSuper = false)
-@Incubating(since = "7.0.0")
 @Value
 public class NoFinalizedLocalVariables extends Recipe {
 
@@ -47,14 +46,12 @@ public class NoFinalizedLocalVariables extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
-                // if this doesn't have "final", we don't need to bother going any further; we're done
                 if (!mv.hasModifier(J.Modifier.Type.Final)) {
                     return mv;
                 }
 
                 Tree parent = getCursor().getParentTreeCursor().getValue();
                 if (parent instanceof J.MethodDeclaration || parent instanceof J.Lambda || parent instanceof J.Lambda.Parameters) {
-                    // this variable is a method parameter or lambda parameter
                     if (Boolean.TRUE.equals(excludeMethodParameters)) {
                         return mv;
                     }
@@ -83,8 +80,8 @@ public class NoFinalizedLocalVariables extends Recipe {
             }
 
             private J.VariableDeclarations removeFinal(J.VariableDeclarations mv) {
-                J.VariableDeclarations v = mv.withModifiers(ListUtils.map(mv.getModifiers(),
-                        m -> m.getType() == J.Modifier.Type.Final ? null : m));
+                J.VariableDeclarations v = mv.withModifiers(ListUtils.filter(mv.getModifiers(),
+                        m -> m.getType() != J.Modifier.Type.Final));
                 if (v.getModifiers().isEmpty() && v.getTypeExpression() != null) {
                     v = v.withTypeExpression(v.getTypeExpression().withPrefix(v.getTypeExpression().getPrefix()
                             .withWhitespace(v.getLeadingAnnotations().isEmpty() ? "" : " ")));

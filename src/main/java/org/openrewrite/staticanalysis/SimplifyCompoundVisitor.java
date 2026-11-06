@@ -24,6 +24,10 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 
+/**
+ * @deprecated Use {@link SimplifyCompoundStatement} instead.
+ */
+@Deprecated
 public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
 
     @Override
@@ -31,8 +35,7 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
         Expression cleanedUpAssignment = cleanupBooleanExpression(assignOp.getAssignment(), ctx);
         if (assignOp.getOperator() == J.AssignmentOperation.Type.BitAnd) {
             if (isLiteralTrue(cleanedUpAssignment)) {
-                //noinspection DataFlowIssue
-                return null;
+                return StatementRemoval.remove(getCursor(), assignOp);
             }
             if (isLiteralFalse(cleanedUpAssignment)) {
                 return maybeAutoFormat(
@@ -50,8 +53,7 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
             }
         } else if (assignOp.getOperator() == J.AssignmentOperation.Type.BitOr) {
             if (isLiteralFalse(cleanedUpAssignment)) {
-                //noinspection DataFlowIssue
-                return null;
+                return StatementRemoval.remove(getCursor(), assignOp);
             }
             if (isLiteralTrue(cleanedUpAssignment)) {
                 return maybeAutoFormat(

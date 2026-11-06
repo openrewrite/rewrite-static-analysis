@@ -27,7 +27,6 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.10.0")
 public class IndexOfShouldNotCompareGreaterThanZero extends Recipe {
     private static final MethodMatcher STRING_INDEX_MATCHER = new MethodMatcher("java.lang.String indexOf(String)");
     private static final MethodMatcher LIST_INDEX_MATCHER = new MethodMatcher("java.util.List indexOf(Object)");
@@ -60,7 +59,7 @@ public class IndexOfShouldNotCompareGreaterThanZero extends Recipe {
                                 J.MethodInvocation mi = (J.MethodInvocation) b.getLeft();
                                 if (STRING_INDEX_MATCHER.matches(mi) || LIST_INDEX_MATCHER.matches(mi)) {
                                     if (b.getRight() instanceof J.Literal && "0".equals(((J.Literal) b.getRight()).getValueSource())) {
-                                        b = b.withRight(((J.Literal) b.getRight()).withValueSource("1")).withOperator(J.Binary.Type.GreaterThanOrEqual);
+                                        b = b.withRight(((J.Literal) b.getRight()).withValue(1).withValueSource("1")).withOperator(J.Binary.Type.GreaterThanOrEqual);
                                     }
                                 }
                             }

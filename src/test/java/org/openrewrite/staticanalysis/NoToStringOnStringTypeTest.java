@@ -16,17 +16,66 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 class NoToStringOnStringTypeTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new NoToStringOnStringType());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
+      "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})
+    void preserveRefasterPattern(String annotation) {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.google.errorprone.refaster.annotation;
+              @java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+              public @interface BeforeTemplate {}
+              """
+          )),
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Test {
+                  %s
+                  String before(String string) {
+                      return string.toString();
+                  }
+
+                  String helper() {
+                      return "helper".toString();
+                  }
+              }
+              """.formatted(annotation),
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Test {
+                  %s
+                  String before(String string) {
+                      return string.toString();
+                  }
+
+                  String helper() {
+                      return "helper";
+                  }
+              }
+              """.formatted(annotation)
+          )
+        );
     }
 
     @DocumentExample
@@ -120,6 +169,83 @@ class NoToStringOnStringTypeTest implements RewriteTest {
                   static String method2() {
                       return "";
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings({"StringOperationCanBeSimplified", "ResultOfMethodCallIgnored", "RedundantStringConstructorCall"})
+    @Test
+    void toStringAsStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method(String str) {
+                      str.toString().toString().toString();
+                      str.trim().toString();
+                      new String(str).toString();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method(String str) {
+                      str.toString();
+                      str.trim();
+                      new String(str);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings({"StringOperationCanBeSimplified", "ResultOfMethodCallIgnored"})
+    @Test
+    void toStringAsLambdaBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static void method(String str) {
+                      Runnable r = () -> str.toString();
+                      UnaryOperator<String> u = s -> s.toString();
+                  }
+              }
+              """,
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static void method(String str) {
+                      Runnable r = () -> str.toString();
+                      UnaryOperator<String> u = s -> s;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaToStringOnString() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(s: String): String = s.toString()
+              }
+              """,
+            """
+              class A {
+                def foo(s: String): String = s
               }
               """
           )

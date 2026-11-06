@@ -19,7 +19,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
@@ -39,6 +41,9 @@ import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 @Value
 public class EqualsAvoidsNull extends Recipe {
 
+    private static final AnnotationMatcher BEFORE_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
+
     private static final String JAVA_LANG_STRING = "java.lang.String";
     private static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
@@ -49,13 +54,13 @@ public class EqualsAvoidsNull extends Recipe {
 
     String displayName = "Equals avoids null";
 
-    String description = "Checks that any combination of String literals is on the left side " +
-                "of an `equals()` comparison. Also checks for String literals assigned " +
-                "to some field (such as `someString.equals(anotherString = \"text\"))`. " +
-                "And removes redundant null checks in conjunction with equals comparisons. " +
+    String description = "Checks that any combination of `String` literals is on the left side " +
+                "of an `equals()` comparison. Also checks for `String` literals assigned " +
+                "to some field (such as `someString.equals(anotherString = \"text\")`). " +
+                "It also removes redundant null checks in conjunction with `equals()` comparisons. " +
                 "Placing the literal on the left side prevents `NullPointerException`s, " +
                 "since a literal can never be null and its `equals` method handles null " +
-                "arguments safely.";
+                "arguments safely. Groovy source is left unchanged because equality receiver dispatch can be customized.";
 
     Set<String> tags = singleton("RSPEC-S1132");
 
@@ -71,17 +76,42 @@ public class EqualsAvoidsNull extends Recipe {
                         new UsesMethod<>(CONTENT_EQUALS)),
                 new JavaVisitor<ExecutionContext>() {
                     @Override
+                    public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                        if (tree instanceof SourceFile) {
+                            SourceFile source = (SourceFile) tree;
+                            String path = source.getSourcePath().toString();
+                            // Avoid an optional Groovy class reference and retain dynamic equality dispatch.
+                            // A standalone invocation is a Statement, but replacing it with a bare Binary is not.
+                            if (tree.getClass().getName().startsWith("org.openrewrite.groovy.") ||
+                                path.endsWith(".groovy") || path.endsWith(".gradle")) {
+                                return (J) tree;
+                            }
+                        }
+                        return super.visit(tree, ctx);
+                    }
+
+                    @Override
+                    public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                        if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream().anyMatch(BEFORE_TEMPLATE::matches)) {
+                            return method;
+                        }
+                        return super.visitMethodDeclaration(method, ctx);
+                    }
+
+                    @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (mi.getSelect() instanceof J.Literal || !isStringComparisonMethod(mi) || !hasCompatibleArgument(mi)) {
+                        if (mi.getSelect() == null || mi.getSelect() instanceof J.Literal ||
+                            !isStringComparisonMethod(mi) || !hasCompatibleArgument(mi)) {
                             return mi;
                         }
 
                         Expression firstArgument = mi.getArguments().get(0);
-                        return firstArgument.getType() == JavaType.Primitive.Null ?
-                                literalsFirstInComparisonsNull(mi, firstArgument) :
-                                literalsFirstInComparisons(mi, firstArgument);
+                        if (firstArgument.getType() != JavaType.Primitive.Null) {
+                            return literalsFirstInComparisons(mi, firstArgument);
+                        }
+                        return StatementRemoval.needsStatementExpression(getCursor()) ? mi : literalsFirstInComparisonsNull(mi, firstArgument);
                     }
 
                     @Override
@@ -92,7 +122,9 @@ public class EqualsAvoidsNull extends Recipe {
                         // Independent of changes above, clear out unnecessary null comparisons
                         if (b.getLeft() instanceof J.Binary &&
                                 b.getOperator() == J.Binary.Type.And &&
-                                isStringComparisonMethod(b.getRight())) {
+                                isStringComparisonMethod(b.getRight()) &&
+                                // Unlike equals, contentEquals throws on a null argument
+                                !CONTENT_EQUALS.matches(b.getRight())) {
                             Expression nullCheckedLeft = nullCheckedArgument((J.Binary) b.getLeft());
                             if (nullCheckedLeft != null && areEqual(nullCheckedLeft, ((J.MethodInvocation) b.getRight()).getArguments().get(0))) {
                                 return b.getRight().withPrefix(b.getPrefix());

@@ -934,7 +934,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/671")
     @Test
     void explicitImplementationClassInApi() {
         rewriteRun(

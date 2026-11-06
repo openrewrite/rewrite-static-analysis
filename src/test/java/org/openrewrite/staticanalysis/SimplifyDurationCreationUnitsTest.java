@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -323,7 +322,7 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/30")
+    // A zero amount is divisible by every unit, so it must not be converted
     @Test
     void doesNotChangeZeroConstant() {
         rewriteRun(

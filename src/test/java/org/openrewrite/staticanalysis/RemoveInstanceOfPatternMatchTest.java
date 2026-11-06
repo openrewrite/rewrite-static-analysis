@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class RemoveInstanceOfPatternMatchTest implements RewriteTest {
 
@@ -1021,6 +1022,56 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
                   }
               }
               """),
+            14));
+    }
+
+    @Test
+    void methodNameMatchingPatternVariableName() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              package com.example;
+
+              class Example {
+                  int test(Object obj) {
+                      return obj instanceof String length ? length.length() : 0;
+                  }
+              }
+              """,
+              """
+              package com.example;
+
+              class Example {
+                  int test(Object obj) {
+                      return obj instanceof String ? ((String) obj).length() : 0;
+                  }
+              }
+              """),
+            14));
+    }
+
+    @Test
+    void doNotChangeKotlin() {
+        rewriteRun(
+          version(
+            kotlin(
+              """
+              package com.talk2duck.gradle.buildcache
+
+              import org.gradle.caching.BuildCacheEntryReader
+              import org.gradle.caching.BuildCacheEntryWriter
+
+              class S3BuildCacheService {
+                  fun check(obj: Any) {
+                      if (obj is String) {
+                          println(obj)
+                      }
+                  }
+              }
+              """
+            ),
             14));
     }
 

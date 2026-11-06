@@ -16,22 +16,23 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.21.0")
 public class RemoveUnneededBlock extends Recipe {
     @Getter
     final String displayName = "Remove unneeded block";
@@ -44,16 +45,32 @@ public class RemoveUnneededBlock extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1199");
 
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new RemoveUnneededBlockStatementVisitor();
     }
 
-    static class RemoveUnneededBlockStatementVisitor extends JavaVisitor<ExecutionContext> {
+    static class RemoveUnneededBlockStatementVisitor extends JavaIsoVisitor<ExecutionContext> {
+        /**
+         * When set, only this block is inlined, so that recipes which leave one block behind
+         * do not flatten every other block in the file.
+         */
+        private final @Nullable UUID onlyBlockId;
+
+        RemoveUnneededBlockStatementVisitor() {
+            this.onlyBlockId = null;
+        }
+
+        RemoveUnneededBlockStatementVisitor(J.Block onlyBlock) {
+            this.onlyBlockId = onlyBlock.getId();
+        }
 
         @Override
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-            J.Block bl = (J.Block) super.visitBlock(block, ctx);
+            J.Block bl = super.visitBlock(block, ctx);
             J directParent = getCursor().getParentTreeCursor().getValue();
             if (directParent instanceof J.NewClass || directParent instanceof J.ClassDeclaration) {
                 // If the direct parent is an initializer block or a static block, skip it
@@ -76,6 +93,9 @@ public class RemoveUnneededBlock extends Recipe {
             List<JRightPadded<Statement>> padded = block.getPadding().getStatements();
             J.Block flattened = block.getPadding().withStatements(ListUtils.flatMap(padded, (i, rp) -> {
                 Statement stmt = rp.getElement();
+                if (onlyBlockId != null && !onlyBlockId.equals(stmt.getId())) {
+                    return rp;
+                }
                 J.Block nested;
                 if (stmt instanceof J.Try) {
                     J.Try _try = (J.Try) stmt;

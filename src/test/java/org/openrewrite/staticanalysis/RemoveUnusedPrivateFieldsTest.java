@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -46,99 +47,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               """,
             """
               class Test {
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotRemoveSerialVersionUid() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test implements java.io.Serializable {
-                  private static final long serialVersionUID = 42L;
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotRemoveAnnotatedField() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  @Deprecated
-                  public String annotated;
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeFieldsOnClassWithNativeMethod() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public String notUsed;
-                  public native void method();
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void notPrivateField() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public String notUsed;
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void fieldIsUsed() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private String value;
-                  void method() {
-                      String useValue = value;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void usedInClassScope() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private String value = "";
-                  private String useValue = method(value);
-                  String method(String arg0) {
-                      return arg0 + useValue;
-                  }
               }
               """
           )
@@ -217,30 +125,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                       String removeAOne = aTwo + aThree;
                       String removeBTwo = bOne + bThree;
                       String removeCThree = cOne + cTwo;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/3061")
-    @Test
-    void findReferencesInOuterScope() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Vehicle {
-                  private VehicleUsage vehicleUsage;
-
-                  class VehicleUsage {
-                      private final String vehicleId;
-                  }
-
-                  public void doSomethingWithAVehicle() {
-                      vehicleUsage = new VehicleUsage();
-                      vehicleUsage.vehicleId = "vu50";
                   }
               }
               """
@@ -404,29 +288,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
-    @ParameterizedTest
-    @ValueSource(strings = {
-      "@lombok.Data",
-      "@lombok.Value",
-      "@lombok.Getter",
-      "@lombok.Setter",
-    })
-    void doNotRemoveFieldsIfLombokDataAnnotationIsPresent(String annotation) {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
-          //language=java
-          java(
-            """
-              %s
-              class A {
-                  private int a = 1;
-              }
-              """.formatted(annotation)
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
     @Test
     void doRemoveFieldsIfLombokLoggingAnnotationIsPresent() {
         rewriteRun(
@@ -448,32 +309,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/757")
-    @Test
-    void doNotRemoveLombokAnnotatedFieldWhenAnnotationIsAfterModifier() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
-          java(
-            """
-              import lombok.Getter;
-
-              class OnModifier {
-                  @Getter private String foo;
-              }
-              """
-          ),
-          java(
-            """
-              import lombok.Getter;
-
-              class OnType {
-                  private @Getter String foo;
-              }
-              """
-          )
-        );
-    }
-
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
     @Test
     void removeUntilStable() {
@@ -489,23 +324,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               """,
             """
               class Test {
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
-    @Test
-    void doNotRemoveWhenThereAreMissingTypes() {
-        rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
-          //language=java
-          java(
-            """
-              import can.not.be.Found;
-              class Test {
-                  private Found notUsed;
               }
               """
           )
@@ -557,5 +375,191 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class NoChange {
+        @Test
+        void doNotRemoveSerialVersionUid() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test implements java.io.Serializable {
+                      private static final long serialVersionUID = 42L;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotRemoveAnnotatedField() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      @Deprecated
+                      public String annotated;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeFieldsOnClassWithNativeMethod() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public String notUsed;
+                      public native void method();
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void notPrivateField() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public String notUsed;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void fieldIsUsed() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private String value;
+                      void method() {
+                          String useValue = value;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void usedInClassScope() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private String value = "";
+                      private String useValue = method(value);
+                      String method(String arg0) {
+                          return arg0 + useValue;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/3061")
+        @Test
+        void findReferencesInOuterScope() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Vehicle {
+                      private VehicleUsage vehicleUsage;
+
+                      class VehicleUsage {
+                          private final String vehicleId;
+                      }
+
+                      public void doSomethingWithAVehicle() {
+                          vehicleUsage = new VehicleUsage();
+                          vehicleUsage.vehicleId = "vu50";
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
+        @ParameterizedTest
+        @ValueSource(strings = {
+          "@lombok.Data",
+          "@lombok.Value",
+          "@lombok.Getter",
+          "@lombok.Setter",
+        })
+        void doNotRemoveFieldsIfLombokDataAnnotationIsPresent(String annotation) {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+              //language=java
+              java(
+                """
+                  %s
+                  class A {
+                      private int a = 1;
+                  }
+                  """.formatted(annotation)
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/757")
+        @Test
+        void doNotRemoveLombokAnnotatedFieldWhenAnnotationIsAfterModifier() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+              java(
+                """
+                  import lombok.Getter;
+
+                  class OnModifier {
+                      @Getter private String foo;
+                  }
+                  """
+              ),
+              java(
+                """
+                  import lombok.Getter;
+
+                  class OnType {
+                      private @Getter String foo;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
+        @Test
+        void doNotRemoveWhenThereAreMissingTypes() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
+              //language=java
+              java(
+                """
+                  import can.not.be.Found;
+                  class Test {
+                      private Found notUsed;
+                  }
+                  """
+              )
+            );
+        }
     }
 }

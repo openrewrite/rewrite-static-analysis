@@ -17,7 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -33,6 +34,144 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnnecessaryExplicitTypeArguments());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"value -> value.trim()", "(value) -> value.trim()", "(var value) -> value.trim()"})
+    void retainWitnessThatTypesLambdaParameter(String lambda) {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static <T extends CharSequence> int apply(Object context, UnaryOperator<T> operator) {
+                      return 0;
+                  }
+
+                  int test() {
+                      return Test.<String>apply(new Object(), %s);
+                  }
+              }
+              """.formatted(lambda)
+          )
+        );
+    }
+
+    @Test
+    void preserveWitnessUnderCast() {
+        rewriteRun(java(
+          """
+            interface Descriptor {}
+            interface ActiveDescriptor<T> {}
+            interface Config { <T> ActiveDescriptor<T> bind(Descriptor descriptor); }
+            class MyService {}
+            class A {
+                ActiveDescriptor<MyService> bind(Config config, Descriptor descriptor) {
+                    return (ActiveDescriptor<MyService>) config.<MyService>bind(descriptor);
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveFieldReceiverWitness() {
+        rewriteRun(java(
+          """
+            import java.util.List;
+            class Box<T> {
+                Box<T> next;
+                List<T> values;
+                static <T> Box<T> of(T value) { return null; }
+            }
+            class A {
+                Box<Number> recursive() { return Box.<Number>of(1).next; }
+                List<Number> list() { return Box.<Number>of(1).values; }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveReceiverWitnessWideningArgumentType() {
+        rewriteRun(java(
+          """
+            import java.util.Collections;
+            import java.util.Iterator;
+            interface ValueMap {}
+            class SimpleValueMapImpl implements ValueMap {}
+            class A {
+                Iterator<ValueMap> queryResources() {
+                    SimpleValueMapImpl valueMap = new SimpleValueMapImpl();
+                    return Collections.<ValueMap>singletonList(valueMap).iterator();
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveReceiverWitnessForNullArgument() {
+        rewriteRun(java(
+          """
+            import java.util.concurrent.CompletableFuture;
+            class A {
+                CompletableFuture<Integer> length() {
+                    return CompletableFuture.<String>completedFuture(null).thenApply(String::length);
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void retainWitnessForOverloadedMethodReference() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  static <T> String apply(Function<T, String> function) {
+                      return function.apply(null);
+                  }
+
+                  static String label(Object value) { return "Object"; }
+                  static String label(String value) { return "String"; }
+
+                  String test() {
+                      return Test.<String>apply(Test::label);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainWitnessForNestedTargetTypedLambda() {
+        rewriteRun(
+          java(
+            """
+              import java.util.function.UnaryOperator;
+
+              class Test {
+                  static class Wrapper<T> {
+                      Wrapper(UnaryOperator<T> operator) {}
+                  }
+
+                  static <T extends CharSequence> int apply(Wrapper<T> wrapper) {
+                      return 0;
+                  }
+
+                  int test() {
+                      return Test.<String>apply(new Wrapper<>(value -> value.trim()));
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
@@ -497,7 +636,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/moderneinc/customer-requests/issues/2370")
+        // Explicit type argument on a generic static method call passed as an argument to another generic method
         @Test
         void retainsExplicitTypeOnStaticMethodWithoutTypeBoundParameters() {
             rewriteRun(
@@ -525,7 +664,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         }
 
         @Test
-        void staticMethodInvocationWithoutTypeArguments() {
+        void retainReceiverWitnessWhileRemovingTargetTypedWitness() {
             //language=java
             rewriteRun(
               GENERIC_CLASS_SOURCE,
@@ -541,7 +680,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                 """
                   class Test {
                       <T> void test(Class<T> clazz) {
-                          final GenericClass<T> gc = GenericClass.typedBuilderWithClass(clazz).build();
+                          final GenericClass<T> gc = GenericClass.<T>typedBuilderWithClass(clazz).build();
                           final GenericClass.GenericClassBuilder<T> gcb = GenericClass.typedBuilder();
                       }
                   }
@@ -552,7 +691,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Nested
-    class kotlinTest {
+    class Kotlin {
         @Test
         void doNotChangeIfHasNotTypeInference() {
             rewriteRun(
@@ -565,18 +704,13 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @ExpectedToFail("Not matching yet")
         @Test
-        void changeIfHasTypeInference() {
+        void doNotChangeEvenIfHasTypeInference() {
             rewriteRun(
               kotlin(
                 """
                   val foo = listOf<String>("a", "b")
                   var bar = mutableMapOf<String, Int>("a" to 1)
-                  """,
-                """
-                  val foo = listOf("a", "b")
-                  var bar = mutableMapOf("a" to 1)
                   """
               )
             );

@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -30,6 +31,7 @@ class UseSystemLineSeparatorTest implements RewriteTest {
     }
 
     @Issue("https://github.com/openrewrite/rewrite/issues/2363")
+    @DocumentExample
     @Test
     void useSystemLineSeparator() {
         rewriteRun(

@@ -33,6 +33,9 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class RemoveUnreachableMultiCatchAlternative extends Recipe {
 
@@ -47,6 +50,9 @@ public class RemoveUnreachableMultiCatchAlternative extends Recipe {
             "the unreachable alternatives from later multi-catches, collapses a multi-catch to a " +
             "regular `catch` when only one alternative remains, and removes the entire `catch` clause " +
             "when all of its declared types are already covered.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4970");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

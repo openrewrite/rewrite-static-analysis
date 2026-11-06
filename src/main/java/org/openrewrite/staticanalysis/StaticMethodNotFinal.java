@@ -49,7 +49,7 @@ public class StaticMethodNotFinal extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if (m.hasModifier(J.Modifier.Type.Static) && m.hasModifier(J.Modifier.Type.Final)) {
-                    m = m.withModifiers(ListUtils.map(m.getModifiers(), mod -> mod.getType() == J.Modifier.Type.Final ? null : mod));
+                    m = m.withModifiers(ListUtils.filter(m.getModifiers(), mod -> mod.getType() != J.Modifier.Type.Final));
                 }
                 return m;
             }

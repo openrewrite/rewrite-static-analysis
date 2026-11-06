@@ -26,6 +26,7 @@ import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 import static org.openrewrite.python.Assertions.python;
+import static org.openrewrite.scala.Assertions.scala;
 
 class CollapsibleIfStatementsTest implements RewriteTest {
 
@@ -380,6 +381,35 @@ class CollapsibleIfStatementsTest implements RewriteTest {
               }
 
               func sendWelcome(user User) {}
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsScala() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(a: Boolean, b: Boolean): Unit = {
+                  if (a) {
+                    if (b) {
+                      println("x")
+                    }
+                  }
+                }
+              }
+              """,
+            """
+              class A {
+                def foo(a: Boolean, b: Boolean): Unit = {
+                    if (a && b) {
+                        println("x")
+                    }
+                }
+              }
               """
           )
         );
