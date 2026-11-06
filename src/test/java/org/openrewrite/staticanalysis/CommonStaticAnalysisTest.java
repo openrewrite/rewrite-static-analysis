@@ -60,6 +60,30 @@ class CommonStaticAnalysisTest implements RewriteTest {
         );
     }
     @Test
+    void preserveUncommentedSwitchFallThrough() {
+        rewriteRun(
+          java(
+            """
+              class NumberParser {
+                  int parseInt(char[] digits, int offset, int length) {
+                      int value = 0;
+                      switch (length) {
+                          case 3:
+                              value += (digits[offset++] - '0') * 100;
+                          case 2:
+                              value += (digits[offset++] - '0') * 10;
+                          case 1:
+                              value += digits[offset] - '0';
+                      }
+                      return value;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void preserveFreshWrapperIdentity() {
         rewriteRun(
           java(
