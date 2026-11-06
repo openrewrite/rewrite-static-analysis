@@ -117,8 +117,16 @@ public class InlineVariable extends Recipe {
                     return canInline(variableType, ternary.getTruePart()) &&
                             canInline(variableType, ternary.getFalsePart());
                 }
-                return variableType == null || value.getType() == null ||
-                        TypeUtils.isOfType(variableType, value.getType());
+                JavaType valueType = value.getType();
+                return variableType == null || valueType == null ||
+                        TypeUtils.isOfType(variableType, valueType) ||
+                        isReferenceType(variableType) && isReferenceType(valueType) &&
+                                TypeUtils.isAssignableTo(variableType, valueType);
+            }
+
+            private boolean isReferenceType(JavaType type) {
+                return !(type instanceof JavaType.Primitive) ||
+                        type == JavaType.Primitive.String || type == JavaType.Primitive.Null;
             }
 
             private boolean isReadInEnclosingCatchOrFinally(J.Identifier variable) {

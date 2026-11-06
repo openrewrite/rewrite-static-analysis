@@ -757,6 +757,54 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
+    @Test
+    void inlineWhenInitializerIsSubtypeOfDeclaredType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  List<String> list() {
+                      List<String> l = new ArrayList<>();
+                      return l;
+                  }
+
+                  Object string() {
+                      Object o = "value";
+                      return o;
+                  }
+
+                  RuntimeException exception() {
+                      RuntimeException e = new IllegalStateException();
+                      throw e;
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  List<String> list() {
+                      return new ArrayList<>();
+                  }
+
+                  Object string() {
+                      return "value";
+                  }
+
+                  RuntimeException exception() {
+                      throw new IllegalStateException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
     @Test
     void doNotInlineWhenDeclaredTypeDiffersFromInitializer() {
