@@ -598,6 +598,22 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         }
 
         @Test
+        void preserveSafeBooleanPropertyComparisons() {
+            rewriteRun(
+              kotlin(
+                """
+                  class State(val failed: Boolean)
+                  fun failed(state: State?) = state?.failed == true
+                  fun notFailed(state: State?) = state?.failed != true
+                  fun clear(state: State?) = state?.failed == false
+                  fun notClear(state: State?) = state?.failed != false
+                  fun grouped(state: State?) = (state?.failed) == true
+                """
+              )
+            );
+        }
+
+        @Test
         void nullableVariable() {
             rewriteRun(
               kotlin(

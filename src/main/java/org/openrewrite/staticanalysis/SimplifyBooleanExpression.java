@@ -24,6 +24,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
@@ -78,7 +79,7 @@ public class SimplifyBooleanExpression extends Recipe {
             // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                if (j instanceof J.MethodInvocation && j.getMarkers().findFirst(IsNullSafe.class).isPresent()) {
+                if (j instanceof Expression && ((Expression) j).unwrap().getMarkers().findFirst(IsNullSafe.class).isPresent()) {
                     return false;
                 }
                 return super.shouldSimplifyEqualsOn(j);
