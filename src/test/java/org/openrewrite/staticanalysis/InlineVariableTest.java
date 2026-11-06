@@ -757,6 +757,95 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineWhenDeclaredTypeDiffersFromInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object primitiveWidening() {
+                      long v = 1;
+                      return v;
+                  }
+
+                  Object assignmentPrimitiveWidening(long v) {
+                      v = 1;
+                      return v;
+                  }
+
+                  Object unboxing(Integer x) {
+                      int v = x;
+                      return v;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineLambdaOrMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object lambda() {
+                      Runnable r = () -> {};
+                      return r;
+                  }
+
+                  Object methodReference() {
+                      Runnable r = this::lambda;
+                      return r;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineAssignmentReadInFinallyOrCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int compute() {
+                      return 42;
+                  }
+
+                  void log(int v) {
+                  }
+
+                  int readInFinally(int res) {
+                      try {
+                          res = compute();
+                          return res;
+                      } finally {
+                          log(res);
+                      }
+                  }
+
+                  RuntimeException readInCatch(RuntimeException ex) {
+                      try {
+                          ex = new RuntimeException();
+                          throw ex;
+                      } catch (RuntimeException e) {
+                          return ex;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void scalaInlineReturnedLocal() {
         rewriteRun(
