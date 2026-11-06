@@ -58,6 +58,7 @@ public class IsEmptyCallOnCollections extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTION_SIZE), new JavaVisitor<ExecutionContext>() {
+            private final KnownMockReceiver mocks = new KnownMockReceiver();
 
             @Override
             public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -79,7 +80,8 @@ public class IsEmptyCallOnCollections extends Recipe {
                         J maybeSizeCall = zeroRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null &&
+                                !mocks.isMock(maybeSizeCallMethod.getSelect(), getCursor())) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(), binary.getOperator() != J.Binary.Type.Equal)
                                         .withPrefix(binary.getPrefix());
                             }
@@ -94,7 +96,8 @@ public class IsEmptyCallOnCollections extends Recipe {
                         J maybeSizeCall = oneRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null &&
+                                !mocks.isMock(maybeSizeCallMethod.getSelect(), getCursor())) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(),
                                         binary.getOperator() == J.Binary.Type.GreaterThanOrEqual || binary.getOperator() == J.Binary.Type.LessThanOrEqual)
                                         .withPrefix(binary.getPrefix());

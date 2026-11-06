@@ -52,6 +52,7 @@ public class IsEmptyCallOnMaps extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(MAP_SIZE), new JavaVisitor<ExecutionContext>() {
+            private final KnownMockReceiver mocks = new KnownMockReceiver();
 
             @Override
             public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -73,7 +74,8 @@ public class IsEmptyCallOnMaps extends Recipe {
                         J maybeSizeCall = zeroRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null &&
+                                !mocks.isMock(maybeSizeCallMethod.getSelect(), getCursor())) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(), binary.getOperator() != J.Binary.Type.Equal)
                                         .withPrefix(binary.getPrefix());
                             }
@@ -88,7 +90,8 @@ public class IsEmptyCallOnMaps extends Recipe {
                         J maybeSizeCall = oneRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null &&
+                                !mocks.isMock(maybeSizeCallMethod.getSelect(), getCursor())) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(),
                                         binary.getOperator() == J.Binary.Type.GreaterThanOrEqual || binary.getOperator() == J.Binary.Type.LessThanOrEqual)
                                         .withPrefix(binary.getPrefix());
