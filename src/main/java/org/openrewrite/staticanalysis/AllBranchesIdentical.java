@@ -18,15 +18,19 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.marker.Semicolon;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.kotlin.tree.K;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -36,6 +40,7 @@ import java.util.Set;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @Getter
@@ -72,19 +77,29 @@ public class AllBranchesIdentical extends Recipe {
 
                     Statement body = if_.getThenPart();
                     JRightPadded<Statement> bodyRp = if_.getPadding().getThenPart();
+                    List<JRightPadded<Statement>> bodyStatements = body instanceof J.Block ? ((J.Block) body).getPadding().getStatements() : emptyList();
+                    if (body instanceof J.Block && !bodyStatements.isEmpty() &&
+                            getCursor().firstEnclosing(K.CompilationUnit.class) != null &&
+                            bodyStatements.stream().anyMatch(s -> s.getElement() instanceof J.VariableDeclarations)) {
+                        // A block that `RemoveUnneededBlock` keeps for scoping would become an unused lambda in Kotlin
+                        return rp;
+                    }
+                    boolean emptyBody = body instanceof J.Empty || body instanceof J.Block && bodyStatements.isEmpty();
                     // The hoisted call borrows the padding of the body's first statement, which carries e.g. the JS/TS `Semicolon` marker
-                    JRightPadded<Statement> conditionRp = bodyRp;
+                    JRightPadded<Statement> conditionRp = body instanceof J.Block ? (emptyBody ? rp : bodyStatements.get(0)) : bodyRp;
+                    if (JavascriptFileChecker.isJavaScript(getCursor().firstEnclosing(SourceFile.class)) &&
+                            !conditionRp.getMarkers().findFirst(Semicolon.class).isPresent()) {
+                        conditionRp = conditionRp.withMarkers(conditionRp.getMarkers().add(new Semicolon(randomId())));
+                    }
+                    JRightPadded<Statement> hoisted = conditionRp.withElement(((Statement) condition).withPrefix(if_.getPrefix()));
+                    if (emptyBody) {
+                        return hoisted;
+                    }
                     if (body instanceof J.Block) {
-                        List<JRightPadded<Statement>> bodyStatements = ((J.Block) body).getPadding().getStatements();
-                        if (bodyStatements.isEmpty()) {
-                            return rp.withElement(((Statement) condition).withPrefix(if_.getPrefix()));
-                        }
-                        conditionRp = bodyStatements.get(0);
                         doAfterVisit(new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor((J.Block) body));
                     }
-                    return Arrays.asList(
-                            conditionRp.withElement(((Statement) condition).withPrefix(if_.getPrefix())),
-                            bodyRp.withElement(body.withPrefix(Space.build(if_.getPrefix().getLastWhitespace(), emptyList()))));
+                    return Arrays.asList(hoisted,
+                            bodyRp.withElement(body.withPrefix(Space.build(if_.getPrefix().getLastWhitespace(), body.getComments()))));
                 }));
             }
 

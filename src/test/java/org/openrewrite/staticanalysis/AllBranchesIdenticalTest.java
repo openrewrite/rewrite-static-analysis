@@ -618,6 +618,121 @@ class AllBranchesIdenticalTest implements RewriteTest {
     }
 
     @Test
+    void hoistBareCallConditionWithEmptyBranchesTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(it: Iterator<string>, a: number, b: number) {
+                  if (it.next()) {
+                  } else {
+                  }
+                  [a, b] = [b, a];
+              }
+              """,
+            """
+              function test(it: Iterator<string>, a: number, b: number) {
+                  it.next();
+                  [a, b] = [b, a];
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithEmptyStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume()) ; else ;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistKeepsCommentBeforeBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume()) /* keep */ {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                      /* keep */ System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotHoistScopingBlockKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(it: Iterator<String>) {
+                  if (it.hasNext()) {
+                      val s = "a"
+                      println(s)
+                  } else {
+                      val s = "a"
+                      println(s)
+                  }
+                  println("done")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotHoistNonBareCallCondition() {
         rewriteRun(
           //language=java
