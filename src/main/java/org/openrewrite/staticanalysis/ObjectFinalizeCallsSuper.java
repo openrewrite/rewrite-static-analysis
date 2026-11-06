@@ -16,9 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
+import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -37,7 +38,10 @@ import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,7 +50,7 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
-public class ObjectFinalizeCallsSuper extends Recipe {
+public class ObjectFinalizeCallsSuper extends ScanningRecipe<Map<String, JavaType.Method>> {
     private static final MethodMatcher FINALIZE_METHOD_MATCHER = new MethodMatcher("java.lang.Object finalize()", true);
 
     @Getter
@@ -60,7 +64,28 @@ public class ObjectFinalizeCallsSuper extends Recipe {
     final Set<String> tags = singleton("RSPEC-S1114");
 
     @Override
-    public TreeVisitor<?, ExecutionContext> getVisitor() {
+    public Map<String, JavaType.Method> getInitialValue(ExecutionContext ctx) {
+        return new HashMap<>();
+    }
+
+    // A subclass sees the parse-time `throws` of its parent, so record which overrides this run widens before editing
+    @Override
+    public TreeVisitor<?, ExecutionContext> getScanner(Map<String, JavaType.Method> widened) {
+        return Preconditions.check(Preconditions.and(new JavaFileChecker<>(), new DeclaresMethod<>(FINALIZE_METHOD_MATCHER)), new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
+                JavaType.Method superFinalize = superFinalizeToCall(md);
+                if (superFinalize != null && md.getThrows() == null) {
+                    widened.put(requireNonNull(md.getMethodType()).getDeclaringType().getFullyQualifiedName(), superFinalize);
+                }
+                return md;
+            }
+        });
+    }
+
+    @Override
+    public TreeVisitor<?, ExecutionContext> getVisitor(Map<String, JavaType.Method> widened) {
         // Kotlin's `Any` has no `finalize()` to call on `super`, and C# forbids calling `base.Finalize()`
         return Preconditions.check(Preconditions.and(
                 Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
@@ -68,20 +93,17 @@ public class ObjectFinalizeCallsSuper extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                JavaType.Method methodType = md.getMethodType();
-                J.Block body = md.getBody();
-                if (methodType == null || body == null || !FINALIZE_METHOD_MATCHER.matches(methodType) || hasSuperFinalizeMethodInvocation(md)) {
+                JavaType.Method superFinalize = superFinalizeToCall(md);
+                if (superFinalize == null) {
                     return md;
                 }
-                JavaType.Method superFinalize = TypeUtils.findOverriddenMethod(methodType).orElse(null);
-                if (superFinalize == null || superFinalize.getThrownExceptions().stream().anyMatch(t -> TypeUtils.asFullyQualified(t) == null)) {
-                    return md;
-                }
+                JavaType.Method methodType = requireNonNull(md.getMethodType());
+                J.Block body = requireNonNull(md.getBody());
+                List<JavaType> superThrown = thrownAfterRun(superFinalize, widened);
 
                 // `Throwable` is checked in Java but not in Groovy
                 if (getCursor().firstEnclosing(J.CompilationUnit.class) != null) {
                     List<NameTree> throwz = md.getThrows();
-                    List<JavaType> superThrown = superFinalize.getThrownExceptions();
                     if (throwz == null) {
                         md = declareThrows(md, methodType, superThrown);
                     } else if (superThrown.stream().anyMatch(thrown -> throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
@@ -96,10 +118,11 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                         .apply(updateCursor(md), body.getCoordinates().lastStatement());
                 // The template can't attribute `super` against a superclass it only knows from the type table
                 J.Block withCall = requireNonNull(md.getBody());
+                JavaType.Method calledFinalize = superFinalize.withThrownExceptions(superThrown);
                 return md.withBody(withCall.withStatements(ListUtils.mapLast(withCall.getStatements(), s -> {
                     J.MethodInvocation call = (J.MethodInvocation) s;
-                    return call.withMethodType(superFinalize)
-                            .withName(call.getName().withType(superFinalize))
+                    return call.withMethodType(calledFinalize)
+                            .withName(call.getName().withType(calledFinalize))
                             .withSelect(((J.Identifier) requireNonNull(call.getSelect())).withType(methodType.getDeclaringType().getSupertype()));
                 })));
             }
@@ -120,19 +143,44 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                 return md.getPadding().withThrows(JContainer.build(Space.SINGLE_SPACE, declared, Markers.EMPTY))
                         .withMethodType(methodType.withThrownExceptions(exceptions));
             }
-
-            private boolean hasSuperFinalizeMethodInvocation(J.MethodDeclaration md) {
-                return new JavaIsoVisitor<AtomicBoolean>() {
-                    @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean exists) {
-                        J.MethodInvocation mi = super.visitMethodInvocation(method, exists);
-                        if (FINALIZE_METHOD_MATCHER.matches(mi)) {
-                            exists.set(true);
-                        }
-                        return mi;
-                    }
-                }.reduce(md, new AtomicBoolean()).get();
-            }
         });
+    }
+
+    // The overridden `finalize()` this method will call, or null when the method is left alone
+    private static JavaType.@Nullable Method superFinalizeToCall(J.MethodDeclaration md) {
+        JavaType.Method methodType = md.getMethodType();
+        if (methodType == null || md.getBody() == null || !FINALIZE_METHOD_MATCHER.matches(methodType) || hasSuperFinalizeMethodInvocation(md)) {
+            return null;
+        }
+        JavaType.Method superFinalize = TypeUtils.findOverriddenMethod(methodType).orElse(null);
+        if (superFinalize == null || superFinalize.getThrownExceptions().stream().anyMatch(t -> TypeUtils.asFullyQualified(t) == null)) {
+            return null;
+        }
+        return superFinalize;
+    }
+
+    // An override widened in this run ends up declaring what its own super declares, so follow the chain up to the first clause that stays
+    private static List<JavaType> thrownAfterRun(JavaType.Method superFinalize, Map<String, JavaType.Method> widened) {
+        JavaType.Method method = superFinalize;
+        Set<String> visited = new HashSet<>();
+        for (JavaType.Method above = widened.get(method.getDeclaringType().getFullyQualifiedName());
+             above != null && visited.add(method.getDeclaringType().getFullyQualifiedName());
+             above = widened.get(method.getDeclaringType().getFullyQualifiedName())) {
+            method = above;
+        }
+        return method.getThrownExceptions();
+    }
+
+    private static boolean hasSuperFinalizeMethodInvocation(J.MethodDeclaration md) {
+        return new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean exists) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, exists);
+                if (FINALIZE_METHOD_MATCHER.matches(mi)) {
+                    exists.set(true);
+                }
+                return mi;
+            }
+        }.reduce(md, new AtomicBoolean()).get();
     }
 }
