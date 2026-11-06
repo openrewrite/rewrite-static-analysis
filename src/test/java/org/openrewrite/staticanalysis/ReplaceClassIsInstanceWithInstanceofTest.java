@@ -22,7 +22,12 @@ import org.openrewrite.Issue;
 import org.openrewrite.groovy.tree.G;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.groovy.Assertions.groovy;
@@ -38,6 +43,63 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceClassIsInstanceWithInstanceof());
+    }
+
+    @Test
+    void nestedWildcardOperand() {
+        AtomicReference<Expression> original = new AtomicReference<>();
+        rewriteRun(
+          java(
+            """
+              interface Column<T> {}
+              interface Table<C extends Column<?>, T> {}
+              class BoolTable implements Table<Column<Boolean>, Boolean> {}
+              class Test {
+                  boolean test(Table<? extends Column<?>, ?> value) {
+                      return BoolTable.class.isInstance(value);
+                  }
+              }
+              """,
+            """
+              interface Column<T> {}
+              interface Table<C extends Column<?>, T> {}
+              class BoolTable implements Table<Column<Boolean>, Boolean> {}
+              class Test {
+                  boolean test(Table<? extends Column<?>, ?> value) {
+                      return value instanceof BoolTable;
+                  }
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(cu -> (J.CompilationUnit) new JavaIsoVisitor<Integer>() {
+                @Override
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {
+                    J.MethodInvocation m = super.visitMethodInvocation(method, p);
+                    if (!"isInstance".equals(m.getSimpleName())) {
+                        return m;
+                    }
+                    J.Identifier operand = (J.Identifier) m.getArguments().get(0);
+                    JavaType.Parameterized table = (JavaType.Parameterized) operand.getType();
+                    JavaType.GenericTypeVariable columnBound = (JavaType.GenericTypeVariable) table.getTypeParameters().get(0);
+                    JavaType.Parameterized column = (JavaType.Parameterized) columnBound.getBounds().get(0);
+                    JavaType.GenericTypeVariable wildcard = (JavaType.GenericTypeVariable) column.getTypeParameters().get(0);
+                    // Legacy LSTs retain a captured wildcard as the bound of another wildcard.
+                    JavaType captured = new JavaType.GenericTypeVariable(null, "?",
+                      JavaType.GenericTypeVariable.Variance.COVARIANT, List.of(wildcard));
+                    JavaType type = table.withTypeParameters(List.of(columnBound.withBounds(
+                      List.of(column.withTypeParameters(List.of(captured)))), table.getTypeParameters().get(1)));
+                    original.set(operand.withType(type));
+                    return m.withArguments(List.of(original.get()));
+                }
+            }.visit(cu, 0)).afterRecipe(cu -> new JavaIsoVisitor<Integer>() {
+                @Override
+                public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
+                    assertThat(instanceOf.getExpression().getId()).isEqualTo(original.get().getId());
+                    assertThat(instanceOf.getExpression().getType()).isSameAs(original.get().getType());
+                    return super.visitInstanceOf(instanceOf, p);
+                }
+            }.visit(cu, 0))
+          )
+        );
     }
 
     @Test
