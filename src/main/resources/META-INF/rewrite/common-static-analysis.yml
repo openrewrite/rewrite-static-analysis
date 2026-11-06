@@ -52,7 +52,7 @@ recipeList:
   - org.openrewrite.staticanalysis.IsEmptyCallOnMaps
   - org.openrewrite.staticanalysis.LambdaBlockToExpression
 #  - org.openrewrite.staticanalysis.LowercasePackage # renames packages, which moves files and changes the public API
-  - org.openrewrite.staticanalysis.MethodNameCasing
+#  - org.openrewrite.staticanalysis.MethodNameCasing # method names are observable through stack traces, reflection, and framework conventions
   - org.openrewrite.staticanalysis.MinimumSwitchCases
   - org.openrewrite.staticanalysis.ModifierOrder
   - org.openrewrite.staticanalysis.MultipleVariableDeclarations
