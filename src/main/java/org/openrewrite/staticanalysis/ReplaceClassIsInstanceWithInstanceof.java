@@ -21,7 +21,9 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.groovy.tree.G;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -72,7 +74,12 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
                             instanceOf -> instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix())));
-                    return maybeAutoFormat(method, updated, ctx);
+                    updated = maybeAutoFormat(method, updated, ctx);
+                    if (getCursor().firstEnclosing(G.CompilationUnit.class) != null &&
+                            Boolean.FALSE.equals(StatementRemoval.isValueUsed(getCursor()))) {
+                        return new G.ExpressionStatement(Tree.randomId(), (Expression) updated);
+                    }
+                    return updated;
                 }
                 return super.visitMethodInvocation(method, ctx);
             }

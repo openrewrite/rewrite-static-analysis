@@ -17,7 +17,15 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
+import org.openrewrite.groovy.tree.G;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.J;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -30,6 +38,108 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceClassIsInstanceWithInstanceof());
+    }
+
+    @Test
+    void groovyStatementPositions() {
+        rewriteRun(
+          groovy(
+            """
+              class Test {
+                  boolean check(Object value) {
+                      // retain the implicit return and label
+                      expect:
+                      /* check */ String.class.isInstance(value)
+                  }
+                  boolean block(Object value) {
+                      String.class.isInstance(value)
+                  }
+                  void body(Object value) {
+                      if (value != null) String.class.isInstance(value)
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean check(Object value) {
+                      // retain the implicit return and label
+                      expect:
+                      /* check */ value instanceof String
+                  }
+                  boolean block(Object value) {
+                      value instanceof String
+                  }
+                  void body(Object value) {
+                      if (value != null) value instanceof String
+                  }
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(ReplaceClassIsInstanceWithInstanceofTest::attributeClassIsInstance)
+              .afterRecipe(cu -> new JavaIsoVisitor<Integer>() {
+                  @Override
+                  public J.Label visitLabel(J.Label label, Integer p) {
+                      assertThat(label.getStatement()).isInstanceOf(G.ExpressionStatement.class);
+                      return super.visitLabel(label, p);
+                  }
+              }.visit(cu, 0))
+          )
+        );
+    }
+
+    @Test
+    void groovyExpressionPositions() {
+        rewriteRun(
+          groovy(
+            """
+              class Test {
+                  boolean check(Object value) {
+                      boolean result = String.class.isInstance(value)
+                      return String.class.isInstance(value)
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean check(Object value) {
+                      boolean result = value instanceof String
+                      return value instanceof String
+                  }
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(ReplaceClassIsInstanceWithInstanceofTest::attributeClassIsInstance)
+          )
+        );
+    }
+
+    // Standalone Groovy parsing does not resolve Class.isInstance as the compiler LST does.
+    // Supply its real Java method and class-literal types while retaining the native Groovy statement tree.
+    private static G.CompilationUnit attributeClassIsInstance(G.CompilationUnit cu) {
+        var ctx = new InMemoryExecutionContext();
+        J.MethodInvocation[] attributed = new J.MethodInvocation[1];
+        new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {
+                attributed[0] = method;
+                return method;
+            }
+        }.visit(JavaParser.fromJavaVersion().build().parse(ctx,
+          "class Attribution { boolean check(Object value) { return String.class.isInstance(value); } }")
+          .findFirst().orElseThrow(), 0);
+        assertThat(attributed[0].getMethodType()).isNotNull();
+        return (G.CompilationUnit) new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {
+                J.MethodInvocation m = super.visitMethodInvocation(method, p);
+                if ("isInstance".equals(m.getSimpleName())) {
+                    J.FieldAccess select = (J.FieldAccess) m.getSelect();
+                    J.FieldAccess typed = (J.FieldAccess) attributed[0].getSelect();
+                    return m.withMethodType(attributed[0].getMethodType())
+                      .withSelect(select.withTarget(select.getTarget().withType(typed.getTarget().getType()))
+                        .withType(typed.getType()));
+                }
+                return m;
+            }
+        }.visitNonNull(cu, 0);
     }
 
     @DocumentExample
