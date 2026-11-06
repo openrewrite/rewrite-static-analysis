@@ -62,7 +62,7 @@ recipeList:
   - org.openrewrite.staticanalysis.NoDoubleBraceInitialization
   - org.openrewrite.staticanalysis.NoEmptyCollectionWithRawType
   - org.openrewrite.staticanalysis.NoEqualityInForCondition
-  - org.openrewrite.staticanalysis.NoFinalizer
+#  - org.openrewrite.staticanalysis.NoFinalizer # finalizer cleanup requires an explicit lifecycle migration
   - org.openrewrite.staticanalysis.NoPrimitiveWrappersForToStringOrCompareTo
   - org.openrewrite.staticanalysis.NoRedundantJumpStatements
   - org.openrewrite.staticanalysis.NoToStringOnStringType
