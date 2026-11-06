@@ -46,6 +46,7 @@ dependencies {
     }
 
     testImplementation("org.openrewrite:rewrite-test")
+    testImplementation("org.apache.groovy:groovy:4.0.33")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("org.junit.platform:junit-platform-launcher")
     testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")
