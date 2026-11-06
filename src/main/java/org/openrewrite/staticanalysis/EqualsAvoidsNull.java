@@ -102,7 +102,8 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (mi.getSelect() instanceof J.Literal || !isStringComparisonMethod(mi) || !hasCompatibleArgument(mi)) {
+                        if (mi.getSelect() == null || mi.getSelect() instanceof J.Literal ||
+                            !isStringComparisonMethod(mi) || !hasCompatibleArgument(mi)) {
                             return mi;
                         }
 

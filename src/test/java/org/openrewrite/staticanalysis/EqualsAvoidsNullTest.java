@@ -37,6 +37,70 @@ class EqualsAvoidsNullTest implements RewriteTest {
         spec.recipe(new EqualsAvoidsNull());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"\"literal\"", "CONSTANT"})
+    void preserveImplicitEqualsReceiver(String argument) {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  static final String CONSTANT = "literal";
+
+                  boolean test() {
+                      return equals(%s);
+                  }
+              }
+              """.formatted(argument)
+          )
+        );
+    }
+
+    @Test
+    void preserveImplicitOverriddenEqualsReceiver() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  @Override
+                  public boolean equals(Object other) {
+                      return other instanceof String;
+                  }
+
+                  boolean test() {
+                      return equals("literal");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void selectedComparisonsStillTransform() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  static final String CONSTANT = "literal";
+
+                  boolean test(String value) {
+                      return value.equals(CONSTANT) || value.equals("literal") || value.equals(null);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static final String CONSTANT = "literal";
+
+                  boolean test(String value) {
+                      return CONSTANT.equals(value) || "literal".equals(value) || value == null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void preserveGroovyStandaloneEqualsNull() {
         rewriteRun(groovy(
