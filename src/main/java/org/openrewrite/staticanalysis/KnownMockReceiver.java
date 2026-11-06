@@ -242,6 +242,8 @@ final class KnownMockReceiver {
             List<? extends J> statements = null;
             if (value instanceof J.Block && (!fieldOnly || scope.getParentTreeCursor().getValue() instanceof J.ClassDeclaration)) {
                 statements = ((J.Block) value).getStatements();
+            } else if (!fieldOnly && value instanceof J.ForLoop) {
+                statements = ((J.ForLoop) value).getControl().getInit();
             } else if (!fieldOnly && value instanceof J.MethodDeclaration) {
                 statements = ((J.MethodDeclaration) value).getParameters();
             } else if (!fieldOnly && value instanceof J.Lambda) {

@@ -24,6 +24,63 @@ import static org.openrewrite.java.Assertions.java;
 
 class IsEmptyCallOnMockReceiversTest implements RewriteTest {
     @Test
+    void ordinaryForInitializersInDistinctScopesStillTransform() {
+        String before = """
+          import java.util.*;
+          import static org.mockito.Mockito.mock;
+          class Example {
+              void check() {
+                  for (List list = mock(List.class); list.size() == 0;) { break; }
+                  for (List list = new ArrayList(); list.size() == 0;) {
+                      List alias = list;
+                      if (alias.size() == 0) break;
+                  }
+                  for (Map map = new HashMap(); map.size() == 0;) { break; }
+              }
+              boolean other(List list) { return list.size() == 0; }
+          }
+          """;
+        rewriteRun(
+          spec -> spec.recipes(new IsEmptyCallOnCollections(), new IsEmptyCallOnMaps())
+            .parser(JavaParser.fromJavaVersion().dependsOn(
+              "package org.mockito; public class Mockito { public static <T> T mock(Class<T> type) { return null; } }"
+            )),
+          java(before, before
+            .replace("new ArrayList(); list.size() == 0", "new ArrayList(); list.isEmpty()")
+            .replace("alias.size() == 0", "alias.isEmpty()")
+            .replace("map.size() == 0", "map.isEmpty()")
+            .replace("return list.size() == 0", "return list.isEmpty()"))
+        );
+    }
+
+    @Test
+    void mockForInitializerAndAliases() {
+        rewriteRun(
+          spec -> spec.recipes(new IsEmptyCallOnCollections(), new IsEmptyCallOnMaps())
+            .parser(JavaParser.fromJavaVersion().dependsOn(
+              "package org.mockito; public class Mockito { public static <T> T mock(Class<T> type) { return null; } }"
+            )),
+          java(
+            """
+              import java.util.*;
+              import static org.mockito.Mockito.mock;
+              class Example {
+                  void check() {
+                      for (List list = mock(List.class), alias = list; list.size() == 0 && alias.size() == 0;) {
+                          List bodyAlias = alias;
+                          if (bodyAlias.size() == 0) break;
+                      }
+                      for (Map map = mock(Map.class); map.size() == 0;) {
+                          if (map.size() == 0) break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void legacyGroovyModelWithMissingFactoryMethodTypes() {
         String before = """
           package spock.lang
