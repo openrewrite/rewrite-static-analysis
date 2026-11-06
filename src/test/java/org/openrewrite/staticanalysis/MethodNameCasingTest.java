@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
@@ -111,6 +113,67 @@ class MethodNameCasingTest implements RewriteTest {
                     void call() {
                         ReInit();
                         Runnable reference = this::ReInit;
+                    }
+                }
+                """
+            )
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void preserveConcreteGeneratedSuperclassContract(boolean common) {
+        rewriteRun(
+          spec -> {
+              if (common) {
+                  spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis");
+              } else {
+                  spec.recipe(new MethodNameCasing(false, true));
+              }
+              spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package generated;
+              public class MavenMerger {
+                  protected void mergeModel_Name(StringBuilder target, String source, boolean dominant) {}
+              }
+              """
+              ));
+          },
+          srcMainJava(
+            java(
+              """
+                @Deprecated
+                class MavenModelMerger extends generated.MavenMerger {
+                    @Override
+                    protected void mergeModel_Name(StringBuilder target, String source, boolean dominant) {
+                        super.mergeModel_Name(target, source, dominant);
+                    }
+                    void invoke(StringBuilder target) {
+                        mergeModel_Name(target, "source", true);
+                    }
+                }
+                """
+            )
+          )
+        );
+    }
+
+    @Test
+    void preservePublishedProtectedContractEvenWithEditableHierarchy() {
+        rewriteRun(
+          srcMainJava(
+            java(
+              """
+                public class ModelMerger {
+                    protected String mergeModel_Name(String source) {
+                        return source;
+                    }
+                }
+                class MavenModelMerger extends ModelMerger {
+                    @Override
+                    protected String mergeModel_Name(String source) {
+                        return super.mergeModel_Name(source);
                     }
                 }
                 """
