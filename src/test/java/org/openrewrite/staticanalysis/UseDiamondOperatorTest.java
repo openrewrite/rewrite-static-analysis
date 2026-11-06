@@ -83,13 +83,57 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Test
-    void useAnonymousDiamondAtSource9() {
+    void retainAnonymousTypeArgumentsAtSource9() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "21", "test", "9", "9"))),
           java(
-            "import java.util.*; class Test { List<String> values = new ArrayList<String>() {}; }",
-            "import java.util.*; class Test { List<String> values = new ArrayList<>() {}; }"
+            "import java.util.*; class Test { List<String> values = new ArrayList<String>() {}; }"
           )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"8", "9", "25.0.5+8-LTS"})
+    void retainAnonymousTypeArgumentsWithRelease8OrJsoupModel(String source) {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "25.0.5+8-LTS", "Eclipse Adoptium", source, source.startsWith("25.") ? source : "8"))),
+          java(
+            """
+              import java.util.Iterator;
+              class Test {
+                  Iterator<String> values = new Iterator<String>() {
+                      public boolean hasNext() { return false; }
+                      public String next() { return null; }
+                  };
+                  Iterator<String> create() {
+                      values = new Iterator<String>() {
+                          public boolean hasNext() { return false; }
+                          public String next() { return null; }
+                      };
+                      accept(new Iterator<String>() {
+                          public boolean hasNext() { return false; }
+                          public String next() { return null; }
+                      });
+                      return new Iterator<String>() {
+                          public boolean hasNext() { return false; }
+                          public String next() { return null; }
+                      };
+                  }
+                  void accept(Iterator<String> values) {}
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"6", "7"})
+    void respectReleaseForOrdinaryDiamond(String release) {
+        String before = "import java.util.*; class Test { List<String> values = new ArrayList<String>(); }";
+        String after = "6".equals(release) ? before : before.replace("new ArrayList<String>()", "new ArrayList<>()");
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "25", "test", "25", release))),
+          before.equals(after) ? java(before) : java(before, after)
         );
     }
 
@@ -483,7 +527,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Test
-    void anonymousNewClassJava9Plus() {
+    void retainAnonymousNewClassJava9Plus() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(11))),
           java(
@@ -493,20 +537,13 @@ class UseDiamondOperatorTest implements RewriteTest {
               class Foo {
                   List<String> l = new ArrayList<String>() {};
               }
-              """,
-            """
-              import java.util.*;
-
-              class Foo {
-                  List<String> l = new ArrayList<>() {};
-              }
               """
           )
         );
     }
 
     @Test
-    void anonymousNewClassInferTypesJava9Plus() {
+    void retainAnonymousArgumentsJava9Plus() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(11))),
           java(
@@ -533,29 +570,8 @@ class UseDiamondOperatorTest implements RewriteTest {
                           }
                       });
 
-                      // Concrete type, OK to use diamond operator
+                      // Concrete type, retain explicit arguments for anonymous classes
                       Printer.setSerializerConcreteType(new Serializer<Integer>() {
-                          @Override
-                          public byte[] serialize(Integer integer) {
-                              return new byte[0];
-                          }
-                      });
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void method() {
-                      // Generic type, no infer type, can NOT use diamond operator
-                      Printer.setSerializerGenericType(new Serializer<Integer>() {
-                          @Override
-                          public byte[] serialize(Integer integer) {
-                              return new byte[0];
-                          }
-                      });
-
-                      // Concrete type, OK to use diamond operator
-                      Printer.setSerializerConcreteType(new Serializer<>() {
                           @Override
                           public byte[] serialize(Integer integer) {
                               return new byte[0];
