@@ -23,7 +23,8 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.staticanalysis.go.GoFileChecker;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.Set;
 
@@ -47,7 +48,8 @@ public class WhileInsteadOfFor extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new GoFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        // Java templates cannot preserve other languages' native statement padding and markers.
+        return Preconditions.check(Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 if (forLoop.getControl().getInit().get(0) instanceof J.Empty &&

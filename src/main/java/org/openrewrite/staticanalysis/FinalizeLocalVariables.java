@@ -66,11 +66,7 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                if (mv.getVariables().stream()
-                        .noneMatch(v -> {
-                            Cursor declaringCursor = v.getDeclaringScope(getCursor());
-                            return FindAssignmentReferencesToVariable.find(declaringCursor.getValue(), v).get();
-                        })) {
+                if (mv.getVariables().stream().allMatch(v -> VariableReferences.isEffectivelyFinal(getCursor(), v))) {
                     mv = autoFormat(
                             mv.withModifiers(
                                     ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()))

@@ -21,9 +21,14 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -33,6 +38,10 @@ import static java.util.Arrays.asList;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class SimplifyBooleanExpression extends Recipe {
+    private static final AnnotationMatcher BEFORE_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
+    private static final AnnotationMatcher AFTER_TEMPLATE =
+            new AnnotationMatcher("@com.google.errorprone.refaster.annotation.AfterTemplate");
 
     String displayName = "Simplify boolean expression";
 
@@ -45,14 +54,32 @@ public class SimplifyBooleanExpression extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        // Java boolean literal spelling and statement-expression rules do not apply to Python.
         return new SimplifyBooleanExpressionVisitor() {
+            @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream()
+                        .anyMatch(a -> BEFORE_TEMPLATE.matches(a) || AFTER_TEMPLATE.matches(a))) {
+                    return method;
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
+
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
             // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                if (j instanceof J.MethodInvocation && j.getMarkers().findFirst(IsNullSafe.class).isPresent()) {
+                if (j instanceof Expression && ((Expression) j).unwrap().getMarkers().findFirst(IsNullSafe.class).isPresent()) {
                     return false;
                 }
                 return super.shouldSimplifyEqualsOn(j);

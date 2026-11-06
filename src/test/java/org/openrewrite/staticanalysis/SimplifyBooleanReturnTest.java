@@ -33,6 +33,56 @@ class SimplifyBooleanReturnTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanReturn());
     }
 
+    @Test
+    void preserveBoxedConditionUnboxing() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  Object impliedElse(Boolean value) {
+                      if (value) {
+                          return true;
+                      }
+                      return false;
+                  }
+                  Boolean explicitElse(Boolean value) {
+                      if (value) {
+                          return true;
+                      } else {
+                          return false;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveNegatedBoxedConditionUnboxing() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  Object impliedElse(Boolean value) {
+                      if (!value) {
+                          return false;
+                      }
+                      return true;
+                  }
+                  Boolean explicitElse(Boolean value) {
+                      if (!value) {
+                          return false;
+                      } else {
+                          return true;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simplifyBooleanReturn() {
@@ -349,10 +399,6 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                       return True
 
                   return False
-              """,
-            """
-              def is_ip(address):
-                  return re.match(regexp, address)
               """
           )
         );
@@ -370,11 +416,6 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                           return True
 
                       return False
-              """,
-            """
-              class A:
-                  def is_ip(self, address):
-                      return re.match(regexp, address)
               """
           )
         );

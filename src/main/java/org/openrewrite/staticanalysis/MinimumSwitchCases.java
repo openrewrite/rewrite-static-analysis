@@ -26,7 +26,8 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.*;
 
@@ -53,7 +54,21 @@ public class MinimumSwitchCases extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        return new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Only Java/Groovy switch syntax and labels are supported by this lowering.
+                // Inspect the source root without optional language class linkage or marker dependence.
+                if (tree instanceof SourceFile && !(tree instanceof J.CompilationUnit) &&
+                    !tree.getClass().getName().startsWith("org.openrewrite.groovy.")) {
+                    stopAfterPreVisit();
+                }
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), statement -> {
@@ -219,8 +234,14 @@ public class MinimumSwitchCases extends Recipe {
                 // as those case labels are not simple expressions and cannot be converted to `==`/`equals` checks
                 for (Statement statement : switch_.getCases().getStatements()) {
                     if (statement instanceof J.Case) {
+                        // getPattern() represents only the first label; retain multi-label colon cases too.
+                        if (((J.Case) statement).getCaseLabels().size() > 1) {
+                            return false;
+                        }
                         for (J label : ((J.Case) statement).getCaseLabels()) {
-                            if (!(label instanceof Expression)) {
+                            // Null dispatch cannot use the String equals template.
+                            if (!(label instanceof Expression) ||
+                                label instanceof J.Literal && ((J.Literal) label).getValue() == null) {
                                 return false;
                             }
                         }
@@ -229,8 +250,51 @@ public class MinimumSwitchCases extends Recipe {
                 if (hasUnresolvableCasePattern(switch_)) {
                     return false;
                 }
+                List<Statement> cases = switch_.getCases().getStatements();
+                boolean defaultOnly = cases.size() == 1 && isDefault((J.Case) cases.get(0));
+                if (defaultOnly) {
+                    J.Case defaultCase = (J.Case) cases.get(0);
+                    Expression selector = switch_.getSelector().getTree();
+                    // Removing a selector must preserve null checks and other possible exceptions.
+                    if (getCursor().firstEnclosing(SourceFile.class) instanceof J.CompilationUnit &&
+                        !canDropDefaultSelector(selector)) {
+                        return false;
+                    }
+                    // Default-only lowering lifts colon-case statements into the enclosing block.
+                    // Rule bodies live in getBody(), and local declarations need the switch's scope.
+                    if (defaultCase.getType() == J.Case.Type.Rule ||
+                        defaultCase.getStatements().stream().anyMatch(s ->
+                                s instanceof J.VariableDeclarations || s instanceof J.ClassDeclaration)) {
+                        return false;
+                    }
+                }
+                boolean repeatedSelector = cases.size() == 2 && cases.stream()
+                        .noneMatch(c -> isDefault((J.Case) c));
+                if ((defaultOnly || repeatedSelector) &&
+                    !switch_.getSelector().getTree().getSideEffects().isEmpty()) {
+                    return false;
+                }
                 return switch_.getCases().getStatements().stream()
                                .reduce(0, (a, b) -> a + ((J.Case) b).getCaseLabels().size(), Integer::sum) < 3;
+            }
+
+            private boolean canDropDefaultSelector(Expression selector) {
+                selector = selector.unwrap();
+                if (selector instanceof J.Identifier) {
+                    J.Identifier identifier = (J.Identifier) selector;
+                    if ("this".equals(identifier.getSimpleName())) {
+                        return true;
+                    }
+                    JavaType.Variable variable = identifier.getFieldType();
+                    if (variable == null || !(variable.getOwner() instanceof JavaType.Method)) {
+                        return false;
+                    }
+                } else if (!(selector instanceof J.Literal)) {
+                    return false;
+                }
+                JavaType type = selector.getType();
+                return type == JavaType.Primitive.Byte || type == JavaType.Primitive.Short ||
+                       type == JavaType.Primitive.Int || type == JavaType.Primitive.Char;
             }
 
             private boolean hasUnresolvableCasePattern(J.Switch switch_) {
@@ -362,7 +426,7 @@ public class MinimumSwitchCases extends Recipe {
                 return false;
             }
 
-        });
+        };
     }
 
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {

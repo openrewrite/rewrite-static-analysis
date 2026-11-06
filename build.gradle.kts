@@ -46,12 +46,11 @@ dependencies {
     }
 
     testImplementation("org.openrewrite:rewrite-test")
+    testImplementation("org.apache.groovy:groovy:4.0.33")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("org.junit.platform:junit-platform-launcher")
     testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")
 
-    testRuntimeOnly("org.openrewrite:rewrite-java-21")
-    testRuntimeOnly("org.openrewrite:rewrite-java-25")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
 

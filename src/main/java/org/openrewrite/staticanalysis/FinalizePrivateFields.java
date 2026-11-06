@@ -105,6 +105,7 @@ public class FinalizePrivateFields extends Recipe {
                         .collect(toSet());
                 if (!uninitializedFinalizable.isEmpty()) {
                     privateFieldsToBeFinalized.removeAll(findFieldsReadBeforeAssignedInInitializer(classDecl, uninitializedFinalizable));
+                    privateFieldsToBeFinalized.removeAll(findFieldsUnassignedAtConstructorReturn(classDecl, uninitializedFinalizable));
                 }
 
                 return super.visitClassDeclaration(classDecl, ctx);
@@ -162,6 +163,56 @@ public class FinalizePrivateFields extends Recipe {
                         .collect(toList());
             }
         });
+    }
+
+    private static Set<JavaType.Variable> findFieldsUnassignedAtConstructorReturn(J.ClassDeclaration classDecl,
+                                                                                Set<JavaType.Variable> candidates) {
+        Set<JavaType.Variable> unassigned = new HashSet<>();
+        for (Statement statement : classDecl.getBody().getStatements()) {
+            if (statement instanceof J.MethodDeclaration && ((J.MethodDeclaration) statement).isConstructor()) {
+                new JavaIsoVisitor<Set<JavaType.Variable>>() {
+                    final Set<JavaType.Variable> assigned = new HashSet<>();
+
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, Set<JavaType.Variable> found) {
+                        J.Assignment a = super.visitAssignment(assignment, found);
+                        J.Identifier name = FindLastIdentifier.getLastIdentifier(a.getVariable());
+                        if (name != null && candidates.contains(name.getFieldType())) {
+                            // Candidates have exactly one assignment directly in the constructor
+                            // or an initializer; assignments under control flow are already excluded.
+                            assigned.add(name.getFieldType());
+                        }
+                        return a;
+                    }
+
+                    @Override
+                    public J.Return visitReturn(J.Return returnStatement, Set<JavaType.Variable> found) {
+                        for (JavaType.Variable candidate : candidates) {
+                            if (!assigned.contains(candidate)) {
+                                found.add(candidate);
+                            }
+                        }
+                        return returnStatement;
+                    }
+
+                    @Override
+                    public J.Lambda visitLambda(J.Lambda lambda, Set<JavaType.Variable> found) {
+                        return lambda;
+                    }
+
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration nested, Set<JavaType.Variable> found) {
+                        return nested;
+                    }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, Set<JavaType.Variable> found) {
+                        return newClass;
+                    }
+                }.visit(statement, unassigned);
+            }
+        }
+        return unassigned;
     }
 
     private static int getConstructorCount(J.ClassDeclaration classDecl) {
@@ -314,7 +365,7 @@ public class FinalizePrivateFields extends Recipe {
                 int increment;
                 if (isInLoop(cursor) || isInLambda(cursor)) {
                     increment = 2;
-                } else if (isInitializedByClass(cursor, privateField.hasFlags(Flag.Static))) {
+                } else if (isInitializedByClass(cursor, privateField)) {
                     increment = 1;
                 } else {
                     increment = 2;
@@ -328,7 +379,13 @@ public class FinalizePrivateFields extends Recipe {
             return isInForLoop(cursor) || isInDoWhileLoopLoop(cursor) || isInWhileLoop(cursor);
         }
 
-        private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
+        private static boolean isInitializedByClass(Cursor cursor, JavaType.Variable privateField) {
+            J.ClassDeclaration enclosingClass = cursor.firstEnclosing(J.ClassDeclaration.class);
+            // A nested class initializes itself, not the class that declares the assigned field.
+            if (enclosingClass == null || !TypeUtils.isOfType(privateField.getOwner(), enclosingClass.getType())) {
+                return false;
+            }
+            boolean privateFieldIsStatic = privateField.hasFlags(Flag.Static);
             Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic()) ||
                             p instanceof JRightPadded ||
                             p instanceof JLeftPadded)

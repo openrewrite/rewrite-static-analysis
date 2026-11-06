@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.python.Assertions.python;
 import static org.openrewrite.scala.Assertions.scala;
 
@@ -288,6 +289,127 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
           .getVisitor().visit(unattributed, ctx);
         assertThat(result).isNotNull();
         assertThat(result.printAll()).isEqualTo(unattributed.printAll());
+    }
+
+    @Test
+    void nestedComparisonNegation() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  boolean test(String foo, String bar) {
+                      return !!(foo == bar);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(String foo, String bar) {
+                      return foo == bar;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " : 'foobar'"})
+    void groovyAssertNestedComparisonNegation(String message) {
+        rewriteRun(
+          groovy(
+            "assert !!('very long foo' == 'very long bar')" + message,
+            spec -> spec.afterRecipe(cu -> {
+                groovy.lang.GroovyShell shell = new groovy.lang.GroovyShell();
+                org.assertj.core.api.Assertions.assertThatThrownBy(() -> shell.evaluate(cu.printAll()))
+                  .isInstanceOf(AssertionError.class);
+            })
+          )
+        );
+    }
+
+    @Test
+    void doubleNegationRetainsBoxedBooleanUnboxing() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  Object test(Boolean value) {
+                      return !(!value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groovyDoubleNegationRetainsTruthCoercion() {
+        rewriteRun(
+          groovy("def value = 'foo'; assert !(!value) instanceof Boolean")
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " : 'foobar'"})
+    void emittedGroovyAssertionStillFails(String message) {
+        ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
+        String before = "def foo = 'very long foo'; def bar = 'very long bar'; assert !!(foo == bar)" + message;
+        org.openrewrite.SourceFile parsed = org.openrewrite.groovy.GroovyParser.builder().build()
+          .parse(ctx, before).findFirst().orElseThrow();
+        org.openrewrite.SourceFile after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
+          .getVisitor().visit(parsed, ctx);
+        assertThat(after).isNotNull();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(before))
+          .isInstanceOf(AssertionError.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(after.printAll()))
+          .as("Emitted assertion: %s", after.printAll()).isInstanceOf(AssertionError.class);
+    }
+
+    @Test
+    void retainGroupingWhenRemovingDoubleNegation() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  boolean test(boolean a, boolean b, boolean c) {
+                      return !(!(a || b)) && c;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean a, boolean b, boolean c) {
+                      return (a || b) && c;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+      "def foo = 'foo'; def bar = 'foo'; return !!(foo == bar)",
+      "def foo = 'foo'; def bar = 'bar'; return !!(foo == bar)",
+      "def foo = null; def bar = null; return !!(foo == bar)",
+      "def foo = null; def bar = 'bar'; return !!(foo == bar)",
+      "def value = null; return !(!value)",
+      "def value = 'foo'; return !(!value)",
+      "def count = 0; def next = { count++; count % 2 == 1 }; def result = !(next() == next()); return [result, count]",
+      "def count = 0; def next = { count++; true }; def result = !(!(next() || next())); return [result, count]"
+    })
+    void preserveGroovyEvaluationAndNullSemantics(String before) {
+        ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
+        org.openrewrite.SourceFile parsed = org.openrewrite.groovy.GroovyParser.builder().build()
+          .parse(ctx, before).findFirst().orElseThrow();
+        org.openrewrite.SourceFile after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
+          .getVisitor().visit(parsed, ctx);
+        assertThat(after).isNotNull();
+        Object expected = new groovy.lang.GroovyShell().evaluate(before);
+        Object actual = new groovy.lang.GroovyShell().evaluate(after.printAll());
+        assertThat(actual).as("Emitted code: %s", after.printAll()).isEqualTo(expected);
+        assertThat(actual.getClass()).isEqualTo(expected.getClass());
     }
 
 }

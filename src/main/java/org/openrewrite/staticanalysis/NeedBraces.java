@@ -18,19 +18,24 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.groovy.tree.G;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.format.AutoFormatVisitor;
+import org.openrewrite.java.service.AutoFormatService;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,6 +70,21 @@ public class NeedBraces extends Recipe {
 
             @SuppressWarnings("NotNullFieldNotInitialized")
             NeedBracesStyle needBracesStyle;
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <J2 extends J> J2 autoFormat(J2 tree, @Nullable J stopAfter, ExecutionContext ctx, Cursor parent) {
+                FormattingListener.beforeFormat(tree, stopAfter, parent);
+                JavaSourceFile source = tree instanceof JavaSourceFile ? (JavaSourceFile) tree :
+                        getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
+                // Service classes can be shared with an older platform, while formatter implementations
+                // are isolated with the recipe. Invoke the bundled formatter directly for Java.
+                if (source instanceof J.CompilationUnit) {
+                    return (J2) new AutoFormatVisitor<ExecutionContext>(stopAfter).visit(tree, ctx, parent);
+                }
+                AutoFormatService service = source.service(AutoFormatService.class);
+                return (J2) service.autoFormatVisitor(stopAfter).visit(tree, ctx, parent);
+            }
 
             /**
              * A {@link J.Block} implies the section of code is implicitly surrounded in braces.
@@ -122,8 +142,8 @@ public class NeedBraces extends Recipe {
             public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof SourceFile) {
                     SourceFile cu = (SourceFile) requireNonNull(tree);
-                    // Python don't need none of your curly braces
-                    if (cu.getSourcePath().toString().endsWith(".py")) {
+                    // Python has no braces; Java-only wrapping does not relocate JS semicolon markers.
+                    if (cu.getSourcePath().toString().endsWith(".py") || JavascriptFileChecker.isJavaScript(cu)) {
                         return (J) tree;
                     }
                     needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
@@ -160,6 +180,13 @@ public class NeedBraces extends Recipe {
 
             @Override
             public J.If visitIf(J.If iff, ExecutionContext ctx) {
+                if (getCursor().firstEnclosing(G.CompilationUnit.class) != null &&
+                    iff.getPrefix().getWhitespace().chars().anyMatch(c -> !Character.isWhitespace(c))) {
+                    // Older serialized Groovy models store labels in the if prefix instead of J.Label.
+                    // Formatting that malformed whitespace can delete source tokens. Preserve this subtree;
+                    // freshly parsed labels have their own node and can still receive braces normally.
+                    return iff;
+                }
                 if (usedAsExpression()) {
                     // Kotlin has no dedicated ternary operator
                     return iff;
