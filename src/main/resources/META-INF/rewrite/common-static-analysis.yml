@@ -39,7 +39,7 @@ recipeList:
   - org.openrewrite.staticanalysis.ExplicitInitialization
   - org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
   - org.openrewrite.staticanalysis.FinalizePrivateFields
-  - org.openrewrite.staticanalysis.FallThrough
+#  - org.openrewrite.staticanalysis.FallThrough # inserting breaks can change intentional, undocumented fall-through
   - org.openrewrite.staticanalysis.FinalClass
   - org.openrewrite.staticanalysis.FixStringFormatExpressions
   - org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
