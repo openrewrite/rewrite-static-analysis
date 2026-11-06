@@ -62,7 +62,10 @@ public class AbstractClassPublicConstructor extends Recipe {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 if (cd.hasModifier(Abstract)) {
                     return cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), st -> {
-                        if (st instanceof J.MethodDeclaration && ((J.MethodDeclaration) st).isConstructor()) {
+                        if (st instanceof J.MethodDeclaration && ((J.MethodDeclaration) st).isConstructor() &&
+                            (((J.MethodDeclaration) st).getMethodType() != null ?
+                             ((J.MethodDeclaration) st).getMethodType().isConstructor() :
+                             ((J.MethodDeclaration) st).getSimpleName().equals(cd.getSimpleName()))) {
                             return ((J.MethodDeclaration) st).withModifiers(ListUtils.map(((J.MethodDeclaration) st).getModifiers(),
                                     mod -> mod.getType() == Public ? mod.withType(Protected) : mod));
                         }
