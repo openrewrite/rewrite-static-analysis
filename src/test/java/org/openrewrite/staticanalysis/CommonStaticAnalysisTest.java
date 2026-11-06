@@ -84,6 +84,29 @@ class CommonStaticAnalysisTest implements RewriteTest {
     }
 
     @Test
+    void preserveFinalizerCleanup() {
+        rewriteRun(
+          java(
+            """
+              class FinalizableCounter {
+                  static int count;
+
+                  FinalizableCounter() {
+                      count++;
+                  }
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      count--;
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void preserveFreshWrapperIdentity() {
         rewriteRun(
           java(

@@ -44,7 +44,8 @@ public class NoFinalizer extends ScanningRecipe<NoFinalizer.Calls> {
     final String displayName = "Remove `finalize()` method";
 
     @Getter
-    final String description = "Finalizers are deprecated. Use of `finalize()` can lead to performance issues, deadlocks, hangs, and other undesirable behavior.";
+    final String description = "Finalizers are deprecated. Use of `finalize()` can lead to performance issues, deadlocks, hangs, and other undesirable behavior. " +
+            "Migrate any cleanup performed by a finalizer to an explicit lifecycle before removing it.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1113");
