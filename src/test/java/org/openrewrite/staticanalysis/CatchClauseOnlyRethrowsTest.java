@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("ALL")
 class CatchClauseOnlyRethrowsTest implements RewriteTest {
@@ -28,6 +29,26 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new CatchClauseOnlyRethrows());
+    }
+
+    @Test
+    void preserveKotlinRethrowBeforeThrowableHandler() {
+        rewriteRun(
+          kotlin(
+            """
+              class Aborted : RuntimeException()
+              fun run() {
+                  try {
+                      throw Aborted()
+                  } catch (e: Aborted) {
+                      throw e
+                  } catch (e: Throwable) {
+                      println("handled")
+                  }
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
