@@ -24,8 +24,8 @@ import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
-import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
@@ -61,10 +61,10 @@ public class CovariantEquals extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         TreeVisitor<?, ExecutionContext> conditions = Preconditions.and(
+                // This recipe implements the Java Object.equals contract using a Java template.
+                Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
                 new DeclaresMethod<>(EQUALS_MATCHER),
-                Preconditions.not(new DeclaresMethod<>(EQUALS_OBJECT_MATCHER)),
-                Preconditions.not(new CSharpFileChecker<>()),
-                Preconditions.not(new KotlinFileChecker<>())
+                Preconditions.not(new DeclaresMethod<>(EQUALS_OBJECT_MATCHER))
         );
         return Preconditions.check(conditions, new JavaIsoVisitor<ExecutionContext>() {
             @Override
