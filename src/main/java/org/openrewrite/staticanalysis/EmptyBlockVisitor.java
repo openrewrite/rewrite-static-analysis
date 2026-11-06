@@ -34,6 +34,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.style.Style;
 
 import java.util.HashMap;
@@ -138,6 +139,12 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         if (i.getElsePart() == null) {
+            if (getCursor().firstEnclosing(K.CompilationUnit.class) != null &&
+                !(i.getIfCondition().getTree() instanceof J.Literal)) {
+                // Kotlin property reads can invoke getters, and !! can throw. Neither is
+                // represented by Java expression side effects, so retain their evaluation.
+                return i;
+            }
             if (getCursor().firstEnclosing(SourceFile.class) instanceof J.CompilationUnit &&
                 containsBoxedBoolean(i.getIfCondition().getTree())) {
                 // Extracting calls/assignments does not preserve implicit Boolean unboxing.
