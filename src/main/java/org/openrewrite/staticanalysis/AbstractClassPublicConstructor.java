@@ -36,8 +36,8 @@ public class AbstractClassPublicConstructor extends Recipe {
 
     @Getter
     final String description = "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
-            "Therefore, the visibility of `public` constructors is reduced to `protected`. " +
-            "Declaring them `public` is misleading since it implies they could be invoked directly, which is never possible.";
+            "For classes outside the public API, the visibility of `public` constructors is reduced to `protected`. " +
+            "Public and protected API classes retain their constructor visibility for compatibility.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5993");
@@ -60,7 +60,7 @@ public class AbstractClassPublicConstructor extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.hasModifier(Abstract)) {
+                if (cd.hasModifier(Abstract) && !PublicApi.isExternallyVisible(cd)) {
                     return cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), st -> {
                         if (st instanceof J.MethodDeclaration && ((J.MethodDeclaration) st).isConstructor() &&
                             (((J.MethodDeclaration) st).getMethodType() != null ?
