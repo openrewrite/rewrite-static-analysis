@@ -489,6 +489,54 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
 
     @Nested
     class Kotlin {
+        @Test
+        void distinctNullableStringGuards() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun credentials(username: String?, password: String?): Boolean =
+                      !username.isNullOrBlank() && !password.isNullOrBlank()
+                  """
+              )
+            );
+        }
+
+        @Test
+        void distinctNullableStringGuardsInGradleKotlinDsl() {
+            rewriteRun(
+              kotlin(
+                """
+                  val codegenomeUsername: String? = System.getenv("CODEGENOME_USERNAME")
+                  val codegenomePassword: String? = System.getenv("CODEGENOME_TOKEN")
+                  if (!codegenomeUsername.isNullOrBlank() && !codegenomePassword.isNullOrBlank()) {
+                      println("configured")
+                  }
+                  """,
+                spec -> spec.path("build.gradle.kts")
+              )
+            );
+        }
+
+        @Test
+        void simplifyKotlinWhilePreservingDistinctReceivers() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun credentials(username: String?, password: String?): Boolean =
+                      true && (!username.isNullOrBlank() && !password.isNullOrBlank())
+                  fun missing(username: String?, password: String?): Boolean =
+                      false || (username.isNullOrBlank() || password.isNullOrBlank())
+                  """,
+                """
+                  fun credentials(username: String?, password: String?): Boolean =
+                      (!username.isNullOrBlank() && !password.isNullOrBlank())
+                  fun missing(username: String?, password: String?): Boolean =
+                      (username.isNullOrBlank() || password.isNullOrBlank())
+                  """
+              )
+            );
+        }
+
         @DocumentExample
         @Test
         void regular() {
@@ -545,6 +593,22 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
                   val isPositive1 = getSymbol()?.plus("").equals("+")
                   val isPositive2 = getSymbol()?.plus("")?.equals("+") == true
                   """
+              )
+            );
+        }
+
+        @Test
+        void preserveSafeBooleanPropertyComparisons() {
+            rewriteRun(
+              kotlin(
+                """
+                  class State(val failed: Boolean)
+                  fun failed(state: State?) = state?.failed == true
+                  fun notFailed(state: State?) = state?.failed != true
+                  fun clear(state: State?) = state?.failed == false
+                  fun notClear(state: State?) = state?.failed != false
+                  fun grouped(state: State?) = (state?.failed) == true
+                """
               )
             );
         }

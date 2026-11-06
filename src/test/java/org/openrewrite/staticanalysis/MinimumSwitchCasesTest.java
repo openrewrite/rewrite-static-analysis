@@ -17,6 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -35,6 +37,56 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @DocumentExample
+    @ParameterizedTest
+    @ValueSource(strings = {"next()", "counter++"})
+    void preserveSelectorEvaluationAcrossTwoCases(String selector) {
+        rewriteRun(java("""
+          class Example {
+              int counter;
+              int next() { return ++counter; }
+              void use(int value) {}
+              void test() {
+                  switch (%s) {
+                      case 1: use(1); break;
+                      case 2: use(2); break;
+                  }
+              }
+          }
+          """.formatted(selector)));
+    }
+
+    @Test
+    void preserveMultipleColonCaseLabels() {
+        rewriteRun(java(
+          """
+            class Example {
+                void f(int n) {
+                    switch (n) {
+                        case 1, 2:
+                            System.out.println(n);
+                            break;
+                    }
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveDefaultOnlySelectorEvaluation() {
+        rewriteRun(java("""
+          class Example {
+              int counter;
+              int next() { return ++counter; }
+              void test() {
+                  switch (next()) {
+                      default: System.out.println(counter);
+                  }
+              }
+          }
+          """));
+    }
+
     @Test
     void caseWithReturnInsteadOfBreak() {
         rewriteRun(
@@ -566,6 +618,161 @@ class MinimumSwitchCasesTest implements RewriteTest {
                   }
                   void doSomething() {}
                   void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyRuleBody() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default -> System.out.println(n);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyScope() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default:
+                              int value = n;
+                              System.out.println(value);
+                              break;
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyNullSelectorCheck() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  enum Kind { ONE }
+                  void string(String value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void boxed(Integer value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void enumeration(Kind value) {
+                      switch (value) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlyLocalClassScope() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (n) {
+                          default:
+                              class Local {}
+                              System.out.println(new Local());
+                              break;
+                      }
+                      class Local {}
+                      System.out.println(new Local());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveDefaultOnlySelectorExceptions() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  int value;
+                  void division(int denominator) {
+                      switch (1 / denominator) {
+                          default: System.out.println("body");
+                      }
+                  }
+                  void field(A holder) {
+                      switch (holder.value) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"n", "1"})
+    void defaultOnlySafePrimitiveSelector(String selector) {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(int n) {
+                      switch (%s) {
+                          default: System.out.println("body");
+                      }
+                  }
+              }
+              """.formatted(selector),
+            """
+              class A {
+                  void f(int n) {
+                      System.out.println("body");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveExplicitNullCase() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void f(String value) {
+                      switch (value) {
+                          case null: System.out.println("null"); break;
+                          default: System.out.println("other"); break;
+                      }
+                  }
               }
               """
           )
@@ -1127,7 +1334,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
             """
               class Test {
                   void test(Unresolved u) {
-                      switch (u.getCode()) {
+                      switch (u.code) {
                           case 1:
                               doSomething();
                               break;
@@ -1143,9 +1350,9 @@ class MinimumSwitchCasesTest implements RewriteTest {
             """
               class Test {
                   void test(Unresolved u) {
-                      if (u.getCode() == 1) {
+                      if (u.code == 1) {
                           doSomething();
-                      } else if (u.getCode() == 2) {
+                      } else if (u.code == 2) {
                           doSomethingElse();
                       }
                   }
@@ -1204,8 +1411,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
               import static com.example.Constants.BLUE;
 
               class Test {
-                  void test(Widget w) {
-                      switch (w.getColor()) {
+                  void test(Widget.Color color) {
+                      switch (color) {
                           case RED:
                               doSomething();
                               break;
@@ -1225,10 +1432,10 @@ class MinimumSwitchCasesTest implements RewriteTest {
               import static com.example.Constants.BLUE;
 
               class Test {
-                  void test(Widget w) {
-                      if (w.getColor() == Widget.Color.RED) {
+                  void test(Widget.Color color) {
+                      if (color == Widget.Color.RED) {
                           doSomething();
-                      } else if (w.getColor() == Widget.Color.BLUE) {
+                      } else if (color == Widget.Color.BLUE) {
                           doSomethingElse();
                       }
                   }

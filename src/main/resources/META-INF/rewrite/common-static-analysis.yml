@@ -25,7 +25,7 @@ recipeList:
   - org.openrewrite.staticanalysis.AbstractClassPublicConstructor
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable # slow on large code bases, and see #1055 and #1060
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
-  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
+#  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe # changes exact binary values and observable scale; use explicitly when decimal round-trip semantics are intended
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
   - org.openrewrite.staticanalysis.BooleanChecksNotInverted
   - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
@@ -39,7 +39,7 @@ recipeList:
   - org.openrewrite.staticanalysis.ExplicitInitialization
   - org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
   - org.openrewrite.staticanalysis.FinalizePrivateFields
-  - org.openrewrite.staticanalysis.FallThrough
+#  - org.openrewrite.staticanalysis.FallThrough # inserting breaks can change intentional, undocumented fall-through
   - org.openrewrite.staticanalysis.FinalClass
   - org.openrewrite.staticanalysis.FixStringFormatExpressions
   - org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
@@ -52,7 +52,7 @@ recipeList:
   - org.openrewrite.staticanalysis.IsEmptyCallOnMaps
   - org.openrewrite.staticanalysis.LambdaBlockToExpression
 #  - org.openrewrite.staticanalysis.LowercasePackage # renames packages, which moves files and changes the public API
-  - org.openrewrite.staticanalysis.MethodNameCasing
+#  - org.openrewrite.staticanalysis.MethodNameCasing # method names are observable through stack traces, reflection, and framework conventions
   - org.openrewrite.staticanalysis.MinimumSwitchCases
   - org.openrewrite.staticanalysis.ModifierOrder
   - org.openrewrite.staticanalysis.MultipleVariableDeclarations
@@ -62,14 +62,15 @@ recipeList:
   - org.openrewrite.staticanalysis.NoDoubleBraceInitialization
   - org.openrewrite.staticanalysis.NoEmptyCollectionWithRawType
   - org.openrewrite.staticanalysis.NoEqualityInForCondition
-  - org.openrewrite.staticanalysis.NoFinalizer
+#  - org.openrewrite.staticanalysis.NoFinalizer # finalizer cleanup requires an explicit lifecycle migration
   - org.openrewrite.staticanalysis.NoPrimitiveWrappersForToStringOrCompareTo
   - org.openrewrite.staticanalysis.NoRedundantJumpStatements
   - org.openrewrite.staticanalysis.NoToStringOnStringType
   - org.openrewrite.staticanalysis.NoValueOfOnStringType
   - org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
   - org.openrewrite.staticanalysis.PreferSystemGetPropertyOverGetenv
-  - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
+  - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf:
+      onlyIfImmediatelyUnboxed: true
   - org.openrewrite.staticanalysis.RedundantFileCreation
   - org.openrewrite.staticanalysis.RemoveExtraSemicolons
   - org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall

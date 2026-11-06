@@ -19,16 +19,22 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
+import org.openrewrite.groovy.tree.G;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 
 public class BooleanChecksNotInverted extends Recipe {
 
@@ -53,14 +59,32 @@ public class BooleanChecksNotInverted extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
 
             @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
+            @Override
             @SuppressWarnings("ConstantConditions")
             public J visitUnary(J.Unary unary, ExecutionContext ctx) {
+                // Groovy's !! is also Spock's condition-rendering opt-out operator.
+                // Keep the pair intact, including its comparison parentheses.
+                Expression operand = unary.getExpression().unwrap();
+                if (getCursor().firstEnclosing(SourceFile.class) instanceof G.CompilationUnit &&
+                    unary.getOperator() == J.Unary.Type.Not && operand instanceof J.Unary &&
+                    ((J.Unary) operand).getOperator() == J.Unary.Type.Not) {
+                    return unary;
+                }
+                unary = (J.Unary) super.visitUnary(unary, ctx);
                 if (unary.getOperator() == J.Unary.Type.Not && unary.getExpression() instanceof J.Parentheses) {
                     J.Parentheses<?> expr = (J.Parentheses<?>) unary.getExpression();
                     if (expr.getTree() instanceof J.Binary) {
                         J.Binary binary = (J.Binary) expr.getTree();
                         if (isComparison(binary.getLeft()) || isComparison(binary.getRight())) {
-                            return super.visitUnary(unary, ctx);
+                            return unary;
                         }
                         switch (binary.getOperator()) {
                             case LessThan:
@@ -70,32 +94,41 @@ public class BooleanChecksNotInverted extends Recipe {
                                 // A negated ordered comparison accepts NaN; its complementary operator does not.
                                 if (!isKnownIntegral(binary.getLeft().getType()) ||
                                     !isKnownIntegral(binary.getRight().getType())) {
-                                    return super.visitUnary(unary, ctx);
+                                    return unary;
                                 }
                                 break;
                         }
                         switch (binary.getOperator()) {
                             case LessThan:
-                                return super.visit(binary.withOperator(J.Binary.Type.GreaterThanOrEqual), ctx).withPrefix(unary.getPrefix());
+                                return maybeParenthesize(binary.withOperator(J.Binary.Type.GreaterThanOrEqual)
+                                        .withPrefix(unary.getPrefix()), getCursor());
                             case GreaterThan:
-                                return super.visit(binary.withOperator(J.Binary.Type.LessThanOrEqual), ctx).withPrefix(unary.getPrefix());
+                                return maybeParenthesize(binary.withOperator(J.Binary.Type.LessThanOrEqual)
+                                        .withPrefix(unary.getPrefix()), getCursor());
                             case LessThanOrEqual:
-                                return super.visit(binary.withOperator(J.Binary.Type.GreaterThan), ctx).withPrefix(unary.getPrefix());
+                                return maybeParenthesize(binary.withOperator(J.Binary.Type.GreaterThan)
+                                        .withPrefix(unary.getPrefix()), getCursor());
                             case GreaterThanOrEqual:
-                                return super.visit(binary.withOperator(J.Binary.Type.LessThan), ctx).withPrefix(unary.getPrefix());
+                                return maybeParenthesize(binary.withOperator(J.Binary.Type.LessThan)
+                                        .withPrefix(unary.getPrefix()), getCursor());
                             case Equal:
-                                return super.visit(binary.withOperator(J.Binary.Type.NotEqual), ctx).withPrefix(unary.getPrefix());
+                                return maybeParenthesize(binary.withOperator(J.Binary.Type.NotEqual)
+                                        .withPrefix(unary.getPrefix()), getCursor());
                             case NotEqual:
-                                return super.visit(binary.withOperator(J.Binary.Type.Equal), ctx).withPrefix(unary.getPrefix());
+                                return maybeParenthesize(binary.withOperator(J.Binary.Type.Equal)
+                                        .withPrefix(unary.getPrefix()), getCursor());
                         }
                     } else if (expr.getTree() instanceof J.Unary) {
                         J.Unary nestedUnary = (J.Unary) expr.getTree();
-                        if (nestedUnary.getOperator() == J.Unary.Type.Not) {
-                            return super.visit(nestedUnary.getExpression(), ctx).withPrefix(unary.getPrefix());
+                        // Preserve boxed Boolean unboxing and non-boolean truth coercion.
+                        if (nestedUnary.getOperator() == J.Unary.Type.Not &&
+                            nestedUnary.getExpression().getType() == JavaType.Primitive.Boolean) {
+                            return maybeParenthesize(nestedUnary.getExpression()
+                                    .withPrefix(unary.getPrefix()), getCursor());
                         }
                     }
                 }
-                return super.visitUnary(unary, ctx);
+                return unary;
             }
 
             private boolean isKnownIntegral(@Nullable JavaType type) {

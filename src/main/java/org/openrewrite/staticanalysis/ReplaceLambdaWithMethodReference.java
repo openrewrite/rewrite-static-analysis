@@ -20,9 +20,11 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.kotlin.KotlinVisitor;
@@ -45,10 +47,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     String displayName = "Use method references in lambda";
 
     String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
-            "`o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, " +
+            "`o -> (A) o`, `o -> o != null`, " +
             "`o -> o == null` with the equivalent method reference. Method references are often " +
             "more concise and readable than their lambda equivalents, making the code's intent " +
-            "clearer at a glance.";
+            "clearer at a glance. Captured receivers are retained unless they are known to be stable and non-null.";
 
     Set<String> tags = singleton("RSPEC-S1612");
 
@@ -75,12 +77,25 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     }
 
     private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
+        private static final AnnotationMatcher BEFORE_TEMPLATE =
+                new AnnotationMatcher("@com.google.errorprone.refaster.annotation.BeforeTemplate");
+
+        @Override
+        public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+            // A Refaster before-template describes the syntax to match, rather than code to modernize.
+            if (service(AnnotationService.class).getAllAnnotations(getCursor()).stream().anyMatch(BEFORE_TEMPLATE::matches)) {
+                return method;
+            }
+            return super.visitMethodDeclaration(method, ctx);
+        }
+
         @Override
         public J visitLambda(J.Lambda lambda, ExecutionContext ctx) {
             J.Lambda l = (J.Lambda) super.visitLambda(lambda, ctx);
             updateCursor(l);
 
-            if (insideAnonymousInnerClass()) {
+
+            if (insideAnonymousInnerClass() || hasExplicitParametersAndWildcardTarget(l)) {
                 return l;
             }
 
@@ -199,6 +214,15 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     Expression select =
                             method instanceof J.MethodInvocation ? ((J.MethodInvocation) method).getSelect() : null;
+                    if (methodType.hasFlags(Flag.Static) && select != null && !canDiscardStaticQualifier(select)) {
+                        // A value-qualified static call still evaluates its qualifier inside the lambda.
+                        return l;
+                    }
+                    if (!methodType.hasFlags(Flag.Static) && select != null &&
+                        !methodSelectMatchesFirstLambdaParameter(method, lambda) && !isStableNonNullReceiver(select)) {
+                        // A bound reference evaluates and null-checks its receiver when it is created.
+                        return l;
+                    }
                     if (methodType.hasFlags(Flag.Static) ||
                             methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                         if (method.getType() instanceof JavaType.Parameterized &&
@@ -261,6 +285,63 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             return l;
         }
 
+        private boolean hasExplicitParametersAndWildcardTarget(J.Lambda lambda) {
+            boolean explicit = lambda.getParameters().getParameters().stream().anyMatch(parameter ->
+                    parameter instanceof J.VariableDeclarations &&
+                            ((J.VariableDeclarations) parameter).getTypeExpression() != null);
+            if (!explicit) {
+                return false;
+            }
+            Cursor expression = getCursor();
+            Cursor parent = expression.getParentTreeCursor();
+            while (parent.getValue() instanceof J.Parentheses) {
+                expression = parent;
+                parent = parent.getParentTreeCursor();
+            }
+            Object target = parent.getValue();
+            JavaType targetType = null;
+            if (target instanceof MethodCall) {
+                MethodCall call = (MethodCall) target;
+                JavaType.Method method = call.getMethodType();
+                int index = call.getArguments().indexOf(expression.getValue());
+                if (method != null && index >= 0 && !method.getParameterTypes().isEmpty()) {
+                    int last = method.getParameterTypes().size() - 1;
+                    targetType = method.getParameterTypes().get(Math.min(index, last));
+                    if (method.hasFlags(Flag.Varargs) && index >= last && targetType instanceof JavaType.Array) {
+                        targetType = ((JavaType.Array) targetType).getElemType();
+                    }
+                }
+            } else if (target instanceof J.VariableDeclarations.NamedVariable) {
+                targetType = ((J.VariableDeclarations.NamedVariable) target).getType();
+            } else if (target instanceof J.Assignment) {
+                targetType = ((J.Assignment) target).getVariable().getType();
+            } else if (target instanceof J.TypeCast) {
+                targetType = ((J.TypeCast) target).getType();
+            } else if (target instanceof J.Return) {
+                Cursor function = parent.dropParentUntil(value -> value instanceof J.MethodDeclaration ||
+                        value instanceof J.Lambda || value == Cursor.ROOT_VALUE);
+                if (function.getValue() instanceof J.MethodDeclaration) {
+                    TypeTree returnType = function.<J.MethodDeclaration>getValue().getReturnTypeExpression();
+                    targetType = returnType == null ? null : returnType.getType();
+                }
+            }
+            // An explicit lambda parameter can narrow the ground target of Consumer<?> to
+            // Consumer<String>. A method reference instead uses the wildcard's bound (Object).
+            return containsWildcard(targetType, 0);
+        }
+
+        private boolean containsWildcard(@Nullable JavaType type, int depth) {
+            if (depth > 8) {
+                return false;
+            }
+            if (type instanceof JavaType.GenericTypeVariable) {
+                return "?".equals(((JavaType.GenericTypeVariable) type).getName());
+            }
+            JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+            return parameterized != null && parameterized.getTypeParameters().stream()
+                    .anyMatch(parameter -> containsWildcard(parameter, depth + 1));
+        }
+
         private boolean insideAnonymousInnerClass() {
             Cursor current = getCursor();
             while (current != null) {
@@ -276,6 +357,30 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 current = current.getParent();
             }
             return false;
+        }
+
+        private boolean canDiscardStaticQualifier(Expression qualifier) {
+            if (qualifier instanceof J.Identifier) {
+                JavaType.Variable variable = ((J.Identifier) qualifier).getFieldType();
+                return variable == null || variable.getOwner() instanceof JavaType.Method;
+            }
+            if (qualifier instanceof J.FieldAccess) {
+                J.FieldAccess field = (J.FieldAccess) qualifier;
+                return field.getName().getFieldType() == null && !"class".equals(field.getSimpleName());
+            }
+            return qualifier instanceof J.Literal;
+        }
+
+        private boolean isStableNonNullReceiver(Expression receiver) {
+            if (receiver instanceof J.Identifier) {
+                String name = ((J.Identifier) receiver).getSimpleName();
+                return "this".equals(name) || "super".equals(name);
+            }
+            if (receiver instanceof J.FieldAccess) {
+                String name = ((J.FieldAccess) receiver).getSimpleName();
+                return "this".equals(name) || "super".equals(name) || "class".equals(name);
+            }
+            return receiver instanceof J.Literal && ((J.Literal) receiver).getValue() != null;
         }
 
         private boolean hasSelectWithPotentialSideEffects(MethodCall method) {

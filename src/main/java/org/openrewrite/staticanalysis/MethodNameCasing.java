@@ -26,6 +26,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
@@ -47,8 +48,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     @Nullable
     Boolean includeTestSources;
 
-    @Option(displayName = "Rename public methods",
-            description = "Changes are not applied to public methods unless specified.",
+    @Option(displayName = "Rename public and protected methods",
+            description = "Changes are not applied to public or protected methods unless specified.",
             required = false)
     @Nullable
     Boolean renamePublicMethods;
@@ -114,7 +115,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                                 method.hasModifier(J.Modifier.Type.Private),
                                 simpleName,
                                 toName,
-                                new MethodMatcher(MethodMatcher.methodPattern(method), false))
+                                new MethodMatcher(MethodMatcher.methodPattern(method), false),
+                                method.getMethodType())
                         );
                     }
                 }
@@ -123,7 +125,22 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
             }
 
             private boolean containsValidModifiers(J.MethodDeclaration method) {
-                return !method.hasModifier(J.Modifier.Type.Public) || Boolean.TRUE.equals(renamePublicMethods);
+                if (method.hasModifier(J.Modifier.Type.Abstract) || implementsAbstractMethod(method.getMethodType()) ||
+                    method.getLeadingAnnotations().stream().anyMatch(annotation ->
+                            "Override".equals(annotation.getSimpleName())) &&
+                            !TypeUtils.findOverriddenMethod(method.getMethodType()).isPresent()) {
+                    // Implementations may be generated or outside the source set being visited.
+                    // Preserve the contract even when public method renaming is enabled.
+                    return false;
+                }
+                return !method.hasModifier(J.Modifier.Type.Public) && !method.hasModifier(J.Modifier.Type.Protected) ||
+                       Boolean.TRUE.equals(renamePublicMethods);
+            }
+
+            private boolean implementsAbstractMethod(JavaType.@Nullable Method method) {
+                Optional<JavaType.Method> overridden = TypeUtils.findOverriddenMethod(method);
+                return overridden.isPresent() &&
+                       (overridden.get().hasFlags(Flag.Abstract) || implementsAbstractMethod(overridden.get()));
             }
 
             private boolean methodExists(JavaType.Method method, String newName) {
@@ -143,7 +160,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                 UUID id = tree.getId();
                 Map<String, List<MethodNameChange>> byName = new HashMap<>();
                 for (MethodNameChange nameChange : changes) {
-                    if (!nameChange.isPrivateMethod() || id.equals(nameChange.getScope())) {
+                    if ((!nameChange.isPrivateMethod() || id.equals(nameChange.getScope())) &&
+                        canRenameContract(nameChange, changes)) {
                         byName.computeIfAbsent(nameChange.getFromName(), k -> new ArrayList<>()).add(nameChange);
                     }
                 }
@@ -153,6 +171,21 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                 return new RenameMethods(byName).visitNonNull(tree, ctx);
             }
         };
+    }
+
+    private static boolean canRenameContract(MethodNameChange change, List<MethodNameChange> changes) {
+        Optional<JavaType.Method> overridden = TypeUtils.findOverriddenMethod(change.getMethodType());
+        if (!overridden.isPresent()) {
+            return true;
+        }
+        // A generated or dependency declaration cannot be renamed by this run. Only rename an
+        // override when the declaration it overrides is also an eligible source declaration.
+        for (MethodNameChange candidate : changes) {
+            if (candidate.getMatcher().matches(overridden.get()) && canRenameContract(candidate, changes)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static class RenameMethods extends JavaIsoVisitor<ExecutionContext> {
@@ -256,5 +289,6 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
         String fromName;
         String toName;
         MethodMatcher matcher;
+        JavaType.Method methodType;
     }
 }

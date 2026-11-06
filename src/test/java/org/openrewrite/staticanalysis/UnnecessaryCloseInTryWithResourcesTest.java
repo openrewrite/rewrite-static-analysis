@@ -85,6 +85,71 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
     }
 
     @Test
+    void removeCloseOfReferencedResource() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething(Scanner scanner) {
+                      try (scanner) {
+                          boolean hasNext = scanner.hasNext();
+                          scanner.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething(Scanner scanner) {
+                      try (scanner) {
+                          boolean hasNext = scanner.hasNext();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeRepeatedTrailingClose() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (Scanner scanner = new Scanner("abc")) {
+                          boolean hasNext = scanner.hasNext();
+                          scanner.close();
+                          scanner.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (Scanner scanner = new Scanner("abc")) {
+                          boolean hasNext = scanner.hasNext();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void onlyRemoveAutoCloseableClose() {
         rewriteRun(
           //language=java
@@ -119,4 +184,184 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveCloseWhenResourceStateIsObservedAfterwards() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Closeable;
+
+              class Test {
+                  static class Resource implements Closeable {
+                      boolean closed;
+
+                      @Override
+                      public void close() {
+                          closed = true;
+                      }
+                  }
+
+                  void declaration() {
+                      try (Resource resource = new Resource()) {
+                          resource.close();
+                          if (!resource.closed) {
+                              throw new AssertionError();
+                          }
+                      }
+                  }
+
+                  void reference(Resource resource) {
+                      try (resource) {
+                          resource.close();
+                          if (!resource.closed) {
+                              throw new AssertionError();
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCloseFollowedByOtherStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (Scanner scanner = new Scanner("abc")) {
+                          scanner.close();
+                          System.out.println("scanner released early");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCloseOfResourceThatIsNotClosedFirst() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileWriter;
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (FileWriter fileWriter = new FileWriter("test"); Scanner scanner = new Scanner("abc")) {
+                          fileWriter.write(scanner.next());
+                          fileWriter.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCloseOfResourceThatIsNotCloseable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  static class Latch implements AutoCloseable {
+                      int closeCount;
+
+                      @Override
+                      public void close() {
+                          closeCount++;
+                      }
+                  }
+
+                  public void doSomething() {
+                      try (Latch latch = new Latch()) {
+                          latch.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCloseWithComment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (Scanner scanner = new Scanner("abc")) {
+                          boolean hasNext = scanner.hasNext();
+                          // release the scanner before the block exits
+                          scanner.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCloseWithCommentInsideTheCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (Scanner scanner = new Scanner("abc")) {
+                          boolean hasNext = scanner.hasNext();
+                          scanner./* release early */close(/* no arguments */);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+    @Test
+    void preserveCloseBeforeReadAfterCloseAssertion() {
+        rewriteRun(
+          java(
+            """
+              import java.io.BufferedInputStream;
+              import java.io.ByteArrayInputStream;
+              import java.io.IOException;
+
+              class ReadAfterClose {
+                  void verifyClosed() throws IOException {
+                      try (BufferedInputStream stream = new BufferedInputStream(new ByteArrayInputStream(new byte[] {1}))) {
+                          stream.close();
+                          try {
+                              stream.read();
+                              throw new AssertionError("Read must fail after close");
+                          } catch (IOException expected) {
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

@@ -20,7 +20,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("ALL")
 class ExternalizableHasNoArgsConstructorTest implements RewriteTest {
@@ -28,6 +30,105 @@ class ExternalizableHasNoArgsConstructorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ExternalizableHasNoArgsConstructor());
+    }
+
+    @Test
+    void kotlinDelegatingNoArgsConstructor() {
+        rewriteRun(
+          kotlin(
+            """
+              import java.io.Externalizable
+              import java.io.ObjectInput
+              import java.io.ObjectOutput
+
+              internal class Ser(private var typeTag: Int, private var value: Any?) : Externalizable {
+                  constructor() : this(0, null)
+
+                  override fun writeExternal(out: ObjectOutput) {}
+                  override fun readExternal(input: ObjectInput) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinRequiredPrimaryConstructorArguments() {
+        rewriteRun(
+          kotlin(
+            """
+              import java.io.Externalizable
+              import java.io.ObjectInput
+              import java.io.ObjectOutput
+
+              class Required(private var value: String) : Externalizable {
+                  override fun writeExternal(out: ObjectOutput) {}
+                  override fun readExternal(input: ObjectInput) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinDefaultPrimaryConstructorArguments() {
+        rewriteRun(
+          kotlin(
+            """
+              import java.io.Externalizable
+              import java.io.ObjectInput
+              import java.io.ObjectOutput
+
+              class Defaulted(private var value: String = "") : Externalizable {
+                  override fun writeExternal(out: ObjectOutput) {}
+                  override fun readExternal(input: ObjectInput) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groovyNeedsNoArgsConstructor() {
+        rewriteRun(
+          groovy(
+            """
+              import java.io.Externalizable
+              import java.io.ObjectInput
+              import java.io.ObjectOutput
+
+              class MyThing implements Externalizable {
+                  String value
+
+                  MyThing(String value) {
+                      this.value = value
+                  }
+
+                  void writeExternal(ObjectOutput out) {}
+                  void readExternal(ObjectInput input) {}
+              }
+              """,
+            """
+              import java.io.Externalizable
+              import java.io.ObjectInput
+              import java.io.ObjectOutput
+
+              class MyThing implements Externalizable {
+                  String value
+
+                  public MyThing() {
+                  }
+
+                  MyThing(String value) {
+                      this.value = value
+                  }
+
+                  void writeExternal(ObjectOutput out) {}
+                  void readExternal(ObjectInput input) {}
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample

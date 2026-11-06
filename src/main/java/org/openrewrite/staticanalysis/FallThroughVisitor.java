@@ -48,7 +48,11 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
      * Ignores any fall-through commented with a text matching the regex pattern.
      * This is currently non-user-configurable, though held within {@link FallThroughStyle}.
      */
-    private static final Pattern RELIEF_PATTERN = Pattern.compile("falls?[ -]?thr(u|ough)");
+    private static final Pattern RELIEF_PATTERN = Pattern.compile("\\b(?:falls?|drops?)[ -]?thr(?:u|ough)\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
+            comment instanceof TextComment &&
+                    RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
 
     private FallThroughStyle style;
 
@@ -70,6 +74,12 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = requireNonNull(getCursor().firstEnclosing(J.Switch.class));
+            // A comment just inside the switch's opening brace belongs to the first case's prefix.
+            // It documents fall-through for this switch, without relieving any nested switches.
+            List<Statement> cases = switch_.getCases().getStatements();
+            if (!cases.isEmpty() && cases.get(0).getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)) {
+                return c;
+            }
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
@@ -133,9 +143,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
         @RequiredArgsConstructor
         private static class FindLastLineBreaksOrFallsThroughCommentsVisitor extends JavaIsoVisitor<Set<J>> {
-            private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
-                    comment instanceof TextComment &&
-                            RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
             private final J.Case scope;
 
             private static boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {

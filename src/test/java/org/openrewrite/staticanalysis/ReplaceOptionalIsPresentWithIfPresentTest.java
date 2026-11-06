@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
@@ -230,7 +229,6 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Effectively final locals are found with `FinalizeLocalVariables`, which skips `int x;` declared without an initializer")
     @Test
     void replace2() {
         rewriteRun(
@@ -696,6 +694,33 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
                               list.add(o.get());
                           }
                           x=20;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNothingIfSameNamedVariableInSiblingBlockIsEffectivelyFinal() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+                  public class A {
+                      void method(Optional<Integer> o) {
+                          {
+                              int x = 1;
+                              System.out.println(x);
+                          }
+                          {
+                              int x = 1;
+                              x++;
+                              if (o.isPresent()) {
+                                  System.out.println(x);
+                              }
+                          }
                       }
                   }
                   """

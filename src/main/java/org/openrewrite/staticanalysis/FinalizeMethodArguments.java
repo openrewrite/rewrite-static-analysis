@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -58,10 +59,9 @@ public class FinalizeMethodArguments extends Recipe {
                     return declarations;
                 }
 
-                J enclosing = getCursor().getParentTreeCursor().getValue();
                 if (methodDeclaration.getParameters().stream().anyMatch(p -> p instanceof J.VariableDeclarations &&
                         ((J.VariableDeclarations) p).getVariables().stream()
-                                .anyMatch(v -> FindAssignmentReferencesToVariable.find(enclosing, v).get()))) {
+                                .anyMatch(v -> !VariableReferences.isEffectivelyFinal(new Cursor(getCursor(), p), v)))) {
                     return declarations;
                 }
 
