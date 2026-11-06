@@ -71,7 +71,8 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                         return super.visitMethodInvocation(method, ctx);
                     }
                     JavaCoordinates coordinates = method.getCoordinates().replace();
-                    J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
+                    // Only the dummy operand needs erasure; substitution retains the original expression and type.
+                    J updated = JavaTemplate.apply("#{any(java.lang.Object)} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
                             instanceOf -> instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix())));
                     updated = maybeAutoFormat(method, updated, ctx);
