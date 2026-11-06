@@ -37,6 +37,10 @@ import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -67,7 +71,9 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     // `instanceof` is a compile error (JLS 15.20.2) where `isInstance` just returns false
-                    if (cannotBeInstanceOf(objectExpression.getType(), (JavaType.FullyQualified) fieldAccessPart.getTarget().getType())) {
+                    if (hasRecursiveBounds(objectExpression.getType()) ||
+                            hasRecursiveBounds(fieldAccessPart.getTarget().getType()) ||
+                            cannotBeInstanceOf(objectExpression.getType(), (JavaType.FullyQualified) fieldAccessPart.getTarget().getType())) {
                         return super.visitMethodInvocation(method, ctx);
                     }
                     JavaCoordinates coordinates = method.getCoordinates().replace();
@@ -106,6 +112,60 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                 return false;
             }
         });
+    }
+
+    // Legacy shared runtimes compare substituted generic bounds structurally without cycle protection.
+    // Retain reflection when that graph is recursive: erasure alone cannot prove Java cast compatibility.
+    private static boolean hasRecursiveBounds(@Nullable JavaType type) {
+        Set<JavaType> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        List<JavaType> pending = new ArrayList<>();
+        if (type != null) {
+            pending.add(type);
+        }
+        for (int i = 0; i < pending.size(); i++) {
+            JavaType current = pending.get(i);
+            if (!visited.add(current)) {
+                continue;
+            }
+            if (current instanceof JavaType.GenericTypeVariable &&
+                    boundReachesVariable((JavaType.GenericTypeVariable) current)) {
+                return true;
+            }
+            addTypeReferences(current, pending);
+        }
+        return false;
+    }
+
+    // Require a path from a variable's bounds back to that exact variable. Ordinary class cycles
+    // (String implements Comparable<String>) and acyclic wildcard bounds remain eligible.
+    private static boolean boundReachesVariable(JavaType.GenericTypeVariable variable) {
+        Set<JavaType> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        List<JavaType> pending = new ArrayList<>(variable.getBounds());
+        for (int i = 0; i < pending.size(); i++) {
+            JavaType current = pending.get(i);
+            if (current == variable) {
+                return true;
+            }
+            if (visited.add(current)) {
+                addTypeReferences(current, pending);
+            }
+        }
+        return false;
+    }
+
+    private static void addTypeReferences(JavaType type, List<JavaType> pending) {
+        if (type instanceof JavaType.GenericTypeVariable) {
+            pending.addAll(((JavaType.GenericTypeVariable) type).getBounds());
+        } else if (type instanceof JavaType.Array) {
+            pending.add(((JavaType.Array) type).getElemType());
+        } else if (type instanceof JavaType.FullyQualified) {
+            JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
+            pending.addAll(fq.getTypeParameters());
+            if (fq.getSupertype() != null) {
+                pending.add(fq.getSupertype());
+            }
+            pending.addAll(fq.getInterfaces());
+        }
     }
 
     private static boolean cannotBeInstanceOf(@Nullable JavaType type, JavaType.FullyQualified target) {
