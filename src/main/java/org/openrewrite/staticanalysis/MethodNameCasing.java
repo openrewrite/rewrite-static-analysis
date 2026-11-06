@@ -26,6 +26,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
@@ -123,7 +124,18 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
             }
 
             private boolean containsValidModifiers(J.MethodDeclaration method) {
+                if (method.hasModifier(J.Modifier.Type.Abstract) || implementsAbstractMethod(method.getMethodType())) {
+                    // Implementations may be generated or outside the source set being visited.
+                    // Preserve the contract even when public method renaming is enabled.
+                    return false;
+                }
                 return !method.hasModifier(J.Modifier.Type.Public) || Boolean.TRUE.equals(renamePublicMethods);
+            }
+
+            private boolean implementsAbstractMethod(JavaType.@Nullable Method method) {
+                Optional<JavaType.Method> overridden = TypeUtils.findOverriddenMethod(method);
+                return overridden.isPresent() &&
+                       (overridden.get().hasFlags(Flag.Abstract) || implementsAbstractMethod(overridden.get()));
             }
 
             private boolean methodExists(JavaType.Method method, String newName) {
