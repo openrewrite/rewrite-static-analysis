@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @Getter
@@ -57,7 +58,7 @@ public class SimplifyRedundantLogicalExpression extends Recipe {
                     case BitOr:
                         if (SemanticallyEqual.areEqual(b.getLeft(), b.getRight()) &&
                                 !mayHaveSideEffects(b.getLeft())) {
-                            return b.getLeft().unwrap().withPrefix(b.getPrefix());
+                            return maybeParenthesize(b.getLeft().unwrap().withPrefix(b.getPrefix()), getCursor());
                         }
                         break;
                     default:
