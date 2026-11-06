@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.groovy.tree.G;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.AutoFormatVisitor;
@@ -179,6 +180,13 @@ public class NeedBraces extends Recipe {
 
             @Override
             public J.If visitIf(J.If iff, ExecutionContext ctx) {
+                if (getCursor().firstEnclosing(G.CompilationUnit.class) != null &&
+                    iff.getPrefix().getWhitespace().chars().anyMatch(c -> !Character.isWhitespace(c))) {
+                    // Older serialized Groovy models store labels in the if prefix instead of J.Label.
+                    // Formatting that malformed whitespace can delete source tokens. Preserve this subtree;
+                    // freshly parsed labels have their own node and can still receive braces normally.
+                    return iff;
+                }
                 if (usedAsExpression()) {
                     // Kotlin has no dedicated ternary operator
                     return iff;
