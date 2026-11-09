@@ -342,4 +342,76 @@ class RemoveUnreachableMultiCatchAlternativeTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void dropDuplicateAlternativeInSameMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class A {
+                  void m() {
+                      try {
+                          throw new IOException();
+                      } catch (IOException | IOException e) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class A {
+                  void m() {
+                      try {
+                          throw new IOException();
+                      } catch (IOException e) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dropSubtypeAlternativeCoveredBySupertypeInSameMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+
+              class A {
+                  void m() {
+                      try {
+                          throw new FileNotFoundException();
+                      } catch (FileNotFoundException | IllegalStateException | IOException e) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+
+              class A {
+                  void m() {
+                      try {
+                          throw new FileNotFoundException();
+                      } catch (IllegalStateException | IOException e) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
