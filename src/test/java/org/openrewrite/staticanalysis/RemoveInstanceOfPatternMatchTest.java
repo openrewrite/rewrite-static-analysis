@@ -230,6 +230,53 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     }
 
     @Test
+    void typesDeclaredInEnclosingScope() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              import java.util.Collection;
+              import java.util.List;
+
+              class Example {
+                  static class Inner {
+                  }
+
+                  public <T> void test(Collection<T> collection, Object obj) {
+                      if (collection instanceof List<T> list) {
+                          System.out.println(list.get(0));
+                      }
+                      if (obj instanceof Inner inner) {
+                          System.out.println(inner);
+                      }
+                  }
+              }
+              """,
+              """
+              import java.util.Collection;
+              import java.util.List;
+
+              class Example {
+                  static class Inner {
+                  }
+
+                  public <T> void test(Collection<T> collection, Object obj) {
+                      if (collection instanceof List<T>) {
+                          List<T> list = (List<T>) collection;
+                          System.out.println(list.get(0));
+                      }
+                      if (obj instanceof Inner) {
+                          Inner inner = (Inner) obj;
+                          System.out.println(inner);
+                      }
+                  }
+              }
+              """),
+            14));
+    }
+
+    @Test
     void commentsInTypeAreNotCopied() {
         rewriteRun(
           version(
