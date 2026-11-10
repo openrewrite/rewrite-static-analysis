@@ -230,6 +230,40 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     }
 
     @Test
+    void commentsInTypeAreNotCopied() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              import java.util.Map;
+
+              class Example {
+                  public void test(Object obj) {
+                      if (obj instanceof Map<?, // values
+                        /* any */ ?> map) {
+                          System.out.println(map);
+                      }
+                  }
+              }
+              """,
+              """
+              import java.util.Map;
+
+              class Example {
+                  public void test(Object obj) {
+                      if (obj instanceof Map<?, // values
+                        /* any */ ?>) {
+                          Map<?, ?> map = (Map<?, ?>) obj;
+                          System.out.println(map);
+                      }
+                  }
+              }
+              """),
+            14));
+    }
+
+    @Test
     void expression() {
         rewriteRun(
           version(

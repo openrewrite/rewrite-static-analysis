@@ -150,14 +150,23 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
 
         private J.Block addVariableDeclaration(Cursor blockCursor, J.InstanceOf instanceOf, ExecutionContext ctx) {
             J.Block block = blockCursor.getValue();
+            String type = new JavaIsoVisitor<Integer>() {
+                @Override
+                public Space visitSpace(@Nullable Space space, Space.Location loc, Integer p) {
+                    if (space == null || space.getComments().isEmpty()) {
+                        return space;
+                    }
+                    return Space.format(space.getWhitespace().isEmpty() ? " " : space.getWhitespace());
+                }
+            }.visitNonNull(instanceOf.getClazz(), 0).toString();
             JavaTemplate template = JavaTemplate
                     .builder("#{} #{} = (#{}) #{any()};")
                     .contextSensitive()
                     .imports(typesNamedBy(instanceOf.getClazz()))
                     .build();
-            return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().toString(),
+            return template.apply(blockCursor, block.getCoordinates().firstStatement(), type,
                     ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
-                    instanceOf.getClazz().toString(),
+                    type,
                     visit(instanceOf.getExpression(), ctx));
         }
 
