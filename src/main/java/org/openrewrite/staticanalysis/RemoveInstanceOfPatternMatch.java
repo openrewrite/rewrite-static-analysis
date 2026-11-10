@@ -23,6 +23,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.RandomizeIdVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -184,12 +185,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
          * Flattens comments to whitespace so that a comment inside the type appears once, on the {@code instanceof}.
          */
         private static TypeTree copyOfType(J.InstanceOf instanceOf) {
-            return new JavaIsoVisitor<Integer>() {
-                @Override
-                public J postVisit(J tree, Integer p) {
-                    return tree.withId(Tree.randomId());
-                }
-
+            return new RandomizeIdVisitor<Integer>() {
                 @Override
                 public Space visitSpace(@Nullable Space space, Space.Location loc, Integer p) {
                     if (space == null || space.getComments().isEmpty()) {
