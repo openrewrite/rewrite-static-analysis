@@ -175,19 +175,21 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             J.Block block = blockCursor.getValue();
             J.Identifier pattern = (J.Identifier) Objects.requireNonNull(instanceOf.getPattern());
             Expression expression = (Expression) visitNonNull(instanceOf.getExpression(), ctx);
+            TypeTree type = copyOfType(instanceOf);
             J.VariableDeclarations declaration = new J.VariableDeclarations(
                     Tree.randomId(),
                     Space.EMPTY,
                     Markers.EMPTY,
                     emptyList(),
                     emptyList(),
-                    copyOfType(instanceOf),
+                    type,
                     null,
                     singletonList(padRight(new J.VariableDeclarations.NamedVariable(
                             Tree.randomId(),
                             Space.SINGLE_SPACE,
                             Markers.EMPTY,
-                            pattern.withId(Tree.randomId()).withPrefix(Space.EMPTY),
+                            // the parser types a pattern identifier as the `instanceof`'s `boolean`
+                            pattern.withId(Tree.randomId()).withPrefix(Space.EMPTY).withType(type.getType()),
                             emptyList(),
                             new JLeftPadded<>(
                                     Space.SINGLE_SPACE,

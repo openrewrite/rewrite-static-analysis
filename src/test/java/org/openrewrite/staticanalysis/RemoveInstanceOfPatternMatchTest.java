@@ -18,9 +18,12 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 import static org.openrewrite.kotlin.Assertions.kotlin;
@@ -272,7 +275,15 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
                       }
                   }
               }
-              """),
+              """,
+              spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<Integer>() {
+                  @Override
+                  public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Integer p) {
+                      assertThat(variable.getName().getType()).as(variable.getSimpleName())
+                        .isEqualTo(variable.getVariableType().getType());
+                      return variable;
+                  }
+              }.visit(cu, 0))),
             14));
     }
 
