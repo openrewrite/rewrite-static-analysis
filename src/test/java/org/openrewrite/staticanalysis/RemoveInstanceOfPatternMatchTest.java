@@ -642,9 +642,8 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
             14));
     }
 
-    @Disabled("Not supported")
     @Test
-    void negationWithoutElse() {
+    void doNotChangePatternUsedAfterIf() {
         rewriteRun(
           version(
             //language=java
@@ -660,20 +659,121 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
                       System.out.println(str.length());
                   }
               }
-              """,
               """
-              package com.example;
+            ),
+            14));
+    }
 
+    @Test
+    void doNotChangePatternInsideIfBranch() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
               class Example {
-                  public void test(Object obj) {
-                      if (!(obj instanceof String)) {
-                          throw new IllegalArgumentException();
+                  void test(Object o, boolean b) {
+                      if (b) {
+                          System.out.println();
+                          while (o instanceof String s) {
+                              System.out.println(s);
+                              o = null;
+                          }
                       }
-                      String str = (String) obj;
-                      System.out.println(str);
                   }
               }
-              """),
+              """
+            ),
+            14));
+    }
+
+    @Test
+    void doNotChangeRecordPattern() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              class Example {
+                  record Point(int x, int y) {}
+
+                  void test(Object o) {
+                      if (o instanceof Point(int x, int y)) {
+                          System.out.println(x + y);
+                      }
+                  }
+              }
+              """
+            ),
+            21));
+    }
+
+    @Test
+    void twoPatternVariablesUsedInElse() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              class Example {
+                  void test(Object o, Object p) {
+                      if (!(o instanceof String s) || !(p instanceof Integer i)) {
+                          return;
+                      } else {
+                          System.out.println(s + i);
+                      }
+                  }
+              }
+              """,
+              """
+              class Example {
+                  void test(Object o, Object p) {
+                      if (!(o instanceof String) || !(p instanceof Integer)) {
+                          return;
+                      } else {
+                          String s = (String) o;
+                          Integer i = (Integer) p;
+                          System.out.println(s + i);
+                      }
+                  }
+              }
+              """
+            ),
+            14));
+    }
+
+    @Test
+    void fieldWithPatternVariableName() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              class Example {
+                  String s;
+
+                  void test(Object o, Example other) {
+                      if (o instanceof String s) {
+                          System.out.println(s);
+                      }
+                      System.out.println(other.s);
+                  }
+              }
+              """,
+              """
+              class Example {
+                  String s;
+
+                  void test(Object o, Example other) {
+                      if (o instanceof String) {
+                          String s = (String) o;
+                          System.out.println(s);
+                      }
+                      System.out.println(other.s);
+                  }
+              }
+              """
+            ),
             14));
     }
 

@@ -41,7 +41,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
     final String displayName = "Remove Java 14's `instanceof` pattern matching";
 
     @Getter
-    final String description = "Adds an explicit variable declaration at the beginning of the `if` statement instead of `instanceof` pattern matching.";
+    final String description = "Adds an explicit variable declaration at the beginning of the `if` statement instead of `instanceof` pattern matching. A record pattern, or a pattern whose variable is used outside the `if` statement or ternary that tests it, is left unchanged.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
@@ -78,9 +78,13 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
 
         @Override
         public J visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+            // this recipe declares only a plain pattern variable, so a record pattern stays
+            if (!(instanceOf.getPattern() instanceof J.Identifier) || variableUsage.kept.contains(instanceOf)) {
+                return super.visitInstanceOf(instanceOf, ctx);
+            }
             J.InstanceOf i = instanceOf.withPattern(null);
             // before Java 16 the type in an `instanceof` must be reifiable, which `List<?>` is and `List<T>` is not
-            if (instanceOf.getPattern() != null && i.getClazz() instanceof J.ParameterizedType) {
+            if (i.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType type = (J.ParameterizedType) i.getClazz();
                 JavaType.Parameterized parameterized = TypeUtils.asParameterized(type.getType());
                 i = i.withClazz(type
@@ -153,8 +157,9 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                         J.InstanceOf instanceOf = iter.next();
                         if (elseInstanceOfs.contains(instanceOf)) {
                             Cursor blockCursor = new Cursor(new Cursor(getCursor(), elsePart), elsePart.getBody());
-                            result = result.withElsePart(elsePart.withBody(
-                                    addVariableDeclaration(blockCursor, instanceOf, ctx)));
+                            elsePart = elsePart.withBody(addVariableDeclaration(blockCursor, instanceOf, ctx));
+                            result = result.withElsePart(elsePart);
+                            updateCursor(result);
                         }
                     }
                 }
@@ -249,6 +254,9 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
 
         public Map<J.If.Else, Set<J.InstanceOf>> elseParts = new HashMap<>();
 
+        // patterns whose variable has a use this recipe can't rewrite, left as they are
+        public Set<J.InstanceOf> kept = new HashSet<>();
+
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -264,14 +272,24 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             VariableUsageAnalyzer collector = new VariableUsageAnalyzer();
             collector.visit(tree, tree);
             collector.currentScope.clear();
-            return collector.variableUsage;
+            VariableUsage usage = collector.variableUsage;
+            usage.conditions.values().removeAll(usage.kept);
+            for (Map<?, Set<J.InstanceOf>> branchUses : Arrays.asList(usage.thenParts, usage.elseParts)) {
+                branchUses.values().removeIf(instanceOfs -> {
+                    instanceOfs.removeAll(usage.kept);
+                    return instanceOfs.isEmpty();
+                });
+            }
+            return usage;
         }
 
         @Override
         public J.If visitIf(J.If iff, J contextTree) {
+            // only a pattern in the condition gets its variable declared at the top of a branch
+            J.If.Else elsePart = iff.getElsePart();
             return iff.withIfCondition(visitAndCast(iff.getIfCondition(), iff))
-                    .withThenPart(Objects.requireNonNull(visitAndCast(iff.getThenPart(), iff)))
-                    .withElsePart(visitAndCast(iff.getElsePart(), iff));
+                    .withThenPart(Objects.requireNonNull(visitAndCast(iff.getThenPart(), iff.getThenPart())))
+                    .withElsePart(elsePart == null ? null : visitAndCast(elsePart, elsePart));
         }
 
         @Override
@@ -307,10 +325,12 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
         @Override
         public J.Identifier visitIdentifier(J.Identifier identifier, J contextTree) {
             J.InstanceOf instanceOf = currentScope.get(identifier.getSimpleName());
-            if (instanceOf != null) {
+            if (instanceOf != null && TypeUtils.isOfType(identifier.getFieldType(),
+                    ((J.Identifier) instanceOf.getPattern()).getFieldType())) {
                 J parentTree = parentTrees.get(instanceOf);
                 switch (getUsageContext(parentTree)) {
                     case NONE:
+                        variableUsage.kept.add(instanceOf);
                         break;
                     case CONDITION:
                         variableUsage.conditions.put(identifier, instanceOf);
