@@ -78,7 +78,19 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
 
         @Override
         public J visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
-            return super.visitInstanceOf(instanceOf.withPattern(null), ctx);
+            J.InstanceOf i = instanceOf.withPattern(null);
+            // before Java 16 the type in an `instanceof` must be reifiable, which `List<?>` is and `List<T>` is not
+            if (instanceOf.getPattern() != null && i.getClazz() instanceof J.ParameterizedType) {
+                J.ParameterizedType type = (J.ParameterizedType) i.getClazz();
+                JavaType.Parameterized parameterized = TypeUtils.asParameterized(type.getType());
+                i = i.withClazz(type
+                        .withTypeParameters(ListUtils.map(type.getTypeParameters(), t ->
+                                new J.Wildcard(Tree.randomId(), t.getPrefix(), Markers.EMPTY, null, null)))
+                        .withType(parameterized == null ? type.getType() :
+                                parameterized.withTypeParameters(ListUtils.map(parameterized.getTypeParameters(), t ->
+                                        new JavaType.GenericTypeVariable(null, "?", JavaType.GenericTypeVariable.Variance.INVARIANT, emptyList())))));
+            }
+            return super.visitInstanceOf(i, ctx);
         }
 
         @Override

@@ -219,7 +219,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
 
               class Example {
                   public void test(Collection<String> collection) {
-                      if (collection instanceof List<String>) {
+                      if (collection instanceof List<?>) {
                           List<String> list = (List<String>) collection;
                           System.out.println(list.size());
                       }
@@ -262,7 +262,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
                   }
 
                   public <T> void test(Collection<T> collection, Object obj) {
-                      if (collection instanceof List<T>) {
+                      if (collection instanceof List<?>) {
                           List<T> list = (List<T>) collection;
                           System.out.println(list.get(0));
                       }
