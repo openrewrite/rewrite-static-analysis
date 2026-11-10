@@ -20,9 +20,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.RandomizeIdVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -31,6 +32,7 @@ import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import java.time.Duration;
 import java.util.*;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 public class RemoveInstanceOfPatternMatch extends Recipe {
@@ -76,7 +78,19 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
 
         @Override
         public J visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
-            return super.visitInstanceOf(instanceOf.withPattern(null), ctx);
+            J.InstanceOf i = instanceOf.withPattern(null);
+            // before Java 16 the type in an `instanceof` must be reifiable, which `List<?>` is and `List<T>` is not
+            if (instanceOf.getPattern() != null && i.getClazz() instanceof J.ParameterizedType) {
+                J.ParameterizedType type = (J.ParameterizedType) i.getClazz();
+                JavaType.Parameterized parameterized = TypeUtils.asParameterized(type.getType());
+                i = i.withClazz(type
+                        .withTypeParameters(ListUtils.map(type.getTypeParameters(), t ->
+                                new J.Wildcard(Tree.randomId(), t.getPrefix(), Markers.EMPTY, null, null)))
+                        .withType(parameterized == null ? type.getType() :
+                                parameterized.withTypeParameters(ListUtils.map(parameterized.getTypeParameters(), t ->
+                                        new JavaType.GenericTypeVariable(null, "?", JavaType.GenericTypeVariable.Variance.INVARIANT, emptyList())))));
+            }
+            return super.visitInstanceOf(i, ctx);
         }
 
         @Override
@@ -148,9 +162,42 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             return result;
         }
 
+        /**
+         * Reuses the type tree and pattern variable of the {@code instanceof}, since types such as method type
+         * variables and nested classes resolve only in the scope the parser saw.
+         */
         private J.Block addVariableDeclaration(Cursor blockCursor, J.InstanceOf instanceOf, ExecutionContext ctx) {
             J.Block block = blockCursor.getValue();
-            String type = new JavaIsoVisitor<Integer>() {
+            J.Identifier pattern = (J.Identifier) Objects.requireNonNull(instanceOf.getPattern());
+            Expression expression = (Expression) visitNonNull(instanceOf.getExpression(), ctx);
+            J.VariableDeclarations declaration = new J.VariableDeclarations(
+                    Tree.randomId(),
+                    Space.EMPTY,
+                    Markers.EMPTY,
+                    emptyList(),
+                    emptyList(),
+                    copyOfType(instanceOf),
+                    null,
+                    singletonList(padRight(new J.VariableDeclarations.NamedVariable(
+                            Tree.randomId(),
+                            Space.SINGLE_SPACE,
+                            Markers.EMPTY,
+                            pattern.withId(Tree.randomId()).withPrefix(Space.EMPTY),
+                            emptyList(),
+                            new JLeftPadded<>(
+                                    Space.SINGLE_SPACE,
+                                    typeCast(copyOfType(instanceOf), expression.withPrefix(Space.SINGLE_SPACE)),
+                                    Markers.EMPTY),
+                            pattern.getFieldType()))));
+            return block.withStatements(ListUtils.insert(block.getStatements(),
+                    autoFormat(declaration, ctx, blockCursor), 0));
+        }
+
+        /**
+         * Flattens comments to whitespace so that a comment inside the type appears once, on the {@code instanceof}.
+         */
+        private static TypeTree copyOfType(J.InstanceOf instanceOf) {
+            return new RandomizeIdVisitor<Integer>() {
                 @Override
                 public Space visitSpace(@Nullable Space space, Space.Location loc, Integer p) {
                     if (space == null || space.getComments().isEmpty()) {
@@ -158,37 +205,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                     }
                     return Space.format(space.getWhitespace().isEmpty() ? " " : space.getWhitespace());
                 }
-            }.visitNonNull(instanceOf.getClazz(), 0).toString();
-            JavaTemplate template = JavaTemplate
-                    .builder("#{} #{} = (#{}) #{any()};")
-                    .contextSensitive()
-                    .imports(typesNamedBy(instanceOf.getClazz()))
-                    .build();
-            return template.apply(blockCursor, block.getCoordinates().firstStatement(), type,
-                    ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
-                    type,
-                    visit(instanceOf.getExpression(), ctx));
-        }
-
-        private static String[] typesNamedBy(J typeTree) {
-            return new JavaIsoVisitor<Set<String>>() {
-                @Override
-                public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, Set<String> t) {
-                    // a qualified name is found through its first part
-                    visit(fieldAccess.getTarget(), t);
-                    return fieldAccess;
-                }
-
-                @Override
-                public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> t) {
-                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(identifier.getType());
-                    if (type != null && !type.getPackageName().isEmpty() &&
-                            identifier.getSimpleName().equals(type.getClassName())) {
-                        t.add(type.getFullyQualifiedName());
-                    }
-                    return identifier;
-                }
-            }.reduce(typeTree, new LinkedHashSet<>()).toArray(new String[0]);
+            }.visitNonNull((TypeTree) instanceOf.getClazz(), 0).withPrefix(Space.EMPTY);
         }
 
         private J.TypeCast typeCast(TypeTree typeTree, Expression expression) {
