@@ -109,7 +109,13 @@ abstract class FormatSourceVisitor extends TreeVisitor<Tree, ExecutionContext> {
                         "Formatted, without types", "The file had not parsed to an LST, and parsed once formatted."));
                 return carryOver(original, reparsed);
             }
-            SourceFile reconciled = WhitespaceReconciler.reconcile(original, reparsed, formatted, this::formattingVisitor);
+            SourceFile reconciled;
+            try {
+                reconciled = WhitespaceReconciler.reconcile(original, reparsed, formatted, this::formattingVisitor);
+            } catch (RuntimeException e) {
+                // Then the formatter's output takes the file's place, which prints the same
+                reconciled = null;
+            }
             if (reconciled != null) {
                 table.insertRow(ctx, new SourceFilesFormatted.Row(original.getSourcePath().toString(), formatterName,
                         "Formatted", null));
@@ -117,14 +123,14 @@ abstract class FormatSourceVisitor extends TreeVisitor<Tree, ExecutionContext> {
             }
             table.insertRow(ctx, new SourceFilesFormatted.Row(original.getSourcePath().toString(), formatterName,
                     "Formatted, without types",
-                    "The formatter changed more than the formatting of the file."));
+                    "The formatter's output parses to a tree of another shape than the file's, so it took the file's place."));
             return carryOver(original, reparsed);
         }
 
         if (original instanceof ParseError) {
             table.insertRow(ctx, new SourceFilesFormatted.Row(original.getSourcePath().toString(), formatterName,
                     "Formatted, as plain text", "The file did not parse to an LST, so its text was formatted."));
-            return ((ParseError) original).withText(formatted);
+            return ((ParseError) original).withText(formatted).withErroneous(null);
         }
         Optional<SourceFile> text = PlainTextParser.builder().build()
                 .parseInputs(Collections.singletonList(input), null, new InMemoryExecutionContext())
