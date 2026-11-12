@@ -46,7 +46,8 @@ public class SourceFilesFormatted extends DataTable<SourceFilesFormatted.Row> {
                 description = "`Formatted` when the formatter's formatting was put onto the file's LST, which keeps its types. " +
                               "`Formatted, without types` when the formatter's output was parsed again in its place, without " +
                               "the types of the project's dependencies: this is when the two parse to trees of different " +
-                              "shapes, or when the file had not parsed before. " +
+                              "shapes, as Kotlin's parser builds a call of a constructor it cannot resolve as a method call, " +
+                              "or when the file had not parsed before. " +
                               "`Formatted, as plain text` when the formatter's output does not parse. " +
                               "`Not formatted` when the formatter rejected the file, which is then left as it was.")
         String result;

@@ -121,12 +121,14 @@ tasks.withType<JavaCompile> {
 // as the jars it runs from, under META-INF/rewrite/formatters/<name>/, and loaded at runtime into a class loader
 // of its own (see BundledFormatter). They are not dependencies of this module, so that:
 // - modules that depend on this one, and target Java 8, do not inherit libraries that need Java 17 or 21,
+// - ktfmt keeps the google-java-format 1.x it is built on while the Java recipe runs google-java-format 2.x,
 // - google-java-format and palantir-java-format can use javac's internals without `--add-exports`.
 // They are pinned, not `latest.release`, because a formatter's output changes between versions, and a recipe
 // is meant to produce what a build that pins the same version checks.
 val formatterDependencies = mapOf(
     "google-java-format" to "com.google.googlejavaformat:google-java-format:2.0.0",
     "palantir-java-format" to "com.palantir.javaformat:palantir-java-format:2.103.0",
+    "ktfmt" to "org.jetbrains.kotlinx:ktfmt:0.65",
 )
 val formatterConfigurations = formatterDependencies.mapValues { (name, coordinates) ->
     configurations.create("formatter-$name") {
@@ -140,6 +142,10 @@ val formatterConfigurations = formatterDependencies.mapValues { (name, coordinat
             attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
         }
         dependencies.add(project.dependencies.create(coordinates))
+        if (name == "ktfmt") {
+            // ktfmt runs on the Kotlin compiler that rewrite-kotlin brings, rather than a second copy of it.
+            exclude(group = "org.jetbrains.kotlin")
+        }
     }
 }
 val bundleFormatters by tasks.registering {

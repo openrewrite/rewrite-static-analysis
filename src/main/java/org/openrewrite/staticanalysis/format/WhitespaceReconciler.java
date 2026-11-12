@@ -54,7 +54,8 @@ final class WhitespaceReconciler {
 
     private static final Set<String> SYNTAX_MARKERS = new HashSet<>(Arrays.asList(
             "org.openrewrite.java.marker.Semicolon",
-            "org.openrewrite.java.marker.TrailingComma"));
+            "org.openrewrite.java.marker.TrailingComma",
+            "org.openrewrite.kotlin.marker.Semicolon"));
 
     private WhitespaceReconciler() {
     }

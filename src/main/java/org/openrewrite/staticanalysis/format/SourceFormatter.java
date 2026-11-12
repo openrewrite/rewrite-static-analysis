@@ -212,4 +212,68 @@ abstract class SourceFormatter {
             }
         });
     }
+
+    /**
+     * What Spotless' {@code KtfmtFormatterFunc} does: start from the style's options, apply any that are set, and
+     * format a {@code .kts} file as a script.
+     */
+    static SourceFormatter ktfmt(String style, Integer maxWidth, Integer blockIndent, Integer continuationIndent,
+                                 Boolean removeUnusedImports, String trailingCommaManagementStrategy) {
+        String key = "ktfmt:" + style + ':' + maxWidth + ':' + blockIndent + ':' + continuationIndent + ':' +
+                     removeUnusedImports + ':' + trailingCommaManagementStrategy;
+        return CACHE.computeIfAbsent(key, k -> new SourceFormatter(BundledFormatter.KTFMT) {
+            private volatile Object options;
+            private Method format;
+            private Method from;
+            private Object kotlinCodeCompanion;
+            private Object regular;
+            private Object scriptType;
+
+            private synchronized void init() throws ReflectiveOperationException {
+                if (options != null) {
+                    return;
+                }
+                ClassLoader cl = formatter.getClassLoader();
+                String pkg = "org.jetbrains.kotlinx.ktfmt.format.";
+                Class<?> formatterClass = cl.loadClass(pkg + "Formatter");
+                Class<?> optionsClass = cl.loadClass(pkg + "FormattingOptions");
+                Object base = formatterClass.getField(style + "_FORMAT").get(null);
+                Object builder = optionsClass.getMethod("toBuilder").invoke(base);
+                Class<?> builderClass = builder.getClass();
+                if (maxWidth != null) {
+                    builderClass.getMethod("maxWidth", int.class).invoke(builder, maxWidth);
+                }
+                if (blockIndent != null) {
+                    builderClass.getMethod("blockIndent", int.class).invoke(builder, blockIndent);
+                }
+                if (continuationIndent != null) {
+                    builderClass.getMethod("continuationIndent", int.class).invoke(builder, continuationIndent);
+                }
+                if (removeUnusedImports != null) {
+                    builderClass.getMethod("removeUnusedImports", boolean.class).invoke(builder, removeUnusedImports);
+                }
+                if (trailingCommaManagementStrategy != null) {
+                    Class<?> strategyClass = cl.loadClass(pkg + "TrailingCommaManagementStrategy");
+                    Object strategy = strategyClass.getMethod("valueOf", String.class).invoke(null, trailingCommaManagementStrategy);
+                    builderClass.getMethod("trailingCommaManagementStrategy", strategyClass).invoke(builder, strategy);
+                }
+                Object built = builderClass.getMethod("build").invoke(builder);
+                Class<?> kotlinCode = cl.loadClass(pkg + "KotlinCode");
+                Class<?> fileType = cl.loadClass(pkg + "FileType");
+                kotlinCodeCompanion = kotlinCode.getField("Companion").get(null);
+                from = kotlinCodeCompanion.getClass().getMethod("from", String.class, fileType);
+                regular = fileType.getField("REGULAR").get(null);
+                scriptType = fileType.getField("SCRIPT").get(null);
+                format = formatterClass.getMethod("format", optionsClass, kotlinCode);
+                options = built;
+            }
+
+            @Override
+            String doFormat(String source, boolean script) throws ReflectiveOperationException {
+                init();
+                Object code = from.invoke(kotlinCodeCompanion, source, script ? scriptType : regular);
+                return (String) format.invoke(null, options, code);
+            }
+        });
+    }
 }
