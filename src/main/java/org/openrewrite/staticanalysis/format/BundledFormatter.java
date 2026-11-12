@@ -55,8 +55,13 @@ enum BundledFormatter {
         return name;
     }
 
+    /**
+     * The version of the formatter that is bundled, which is known without loading it.
+     */
     String getVersion() {
-        load();
+        if (version == null) {
+            index();
+        }
         //noinspection DataFlowIssue
         return version;
     }
@@ -65,6 +70,36 @@ enum BundledFormatter {
         load();
         //noinspection DataFlowIssue
         return classLoader;
+    }
+
+    private String directory() {
+        return "META-INF/rewrite/formatters/" + name + "/";
+    }
+
+    /**
+     * Reads the index of the bundled jars, which also records the formatter's version.
+     */
+    private synchronized List<String> index() {
+        ClassLoader resources = BundledFormatter.class.getClassLoader();
+        List<String> jars = new ArrayList<>();
+        String bundledVersion = null;
+        try (InputStream index = resources.getResourceAsStream(directory() + "index.txt")) {
+            if (index == null) {
+                throw new IllegalStateException("This build of the recipe does not bundle " + name + ".");
+            }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(index, StandardCharsets.UTF_8));
+            for (String line; (line = reader.readLine()) != null; ) {
+                if (line.startsWith("version=")) {
+                    bundledVersion = line.substring("version=".length());
+                } else if (line.startsWith("jar=")) {
+                    jars.add(line.substring("jar=".length()));
+                }
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to read the index of the bundled " + name + ".", e);
+        }
+        version = bundledVersion;
+        return jars;
     }
 
     private void load() {
@@ -80,28 +115,15 @@ enum BundledFormatter {
                 throw new IllegalStateException(name + " needs Java " + minimumJavaVersion +
                                                 " or later to run, and this recipe runs on Java " + javaVersion + ".");
             }
-            String directory = "META-INF/rewrite/formatters/" + name + "/";
+            List<String> jars = index();
             ClassLoader resources = BundledFormatter.class.getClassLoader();
-            List<String> jars = new ArrayList<>();
-            String bundledVersion = null;
-            try (InputStream index = resources.getResourceAsStream(directory + "index.txt")) {
-                if (index == null) {
-                    throw new IllegalStateException("This build of the recipe does not bundle " + name + ".");
-                }
-                BufferedReader reader = new BufferedReader(new InputStreamReader(index, StandardCharsets.UTF_8));
-                for (String line; (line = reader.readLine()) != null; ) {
-                    if (line.startsWith("version=")) {
-                        bundledVersion = line.substring("version=".length());
-                    } else if (line.startsWith("jar=")) {
-                        jars.add(line.substring("jar=".length()));
-                    }
-                }
+            try {
                 Path extracted = Files.createTempDirectory("rewrite-" + name + "-");
                 extracted.toFile().deleteOnExit();
                 List<URL> urls = new ArrayList<>(jars.size());
                 for (String jar : jars) {
                     Path target = extracted.resolve(jar);
-                    try (InputStream in = resources.getResourceAsStream(directory + jar)) {
+                    try (InputStream in = resources.getResourceAsStream(directory() + jar)) {
                         if (in == null) {
                             throw new IllegalStateException("The bundled " + name + " is missing " + jar + ".");
                         }
@@ -110,7 +132,6 @@ enum BundledFormatter {
                     target.toFile().deleteOnExit();
                     urls.add(target.toUri().toURL());
                 }
-                version = bundledVersion;
                 classLoader = new FormatterClassLoader(urls.toArray(new URL[0]), resources, usesJavac);
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to load the bundled " + name + ".", e);
