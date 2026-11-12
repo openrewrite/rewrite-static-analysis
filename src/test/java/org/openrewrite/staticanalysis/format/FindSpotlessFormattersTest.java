@@ -145,17 +145,22 @@ class FindSpotlessFormattersTest implements RewriteTest {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.none()).dataTable(SpotlessFormatters.Row.class, rows -> assertThat(rows).containsExactly(
             new SpotlessFormatters.Row("build.gradle.kts", "Gradle", "kotlin", "ktfmt", "0.65",
-              "maxWidth=120, style=KOTLINLANG", "0.65", true, null))),
+              "maxWidth=120, style=KOTLINLANG", "0.65", true, null),
+            new SpotlessFormatters.Row("build.gradle.kts", "Gradle", "kotlinGradle", "ktfmt", "libs.ktfmt.get().version",
+              "style=GOOGLE", "0.65", false, null))),
           kotlin(
             """
               spotless {
                   kotlin {
                       ktfmt("0.65").kotlinlangStyle().configure { it.setMaxWidth(120) }
                   }
+                  kotlinGradle {
+                      ktfmt(libs.ktfmt.get().version).googleStyle()
+                  }
               }
               """,
             spec -> spec.path("build.gradle.kts").after(actual -> {
-                assertThat(actual).startsWith("/*~~(kotlin: ktfmt 0.65)~~>*/");
+                assertThat(actual).startsWith("/*~~(kotlin: ktfmt 0.65, kotlinGradle: ktfmt libs.ktfmt.get().version)~~>*/");
                 return actual;
             })
           )

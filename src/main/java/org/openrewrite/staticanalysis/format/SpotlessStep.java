@@ -260,10 +260,9 @@ class SpotlessStep {
                 String version = null;
                 List<Expression> args = m.getArguments();
                 if (!args.isEmpty() && !(args.get(0) instanceof J.Empty)) {
-                    version = literal(args.get(0));
-                    if (version == null) {
-                        version = args.get(0).printTrimmed(getCursor());
-                    }
+                    // A version from elsewhere, such as libs.ktfmt.get().version, is kept as it is written
+                    Expression arg = args.get(0);
+                    version = arg instanceof J.Literal ? literal(arg) : arg.printTrimmed(getCursor());
                 }
                 Map<String, String> options = new TreeMap<>();
                 // The chained calls that configure the step, such as .style("AOSP") or .googleStyle()
