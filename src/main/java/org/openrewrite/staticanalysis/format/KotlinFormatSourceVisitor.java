@@ -31,8 +31,6 @@ import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.staticanalysis.table.SourceFilesFormatted;
 import org.openrewrite.tree.ParseError;
 
-import java.util.Collections;
-
 class KotlinFormatSourceVisitor extends FormatSourceVisitor {
 
     private final boolean formatScripts;
@@ -49,12 +47,11 @@ class KotlinFormatSourceVisitor extends FormatSourceVisitor {
                (formatScripts || !path.endsWith(".kts"));
     }
 
+    private static final ParserPool PARSERS = new ParserPool(() -> KotlinParser.builder().build());
+
     @Override
     @Nullable SourceFile parse(SourceFile original, Parser.Input input, ExecutionContext ctx) {
-        return KotlinParser.builder().build()
-                .parseInputs(Collections.singletonList(input), null, ctx)
-                .findFirst()
-                .orElse(null);
+        return PARSERS.parse(input, ctx);
     }
 
     @Override
