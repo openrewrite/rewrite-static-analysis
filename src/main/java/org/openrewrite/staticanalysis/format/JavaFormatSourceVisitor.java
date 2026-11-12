@@ -38,7 +38,11 @@ class JavaFormatSourceVisitor extends FormatSourceVisitor {
                sourceFile instanceof ParseError && sourceFile.getSourcePath().toString().endsWith(".java");
     }
 
-    private static final ParserPool PARSERS = new ParserPool(() -> JavaParser.fromJavaVersion().build());
+    /**
+     * The formatter's output is parsed only for its shape, so without type attribution, which besides being
+     * slower can run for many minutes on a deeply nested expression when the parser has no class path.
+     */
+    private static final ParserPool PARSERS = new ParserPool(() -> JavaParser.fromJavaVersion().typeAttribution(false).build());
 
     @Override
     @Nullable SourceFile parse(SourceFile original, Parser.Input input, ExecutionContext ctx) {
