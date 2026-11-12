@@ -262,7 +262,7 @@ class SpotlessStep {
                 if (!args.isEmpty() && !(args.get(0) instanceof J.Empty)) {
                     // A version from elsewhere, such as libs.ktfmt.get().version, is kept as it is written
                     Expression arg = args.get(0);
-                    version = arg instanceof J.Literal ? literal(arg) : arg.printTrimmed(getCursor());
+                    version = arg instanceof J.Literal ? literal(arg) : oneLine(arg.printTrimmed(getCursor()));
                 }
                 Map<String, String> options = new TreeMap<>();
                 // The chained calls that configure the step, such as .style("AOSP") or .googleStyle()
@@ -362,6 +362,14 @@ class SpotlessStep {
             default:
                 options.put(name, arg == null ? "" : arg);
         }
+    }
+
+    /**
+     * An expression on one line, as {@code versionCatalogs.named("libs").findVersion("ktfmt")}, since a chain of
+     * calls is often written over several.
+     */
+    private static String oneLine(String expression) {
+        return expression.replaceAll("\\s*\\R\\s*", "").replaceAll("\\s+", " ");
     }
 
     /**

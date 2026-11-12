@@ -23,6 +23,7 @@ import org.openrewrite.maven.tree.MavenResolutionResult;
 import org.openrewrite.staticanalysis.table.SpotlessFormatters;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class FindSpotlessFormatters extends Recipe {
@@ -59,7 +60,7 @@ public class FindSpotlessFormatters extends Recipe {
                             step.getLanguage(),
                             step.getFormatter(),
                             step.getVersion(),
-                            step.getOptions().toString().replaceAll("^\\{|}$", ""),
+                            options(step),
                             bundled,
                             bundled != null && bundled.equals(step.getVersion()),
                             step.unsupportedReason()));
@@ -67,6 +68,21 @@ public class FindSpotlessFormatters extends Recipe {
                 return steps.isEmpty() ? tree : SearchResult.found(tree, describe(steps));
             }
         };
+    }
+
+    /**
+     * The options as {@code name=value} pairs separated by semicolons, which, unlike commas, leave the data
+     * table's CSV without quoted fields.
+     */
+    private static String options(SpotlessStep step) {
+        StringBuilder s = new StringBuilder();
+        for (Map.Entry<String, String> option : step.getOptions().entrySet()) {
+            if (s.length() > 0) {
+                s.append("; ");
+            }
+            s.append(option.getKey()).append('=').append(option.getValue());
+        }
+        return s.toString();
     }
 
     private static String describe(List<SpotlessStep> steps) {

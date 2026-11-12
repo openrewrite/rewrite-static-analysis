@@ -122,7 +122,7 @@ class FindSpotlessFormattersTest implements RewriteTest {
         rewriteRun(
           spec -> spec.dataTable(SpotlessFormatters.Row.class, rows -> assertThat(rows).containsExactly(
             new SpotlessFormatters.Row("build.gradle", "Gradle", "java", "googleJavaFormat", "1.17.0",
-              "reflowLongStrings=true, style=AOSP", "2.0.0", false, null))),
+              "reflowLongStrings=true; style=AOSP", "2.0.0", false, null))),
           groovy(
             """
               spotless {
@@ -145,7 +145,7 @@ class FindSpotlessFormattersTest implements RewriteTest {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.none()).dataTable(SpotlessFormatters.Row.class, rows -> assertThat(rows).containsExactly(
             new SpotlessFormatters.Row("build.gradle.kts", "Gradle", "kotlin", "ktfmt", "0.65",
-              "maxWidth=120, style=KOTLINLANG", "0.65", true, null),
+              "maxWidth=120; style=KOTLINLANG", "0.65", true, null),
             new SpotlessFormatters.Row("build.gradle.kts", "Gradle", "kotlinGradle", "ktfmt", "libs.ktfmt.get().version",
               "style=GOOGLE", "0.65", false, null))),
           kotlin(
@@ -181,6 +181,27 @@ class FindSpotlessFormattersTest implements RewriteTest {
               }
               """,
             spec -> spec.path("build.gradle.kts").after(actual -> actual)
+          )
+        );
+    }
+
+    @Test
+    void versionFromAnExpressionOverSeveralLines() {
+        rewriteRun(
+          spec -> spec.dataTable(SpotlessFormatters.Row.class, rows -> assertThat(rows).singleElement()
+            .extracting(SpotlessFormatters.Row::getVersion)
+            .isEqualTo("versionCatalogs.named('libs').findVersion('gjf').get().requiredVersion")),
+          groovy(
+            """
+              spotless {
+                  java {
+                      googleJavaFormat(versionCatalogs
+                          .named('libs')
+                          .findVersion('gjf').get().requiredVersion)
+                  }
+              }
+              """,
+            spec -> spec.path("build.gradle").after(actual -> actual)
           )
         );
     }

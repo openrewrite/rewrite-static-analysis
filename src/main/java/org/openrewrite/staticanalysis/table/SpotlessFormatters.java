@@ -56,7 +56,7 @@ public class SpotlessFormatters extends DataTable<SpotlessFormatters.Row> {
         String version;
 
         @Column(displayName = "Options",
-                description = "The step's options, such as `style=AOSP`.")
+                description = "The step's options, such as `style=AOSP; reflowLongStrings=true`.")
         String options;
 
         @Column(displayName = "Bundled version",
