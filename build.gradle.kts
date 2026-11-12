@@ -29,6 +29,7 @@ dependencies {
     implementation("org.openrewrite:rewrite-java")
     implementation("org.apache.commons:commons-text:latest.release")
 
+
     // Limit transitive dependencies for downstream projects like rewrite-spring
     provided("org.openrewrite:rewrite-groovy:${rewriteVersion}")
     provided("org.openrewrite:rewrite-javascript:${rewriteVersion}")
@@ -115,4 +116,58 @@ tasks.withType<Test> {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
+}
+
+// The formatters that the recipes in `org.openrewrite.staticanalysis.format` run. Each is bundled into this jar
+// as the jars it runs from, under META-INF/rewrite/formatters/<name>/, and loaded at runtime into a class loader
+// of its own (see BundledFormatter). They are not dependencies of this module, so that:
+// - modules that depend on this one, and target Java 8, do not inherit libraries that need Java 17 or 21,
+// - google-java-format and palantir-java-format can use javac's internals without `--add-exports`.
+// They are pinned, not `latest.release`, because a formatter's output changes between versions, and a recipe
+// is meant to produce what a build that pins the same version checks.
+val formatterDependencies = mapOf(
+    "google-java-format" to "com.google.googlejavaformat:google-java-format:2.0.0",
+    "palantir-java-format" to "com.palantir.javaformat:palantir-java-format:2.103.0",
+)
+val formatterConfigurations = formatterDependencies.mapValues { (name, coordinates) ->
+    configurations.create("formatter-$name") {
+        isCanBeConsumed = false
+        isCanBeResolved = true
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+            attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+            attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+        }
+        dependencies.add(project.dependencies.create(coordinates))
+    }
+}
+val bundleFormatters by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/formatters")
+    val jars = formatterConfigurations.mapValues { (_, configuration) -> configuration.incoming.artifacts.resolvedArtifacts }
+    inputs.files(formatterConfigurations.values)
+    inputs.property("coordinates", formatterDependencies)
+    outputs.dir(outputDir)
+    doLast {
+        val root = outputDir.get().asFile
+        root.deleteRecursively()
+        jars.forEach { (name, artifacts) ->
+            val dir = root.resolve("META-INF/rewrite/formatters/$name")
+            dir.mkdirs()
+            val index = StringBuilder("# The jars ").append(name).append(" runs from, in class path order\n")
+            index.append("version=").append(formatterDependencies.getValue(name).substringAfterLast(':')).append('\n')
+            artifacts.get().forEach { artifact ->
+                artifact.file.copyTo(dir.resolve(artifact.file.name), overwrite = true)
+                index.append("jar=").append(artifact.file.name).append('\n')
+            }
+            dir.resolve("index.txt").writeText(index.toString())
+        }
+    }
+}
+sourceSets.named("main") {
+    resources.srcDir(bundleFormatters)
+}
+tasks.named<Jar>("sourcesJar") {
+    exclude("META-INF/rewrite/formatters/**")
 }
