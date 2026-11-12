@@ -25,8 +25,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.table.SourceFilesFormatted;
 import org.openrewrite.tree.ParseError;
 
-import java.util.Collections;
-
 class JavaFormatSourceVisitor extends FormatSourceVisitor {
 
     JavaFormatSourceVisitor(SourceFormatter formatter, SourceFilesFormatted table) {
@@ -40,12 +38,11 @@ class JavaFormatSourceVisitor extends FormatSourceVisitor {
                sourceFile instanceof ParseError && sourceFile.getSourcePath().toString().endsWith(".java");
     }
 
+    private static final ParserPool PARSERS = new ParserPool(() -> JavaParser.fromJavaVersion().build());
+
     @Override
     @Nullable SourceFile parse(SourceFile original, Parser.Input input, ExecutionContext ctx) {
-        return JavaParser.fromJavaVersion().build()
-                .parseInputs(Collections.singletonList(input), null, ctx)
-                .findFirst()
-                .orElse(null);
+        return PARSERS.parse(input, ctx);
     }
 
     @Override
