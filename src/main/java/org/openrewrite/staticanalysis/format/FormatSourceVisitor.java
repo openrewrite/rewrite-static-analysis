@@ -102,6 +102,11 @@ abstract class FormatSourceVisitor extends TreeVisitor<Tree, ExecutionContext> {
         } catch (Throwable t) {
             parseFailure = ExceptionUtils.sanitizeStackTrace(t, FormatSourceVisitor.class);
         }
+        if (reparsed instanceof ParseError) {
+            parseFailure = reparsed.getMarkers().findFirst(ParseExceptionResult.class)
+                    .map(e -> "The formatter's output did not parse: " + e.getMessage())
+                    .orElse(null);
+        }
         if (reparsed != null && !(reparsed instanceof ParseError) &&
             formatted.equals(reparsed.printAll(new PrintOutputCapture<>(0, PrintOutputCapture.MarkerPrinter.SANITIZED)))) {
             if (original instanceof ParseError) {

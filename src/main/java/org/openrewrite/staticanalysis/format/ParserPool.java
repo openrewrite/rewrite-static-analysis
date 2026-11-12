@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Parser;
 import org.openrewrite.SourceFile;
+import org.openrewrite.tree.ParseError;
 
 import java.util.Collections;
 import java.util.Deque;
@@ -41,19 +42,31 @@ final class ParserPool {
         this.factory = factory;
     }
 
+    /**
+     * Parses the input with a pooled parser. When that gives a {@link ParseError}, the parser is dropped, since a
+     * failure may have left it in a bad state, and the input is parsed once more with a new one.
+     */
     @Nullable
     SourceFile parse(Parser.Input input, ExecutionContext ctx) {
         Pooled pooled = pool.pollFirst();
         if (pooled == null) {
-            pooled = new Pooled(factory.get());
+            return parse(new Pooled(factory.get()), input, ctx);
         }
+        SourceFile parsed = parse(pooled, input, ctx);
+        if (parsed instanceof ParseError) {
+            parsed = parse(new Pooled(factory.get()), input, ctx);
+        }
+        return parsed;
+    }
+
+    private @Nullable SourceFile parse(Pooled pooled, Parser.Input input, ExecutionContext ctx) {
         boolean reusable = false;
         try {
             pooled.parser.reset();
             SourceFile parsed = pooled.parser.parseInputs(Collections.singletonList(input), null, ctx)
                     .findFirst()
                     .orElse(null);
-            reusable = true;
+            reusable = !(parsed instanceof ParseError);
             return parsed;
         } finally {
             if (reusable && ++pooled.uses < MAX_USES && pool.size() < MAX_POOLED) {
