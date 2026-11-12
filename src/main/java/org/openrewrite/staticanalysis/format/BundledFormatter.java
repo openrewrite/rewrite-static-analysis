@@ -35,7 +35,8 @@ import java.util.List;
  */
 enum BundledFormatter {
     GOOGLE_JAVA_FORMAT("google-java-format", 21, true),
-    PALANTIR_JAVA_FORMAT("palantir-java-format", 11, true);
+    PALANTIR_JAVA_FORMAT("palantir-java-format", 11, true),
+    KTFMT("ktfmt", 17, false);
 
     private final String name;
     private final int minimumJavaVersion;

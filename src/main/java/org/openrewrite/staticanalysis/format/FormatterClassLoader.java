@@ -27,7 +27,8 @@ import java.util.List;
 /**
  * The class loader a {@link BundledFormatter} runs in. It looks for every class in the formatter's own jars before
  * anywhere else, so that the formatter runs against the libraries it was released with, whatever the recipe's own
- * class path holds. What the jars don't have comes from the recipe's class loader.
+ * class path holds. What the jars don't have comes from the recipe's class loader, which is how ktfmt reaches the
+ * Kotlin compiler that rewrite-kotlin brings.
  * <p>
  * google-java-format and palantir-java-format parse with javac's internal API, which the JDK keeps in packages that
  * {@code jdk.compiler} does not export, so they fail with an {@link IllegalAccessError} unless the JVM was started
