@@ -616,7 +616,8 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void doNotRemoveCatchWhenTryBodyHasUnresolvedInvocation() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input deliberately contains code that does not resolve, so parts of it have no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
           //language=java
           java(
             """
@@ -720,7 +721,8 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void doNotRemoveCatchWhenCalleeThrowsUnresolvedType() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input refers to `Unresolved`, which is not on the classpath, so it has no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
           //language=java
           java(
             """

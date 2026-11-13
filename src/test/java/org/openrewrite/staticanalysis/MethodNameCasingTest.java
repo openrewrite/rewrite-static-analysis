@@ -28,6 +28,7 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.MethodNameCasing.MethodNameChange;
+import org.openrewrite.test.RecipeQualityValidation;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
@@ -594,7 +595,8 @@ class MethodNameCasingTest implements RewriteTest {
     void doesNotRenameMethodInvocationsWhenTheMethodDeclarationsClassTypeIsNull() {
         rewriteRun(
           spec -> spec
-            .typeValidationOptions(TypeValidation.none())
+            // The test recipe below sets the class declaration's type to null on purpose.
+            .recipeQualityValidation(RecipeQualityValidation.all().types(TypeValidation.all().classDeclarations(false)))
             .recipes(
               toRecipe(() -> new JavaIsoVisitor<>() {
                   @Override
@@ -738,7 +740,8 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void unknownParameterTypes() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input refers to `Unknown`, which is not on the classpath, so it has no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
           srcMainJava(
             //language=java
             java(
