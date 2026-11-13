@@ -30,7 +30,6 @@ import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -39,6 +38,18 @@ import static java.util.Collections.singleton;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class UsePortableNewlines extends Recipe {
+
+    private static final String PORTABLE_NEWLINE = "%n";
+    private static final String TEXT_BLOCK_DELIMITER = "\"\"\"";
+    private static final String STRING_DELIMITER = "\"";
+    private static final int UNICODE_ESCAPE_HEX_DIGITS = 4;
+    private static final int HEX_RADIX = 16;
+    private static final int OCTAL_RADIX = 8;
+    private static final char BACKSLASH = '\\';
+    private static final char UNICODE_ESCAPE_MARKER = 'u';
+    private static final char NEWLINE_ESCAPE_LETTER = 'n';
+    private static final char LINE_FEED = '\n';
+    private static final char CARRIAGE_RETURN = '\r';
 
     private static final MethodMatcher STRING_FORMATTED = new MethodMatcher("java.lang.String formatted(..)");
 
@@ -95,59 +106,120 @@ public class UsePortableNewlines extends Recipe {
         }
         J.Literal literal = (J.Literal) maybeLiteral;
         String source = literal.getValueSource();
-        if (!(literal.getValue() instanceof String) || source == null || !source.contains("\\n")) {
+        if (!(literal.getValue() instanceof String) || source == null) {
             return literal;
         }
         String value = (String) literal.getValue();
         // An explicit \r\n is a deliberate line ending (HTTP, SMTP, CSV), %n would change it on every platform
-        if (value.indexOf('\r') >= 0) {
+        if (value.indexOf(CARRIAGE_RETURN) >= 0) {
             return literal;
         }
 
-        // Every '\n' in the value comes, in order, from either a \n escape or a raw text block line break
-        StringBuilder newSource = new StringBuilder(source.length());
-        List<Boolean> replacedNewlines = new ArrayList<>();
-        boolean textBlockOpeningLine = source.startsWith("\"\"\"");
-        for (int i = 0; i < source.length(); i++) {
-            char c = source.charAt(i);
-            if (c == '\\' && i + 1 < source.length()) {
-                char escaped = source.charAt(++i);
-                if (escaped == 'n') {
-                    newSource.append("%n");
-                    replacedNewlines.add(true);
-                    continue;
+        StringBuilder translatedSource = new StringBuilder(source.length());
+        List<Integer> rawStarts = new ArrayList<>();
+        List<Integer> rawEnds = new ArrayList<>();
+        int translatedBackslashes = 0;
+        for (int i = 0; i < source.length();) {
+            int rawStart = i;
+            char translated = source.charAt(i++);
+            if (translated == BACKSLASH) {
+                int hexStart = i;
+                while (hexStart < source.length() && source.charAt(hexStart) == UNICODE_ESCAPE_MARKER) {
+                    hexStart++;
                 }
-                newSource.append(c).append(escaped);
-                if (escaped == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
-                    newSource.append(source.charAt(++i));
+                // JLS 3.3: a backslash starts a Unicode escape only when preceded by an even number of backslashes
+                if (translatedBackslashes % 2 == 0 && hexStart > i && hexStart + UNICODE_ESCAPE_HEX_DIGITS <= source.length()) {
+                    try {
+                        translated = (char) Integer.parseInt(source.substring(hexStart, hexStart + UNICODE_ESCAPE_HEX_DIGITS), HEX_RADIX);
+                        i = hexStart + UNICODE_ESCAPE_HEX_DIGITS;
+                    } catch (NumberFormatException ignored) {
+                        // Keep the raw backslash; an invalid Unicode escape is not valid Java source.
+                    }
                 }
+            }
+            translatedSource.append(translated);
+            translatedBackslashes = translated == BACKSLASH ? translatedBackslashes + 1 : 0;
+            rawStarts.add(rawStart);
+            rawEnds.add(i);
+        }
+
+        List<int[]> replacements = new ArrayList<>();
+        List<Integer> replacedNewlines = new ArrayList<>();
+        boolean textBlock = translatedSource.toString().startsWith(TEXT_BLOCK_DELIMITER);
+        boolean openingTextBlockLine = textBlock;
+        int newlineIndex = 0;
+        int consecutiveBackslashes = 0;
+        for (int i = (textBlock ? TEXT_BLOCK_DELIMITER : STRING_DELIMITER).length(); i < translatedSource.length(); i++) {
+            char current = translatedSource.charAt(i);
+            if (current == BACKSLASH) {
+                consecutiveBackslashes++;
                 continue;
             }
-            newSource.append(c);
-            if (c == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
-                newSource.append(source.charAt(++i));
-            }
-            if (c == '\r' || c == '\n') {
-                if (textBlockOpeningLine) {
-                    textBlockOpeningLine = false;
-                } else {
-                    replacedNewlines.add(false);
+            // An odd run of preceding backslashes means the current character is escaped
+            boolean escaped = consecutiveBackslashes % 2 == 1;
+            if (current == NEWLINE_ESCAPE_LETTER && escaped) {
+                replacements.add(new int[]{rawStarts.get(i - 1), rawEnds.get(i)});
+                replacedNewlines.add(newlineIndex++);
+            } else if (escaped && isOctalDigit(current)) {
+                int octal = current - '0';
+                int maxDigits = maxOctalEscapeDigits(current);
+                int digits = 1;
+                while (digits < maxDigits && i + 1 < translatedSource.length()) {
+                    char next = translatedSource.charAt(i + 1);
+                    if (!isOctalDigit(next)) {
+                        break;
+                    }
+                    octal = octal * OCTAL_RADIX + next - '0';
+                    digits++;
+                    i++;
+                }
+                if (octal == LINE_FEED) {
+                    newlineIndex++;
+                }
+            } else if (textBlock && (current == LINE_FEED || current == CARRIAGE_RETURN)) {
+                boolean crlf = current == CARRIAGE_RETURN && i + 1 < translatedSource.length() &&
+                        translatedSource.charAt(i + 1) == LINE_FEED;
+                if (openingTextBlockLine) {
+                    openingTextBlockLine = false;
+                } else if (!escaped) {
+                    // An escaped line terminator is a text-block continuation, which produces no newline
+                    newlineIndex++;
+                }
+                if (crlf) {
+                    i++;
                 }
             }
+            consecutiveBackslashes = 0;
         }
-        if (!replacedNewlines.contains(true) || value.chars().filter(ch -> ch == '\n').count() != replacedNewlines.size()) {
+        // A newline count that disagrees with the value means the parse missed a newline source, so value and source could drift
+        if (replacedNewlines.isEmpty() || value.chars().filter(ch -> ch == LINE_FEED).count() != newlineIndex) {
             return literal;
         }
 
-        StringBuilder newValue = new StringBuilder(value.length());
-        Iterator<Boolean> replaced = replacedNewlines.iterator();
-        for (char c : value.toCharArray()) {
-            if (c == '\n' && replaced.next()) {
-                newValue.append("%n");
+        StringBuilder transformedSource = new StringBuilder(source);
+        for (int i = replacements.size() - 1; i >= 0; i--) {
+            int[] replacement = replacements.get(i);
+            transformedSource.replace(replacement[0], replacement[1], PORTABLE_NEWLINE);
+        }
+        StringBuilder transformedValue = new StringBuilder(value.length());
+        newlineIndex = 0;
+        for (int i = 0; i < value.length(); i++) {
+            char current = value.charAt(i);
+            if (current == LINE_FEED && replacedNewlines.contains(newlineIndex++)) {
+                transformedValue.append(PORTABLE_NEWLINE);
             } else {
-                newValue.append(c);
+                transformedValue.append(current);
             }
         }
-        return literal.withValue(newValue.toString()).withValueSource(newSource.toString());
+        return literal.withValue(transformedValue.toString()).withValueSource(transformedSource.toString());
+    }
+
+    private static boolean isOctalDigit(char c) {
+        return '0' <= c && c <= '7';
+    }
+
+    // JLS 3.10.6: octal escapes are at most \377, so a third digit is only allowed after a leading 0-3
+    private static int maxOctalEscapeDigits(char firstOctalDigit) {
+        return firstOctalDigit <= '3' ? 3 : 2;
     }
 }
