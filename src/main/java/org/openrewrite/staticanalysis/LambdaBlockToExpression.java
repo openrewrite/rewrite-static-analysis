@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -48,39 +50,70 @@ public class LambdaBlockToExpression extends Recipe {
                     @Override
                     public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
                         J.Lambda l = super.visitLambda(lambda, ctx);
-                        if (lambda.getBody() instanceof J.Block) {
-                            List<Statement> statements = ((J.Block) lambda.getBody()).getStatements();
-                            if (statements.size() == 1) {
-                                Statement statement = statements.get(0);
-                                Space prefix = statement.getPrefix();
-                                if (statement instanceof J.Return) {
-                                    Expression expression = ((J.Return) statement).getExpression();
-                                    if (expression != null) {
-                                        return l.withBody(prefix.getComments().isEmpty() ? expression : expression.withPrefix(prefix));
-                                    }
-                                } else if (statement instanceof J.MethodInvocation) {
-                                    return l.withBody(statement);
+                        if (!(l.getBody() instanceof J.Block) || isArgumentOfAmbiguousOverload(getCursor())) {
+                            return l;
+                        }
+                        List<Statement> statements = ((J.Block) l.getBody()).getStatements();
+                        if (statements.size() == 1) {
+                            Statement statement = statements.get(0);
+                            Space prefix = statement.getPrefix();
+                            if (statement instanceof J.Return) {
+                                Expression expression = ((J.Return) statement).getExpression();
+                                if (expression != null) {
+                                    return l.withBody(prefix.getComments().isEmpty() ? expression : expression.withPrefix(prefix));
                                 }
+                            } else if (statement instanceof J.MethodInvocation) {
+                                return l.withBody(statement);
                             }
                         }
                         return l;
-                    }
-
-                    @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        if (hasLambdaArgument(method) && hasMethodOverloading(method)) {
-                            return method;
-                        }
-                        return super.visitMethodInvocation(method, ctx);
                     }
                 }
         );
     }
 
-    // Check whether a method has overloading methods in the declaring class
-    private static boolean hasMethodOverloading(J.MethodInvocation method) {
-        JavaType.Method methodType = method.getMethodType();
-        return methodType != null && hasMethodOverloading(methodType);
+    /**
+     * An expression lambda can be both void- and value-compatible where the block it replaces was only one of the two,
+     * so it may no longer pick a single overload among those that take different functional interfaces.
+     */
+    private static boolean isArgumentOfAmbiguousOverload(Cursor cursor) {
+        Object argument = cursor.getValue();
+        Cursor parent = cursor.getParentTreeCursor();
+        while (parent.getValue() instanceof J.Parentheses || parent.getValue() instanceof J.Ternary) {
+            argument = parent.getValue();
+            parent = parent.getParentTreeCursor();
+        }
+        if (!(parent.getValue() instanceof MethodCall)) {
+            return false;
+        }
+        MethodCall call = parent.getValue();
+        JavaType.Method methodType = call.getMethodType();
+        int index = call.getArguments().indexOf(argument);
+        if (methodType == null || index < 0) {
+            return false;
+        }
+        String target = interfaceAt(methodType, index);
+        for (JavaType.Method overload : methodType.getDeclaringType().getMethods()) {
+            if (overload.getName().equals(methodType.getName()) &&
+                overload.getParameterTypes().size() == methodType.getParameterTypes().size()) {
+                String other = interfaceAt(overload, index);
+                if (other != null && !other.equals(target)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static @Nullable String interfaceAt(JavaType.Method method, int index) {
+        List<JavaType> parameterTypes = method.getParameterTypes();
+        if (parameterTypes.isEmpty()) {
+            return null;
+        }
+        JavaType parameterType = parameterTypes.get(Math.min(index, parameterTypes.size() - 1));
+        JavaType.Array array = TypeUtils.asArray(parameterType);
+        JavaType.FullyQualified fq = TypeUtils.asFullyQualified(array == null ? parameterType : array.getElemType());
+        return fq != null && fq.getKind() == JavaType.FullyQualified.Kind.Interface ? fq.getFullyQualifiedName() : null;
     }
 
     // TODO this is actually more complex in the presence of generics and inheritance
@@ -103,16 +136,5 @@ public class LambdaBlockToExpression extends Recipe {
                     return false;
                 })
                 .orElse(false);
-    }
-
-    private static boolean hasLambdaArgument(J.MethodInvocation method) {
-        boolean hasLambdaArgument = false;
-        for (Expression arg : method.getArguments()) {
-            if (arg instanceof J.Lambda) {
-                hasLambdaArgument = true;
-                break;
-            }
-        }
-        return hasLambdaArgument;
     }
 }

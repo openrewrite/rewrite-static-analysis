@@ -114,6 +114,117 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
+    @Test
+    void simplifyLambdaNestedInArgumentOfAmbiguousMethod() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Function;
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(Consumer<Integer> consumer) {}
+                  void aMethod(Function<Integer,String> function) {}
+              }
+              """
+          ),
+          java(
+            """
+              import java.util.Optional;
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(value -> {
+                          return Optional.of(value).map(v -> {
+                              return v.toString();
+                          }).get();
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(value -> {
+                          return Optional.of(value).map(v -> v.toString()).get();
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaPassedToOverloadsTakingTheSameInterface() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(Consumer<String> consumer, String... strings) {}
+                  void aMethod(Consumer<String> consumer, Integer... integers) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s -> {
+                          System.out.println(s);
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s ->
+                          System.out.println(s));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaWhereOverloadTakesNoInterface() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(String before, Consumer<String> consumer) {}
+                  void aMethod(String before, String after) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod("before", s -> {
+                          System.out.println(s);
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod("before", s ->
+                          System.out.println(s));
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
     @Test
     void simplifyLambdaBlockReturningVoidAsWell2() {
