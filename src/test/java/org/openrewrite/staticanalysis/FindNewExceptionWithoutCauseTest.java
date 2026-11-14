@@ -546,11 +546,10 @@ class FindNewExceptionWithoutCauseTest implements RewriteTest {
     @Test
     void positionsAreRecordedPerSourceFile() {
         rewriteRun(
-          spec -> spec.dataTable(ExceptionsWithoutCause.Row.class, rows -> {
+          spec -> spec.dataTable(ExceptionsWithoutCause.Row.class, rows ->
               assertThat(rows)
                       .hasSize(2)
-                      .allSatisfy(row -> assertThat(row.getLineNumber()).isPositive());
-          }),
+                      .allSatisfy(row -> assertThat(row.getLineNumber()).isPositive())),
           //language=java
           java(
             """
