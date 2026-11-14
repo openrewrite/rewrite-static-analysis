@@ -58,7 +58,6 @@ public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<Executio
                         mv.getModifiers(),
                         typeExpression,
                         mv.getVarargs(),
-                        emptyList(),
                         singletonList(JRightPadded.build(nv))
                 );
                 if (i == 0) {
