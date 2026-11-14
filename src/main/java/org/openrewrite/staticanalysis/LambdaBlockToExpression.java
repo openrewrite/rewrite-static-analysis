@@ -26,9 +26,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Predicate;
 
 import static java.util.Collections.singleton;
 
@@ -71,9 +70,11 @@ public class LambdaBlockToExpression extends Recipe {
     }
 
     /// An expression lambda can be both void- and value-compatible where the block it replaces was only one of the two,
-    /// so it may no longer pick a single overload among those that take different functional interfaces.
+    /// so it may no longer pick a single overload among those whose functional interfaces take as many parameters as
+    /// the lambda, but differ in whether they return `void`.
     private static boolean isArgumentOfAmbiguousOverload(Cursor cursor) {
-        Object argument = cursor.getValue();
+        J.Lambda lambda = cursor.getValue();
+        Object argument = lambda;
         Cursor parent = cursor.getParentTreeCursor();
         while (true) {
             if (parent.getValue() instanceof J.Case || parent.getValue() instanceof J.Yield) {
@@ -104,12 +105,24 @@ public class LambdaBlockToExpression extends Recipe {
         } else if (call instanceof J.MethodInvocation && ((J.MethodInvocation) call).getSelect() != null) {
             searchFrom = TypeUtils.asFullyQualified(((J.MethodInvocation) call).getSelect().getType());
         }
+        long arity = lambda.getParameters().getParameters().stream().filter(p -> !(p instanceof J.Empty)).count();
+        JavaType.FullyQualified target = interfaceAt(methodType, index);
+        JavaType.Method targetFunction = target == null ? null : functionalMethod(target);
+        Predicate<JavaType.FullyQualified> competes = other -> {
+            if (target != null && target.getFullyQualifiedName().equals(other.getFullyQualifiedName())) {
+                return false;
+            }
+            JavaType.Method function = functionalMethod(other);
+            return function == null || function.getParameterTypes().size() == arity &&
+                    (targetFunction == null || (function.getReturnType() == JavaType.Primitive.Void) != (targetFunction.getReturnType() == JavaType.Primitive.Void));
+        };
         return declaresCompetingOverload(searchFrom == null ? methodType.getDeclaringType() : searchFrom,
-                methodType, call.getArguments().size(), index, interfaceAt(methodType, index), new HashSet<>());
+                methodType, call.getArguments().size(), index, competes, new HashSet<>());
     }
 
     private static boolean declaresCompetingOverload(JavaType.@Nullable FullyQualified type, JavaType.Method methodType,
-                                                     int argumentCount, int index, @Nullable String target, Set<String> seen) {
+                                                     int argumentCount, int index, Predicate<JavaType.FullyQualified> competes,
+                                                     Set<String> seen) {
         if (type == null || !seen.add(type.getFullyQualifiedName())) {
             return false;
         }
@@ -117,8 +130,8 @@ public class LambdaBlockToExpression extends Recipe {
             int parameterCount = overload.getParameterTypes().size();
             if (overload.getName().equals(methodType.getName()) &&
                 (parameterCount == argumentCount || overload.hasFlags(Flag.Varargs) && argumentCount >= parameterCount - 1)) {
-                String other = interfaceAt(overload, index);
-                if (other != null && !other.equals(target)) {
+                JavaType.FullyQualified other = interfaceAt(overload, index);
+                if (other != null && competes.test(other)) {
                     return true;
                 }
             }
@@ -126,18 +139,18 @@ public class LambdaBlockToExpression extends Recipe {
         if (methodType.isConstructor()) {
             return false;
         }
-        if (declaresCompetingOverload(type.getSupertype(), methodType, argumentCount, index, target, seen)) {
+        if (declaresCompetingOverload(type.getSupertype(), methodType, argumentCount, index, competes, seen)) {
             return true;
         }
         for (JavaType.FullyQualified anInterface : type.getInterfaces()) {
-            if (declaresCompetingOverload(anInterface, methodType, argumentCount, index, target, seen)) {
+            if (declaresCompetingOverload(anInterface, methodType, argumentCount, index, competes, seen)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static @Nullable String interfaceAt(JavaType.Method method, int index) {
+    private static JavaType.@Nullable FullyQualified interfaceAt(JavaType.Method method, int index) {
         List<JavaType> parameterTypes = method.getParameterTypes();
         if (parameterTypes.isEmpty()) {
             return null;
@@ -145,6 +158,25 @@ public class LambdaBlockToExpression extends Recipe {
         JavaType parameterType = parameterTypes.get(Math.min(index, parameterTypes.size() - 1));
         JavaType.Array array = TypeUtils.asArray(parameterType);
         JavaType.FullyQualified fq = TypeUtils.asFullyQualified(array == null ? parameterType : array.getElemType());
-        return fq != null && fq.getKind() == JavaType.FullyQualified.Kind.Interface ? fq.getFullyQualifiedName() : null;
+        return fq != null && fq.getKind() == JavaType.FullyQualified.Kind.Interface ? fq : null;
+    }
+
+    /// The single abstract method of a functional interface, or `null` when there isn't exactly one.
+    private static JavaType.@Nullable Method functionalMethod(JavaType.FullyQualified type) {
+        Map<String, JavaType.Method> abstractMethods = new HashMap<>();
+        Deque<JavaType.FullyQualified> types = new ArrayDeque<>(singleton(type));
+        while (!types.isEmpty()) {
+            JavaType.FullyQualified t = types.pop();
+            for (JavaType.Method method : t.getMethods()) {
+                int parameterCount = method.getParameterTypes().size();
+                boolean objectMethod = "equals".equals(method.getName()) && parameterCount == 1 ||
+                        ("hashCode".equals(method.getName()) || "toString".equals(method.getName())) && parameterCount == 0;
+                if (method.hasFlags(Flag.Abstract) && !method.hasFlags(Flag.Default) && !objectMethod) {
+                    abstractMethods.putIfAbsent(method.getName() + "/" + parameterCount, method);
+                }
+            }
+            types.addAll(t.getInterfaces());
+        }
+        return abstractMethods.size() == 1 ? abstractMethods.values().iterator().next() : null;
     }
 }

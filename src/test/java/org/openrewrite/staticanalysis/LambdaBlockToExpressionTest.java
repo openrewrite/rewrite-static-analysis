@@ -196,6 +196,78 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
+    @Test
+    void simplifyLambdaWhereOverloadTakesInterfaceOfOtherArity() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(Iterable<String>... iterables) {}
+                  void aMethod(Consumer<String> consumer, Iterable<String>... iterables) {}
+              }
+              """
+          ),
+          java(
+            """
+              import java.util.List;
+              class Test {
+                  void doTest(A a, List<String> list) {
+                      a.aMethod(s -> {
+                          System.out.println(s);
+                      }, list);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              class Test {
+                  void doTest(A a, List<String> list) {
+                      a.aMethod(s ->
+                          System.out.println(s), list);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaWhereOverloadsBothReturnValue() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Function;
+              import java.util.function.UnaryOperator;
+              class A {
+                  void aMethod(Function<String, String> function) {}
+                  void aMethod(UnaryOperator<String> operator) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s -> {
+                          return s.trim();
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s -> s.trim());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
     @Test
     void simplifyLambdaBlockReturningVoidAsWell2() {
