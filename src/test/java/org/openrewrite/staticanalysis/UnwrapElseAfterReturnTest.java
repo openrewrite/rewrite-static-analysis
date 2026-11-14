@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -492,8 +493,9 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
     @Test
-    void preserveElseIfButUnwrapFinalElseWithMissingReturn() {
+    void preserveElseIfWhenIntermediateBranchMissingReturn() {
         rewriteRun(
           java(
             """
@@ -508,20 +510,7 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       } else {
                           return Integer.MAX_VALUE;
                       }
-                  }
-              }
-              """,
-            """
-              class Test {
-                  int foo(String str) {
-                      if ("one".equals(str)) {
-                          return 1;
-                      } else if ("two".equals(str)) {
-                          System.out.println("two");
-                      } else if ("three".equals(str)) {
-                          return 3;
-                      }
-                      return Integer.MAX_VALUE;
+                      return 0;
                   }
               }
               """
@@ -796,6 +785,178 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       }
                       return 2;
                       // next line after 2
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void preserveElseIfChainWhenMiddleBranchDoesNotReturnInVoidMethod() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void foo(int n, StringBuilder log) {
+                      if (n == 1) {
+                          return;
+                      } else if (n == 2) {
+                          log.append("two");
+                      } else if (n == 3) {
+                          throw new IllegalArgumentException();
+                      } else {
+                          log.append("other");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void preserveElseIfChainWhenLaterIntermediateBranchFallsThrough() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(int n) {
+                      if (n == 1) {
+                          return 1;
+                      } else if (n == 2) {
+                          return 2;
+                      } else if (n == 3) {
+                          System.out.println("three");
+                      } else if (n == 4) {
+                          throw new IllegalStateException();
+                      } else {
+                          return -1;
+                      }
+                      return 0;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unwrapFinalElseWhenAllElseIfBranchesReturnOrThrow() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(String str) {
+                      if ("one".equals(str)) {
+                          return 1;
+                      } else if ("two".equals(str))
+                          return 2;
+                      else if ("three".equals(str)) {
+                          throw new IllegalArgumentException(str);
+                      } else {
+                          return Integer.MAX_VALUE;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(String str) {
+                      if ("one".equals(str)) {
+                          return 1;
+                      } else if ("two".equals(str))
+                          return 2;
+                      else if ("three".equals(str)) {
+                          throw new IllegalArgumentException(str);
+                      }
+                      return Integer.MAX_VALUE;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unwrapFinalElseWhenElseIfContainsNestedIfElseThatUnwrapsToReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(int n, boolean flag) {
+                      if (n == 1) {
+                          return 1;
+                      } else if (n == 2) {
+                          if (flag) {
+                              return 2;
+                          } else {
+                              throw new IllegalStateException();
+                          }
+                      } else {
+                          return -1;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(int n, boolean flag) {
+                      if (n == 1) {
+                          return 1;
+                      } else if (n == 2) {
+                          if (flag) {
+                              return 2;
+                          }
+                          throw new IllegalStateException();
+                      }
+                      return -1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveElseIfChainWithoutFinalElse() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(int n) {
+                      if (n == 1) {
+                          return 1;
+                      } else if (n == 2) {
+                          return 2;
+                      }
+                      return 0;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void preserveElseIfChainWhenIntermediateBranchIsEmpty() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(int n) {
+                      if (n == 1) {
+                          return 1;
+                      } else if (n == 2) {
+                      } else if (n == 3) {
+                          return 3;
+                      } else {
+                          return -1;
+                      }
+                      return 0;
                   }
               }
               """
