@@ -18,15 +18,16 @@ package org.openrewrite.staticanalysis.javascript;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.Tree;
-import org.openrewrite.javascript.tree.JS;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.javascript.tree.JS;
 import org.openrewrite.marker.Markers;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 import static java.util.Collections.emptyList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 
@@ -38,7 +39,7 @@ class JavascriptFileCheckerTest {
         ClassLoader parent = getClass().getClassLoader();
         URL source = Class.forName(checkerName, false, parent).getProtectionDomain().getCodeSource().getLocation();
         JS.CompilationUnit file = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
-          Paths.get("example.ts"), null, "UTF-8", false, null, emptyList(), emptyList(), Space.EMPTY);
+          Path.of("example.ts"), null, "UTF-8", false, null, emptyList(), emptyList(), Space.EMPTY);
         ClassLoader previous = Thread.currentThread().getContextClassLoader();
         try (URLClassLoader isolated = new URLClassLoader(new URL[]{source}, parent) {
             @Override
@@ -59,7 +60,7 @@ class JavascriptFileCheckerTest {
             Thread.currentThread().setContextClassLoader(new ClassLoader(parent) {
                 @Override
                 protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                    if (maskLanguage && name.equals("org.openrewrite.javascript.tree.JS")) {
+                    if (maskLanguage && "org.openrewrite.javascript.tree.JS".equals(name)) {
                         throw new ClassNotFoundException(name);
                     }
                     return super.loadClass(name, resolve);

@@ -16,42 +16,23 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class EmptyBlockKotlinEvaluationTest implements RewriteTest {
-    @Test
-    void preserveNullablePreferenceAssertion() {
-        rewriteRun(spec -> spec.recipe(new EmptyBlock()), kotlin("""
-            class Preference(val key: String)
-            fun click(preference: Preference, downloadFolderPref: Preference?): Boolean {
-                if (preference.key == downloadFolderPref!!.key) {
-                    // Feature not implemented yet.
-                }
-                return false
-            }
-            """));
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new EmptyBlock());
     }
 
-    @Test
-    void preservePropertyGetterEvaluation() {
-        rewriteRun(spec -> spec.recipe(new EmptyBlock()), kotlin("""
-            class State {
-                var reads = 0
-                val enabled: Boolean
-                    get() { reads++; return true }
-                fun check() {
-                    if (enabled) {
-                        // Intentionally empty.
-                    }
-                }
-            }
-            """));
-    }
-
+    @DocumentExample
     @Test
     void removeEmptyLiteralCondition() {
-        rewriteRun(spec -> spec.recipe(new EmptyBlock()), kotlin(
+        rewriteRun( kotlin(
             """
             fun check() {
                 if (true) {
@@ -64,6 +45,36 @@ class EmptyBlockKotlinEvaluationTest implements RewriteTest {
             fun check() {
                 println("done")
             }
-            """));
+            """ ));
+    }
+    @Test
+    void preserveNullablePreferenceAssertion() {
+        rewriteRun( kotlin(
+            """
+            class Preference(val key: String)
+            fun click(preference: Preference, downloadFolderPref: Preference?): Boolean {
+                if (preference.key == downloadFolderPref!!.key) {
+                    // Feature not implemented yet.
+                }
+                return false
+            }
+            """ ));
+    }
+
+    @Test
+    void preservePropertyGetterEvaluation() {
+        rewriteRun( kotlin(
+            """
+            class State {
+                var reads = 0
+                val enabled: Boolean
+                    get() { reads++; return true }
+                fun check() {
+                    if (enabled) {
+                        // Intentionally empty.
+                    }
+                }
+            }
+            """ ));
     }
 }

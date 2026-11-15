@@ -43,6 +43,43 @@ class FallThroughTest implements RewriteTest {
         spec.recipe(new FallThrough());
     }
 
+    @DocumentExample
+    @Test
+    void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  int i;
+                  {
+                      switch (i) {
+                      case 0:
+                          i++;
+                      case 99:
+                          i++;
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  int i;
+                  {
+                      switch (i) {
+                      case 0:
+                          i++;
+                          break;
+                      case 99:
+                          i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void switchHeaderDocumentsCountdownFallThrough() {
         rewriteRun(
@@ -86,10 +123,10 @@ class FallThroughTest implements RewriteTest {
               }
               """,
             spec -> spec.beforeRecipe(cu -> {
-                var type = cu.getClasses().get(0);
-                var method = (J.MethodDeclaration) type.getBody().getStatements().get(0);
-                var sw = (J.Switch) method.getBody().getStatements().get(0);
-                assertThat(sw.getCases().getStatements().get(0).getComments())
+                var type = cu.getClasses().getFirst();
+                var method = (J.MethodDeclaration) type.getBody().getStatements().getFirst();
+                var sw = (J.Switch) method.getBody().getStatements().getFirst();
+                assertThat(sw.getCases().getStatements().getFirst().getComments())
                   .singleElement().satisfies(comment -> assertThat(
                     ((TextComment) comment).getText()).isEqualTo(" drop through"));
             })
@@ -203,43 +240,6 @@ class FallThroughTest implements RewriteTest {
                   }
               }
               """.formatted(comment)
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  int i;
-                  {
-                      switch (i) {
-                      case 0:
-                          i++;
-                      case 99:
-                          i++;
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  int i;
-                  {
-                      switch (i) {
-                      case 0:
-                          i++;
-                          break;
-                      case 99:
-                          i++;
-                      }
-                  }
-              }
-              """
           )
         );
     }

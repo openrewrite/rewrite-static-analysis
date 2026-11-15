@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -25,6 +26,49 @@ class NoEmptyCollectionWithRawTypeCastControlsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new NoEmptyCollectionWithRawType());
+    }
+
+    @DocumentExample
+    @Test
+    void convertOrdinaryStaticUsesAlongsideRetainedCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              import static java.util.Collections.EMPTY_LIST;
+
+              @SuppressWarnings("unchecked")
+              class A {
+                  List<String> cast = (List<String>) (EMPTY_LIST);
+                  List<String> ordinary = EMPTY_LIST;
+                  List<String> throughCall = (List<String>) identity(EMPTY_LIST);
+
+                  static Object identity(Object value) {
+                      return value;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              import static java.util.Collections.EMPTY_LIST;
+              import static java.util.Collections.emptyList;
+
+              @SuppressWarnings("unchecked")
+              class A {
+                  List<String> cast = (List<String>) (EMPTY_LIST);
+                  List<String> ordinary = emptyList();
+                  List<String> throughCall = (List<String>) identity(emptyList());
+
+                  static Object identity(Object value) {
+                      return value;
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -112,48 +156,6 @@ class NoEmptyCollectionWithRawTypeCastControlsTest implements RewriteTest {
                   List<String> list = (List<String>) EMPTY_LIST;
                   Map<String, Integer> map = (Map<String, Integer>) EMPTY_MAP;
                   Set<String> set = (Set<String>) (EMPTY_SET);
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void convertOrdinaryStaticUsesAlongsideRetainedCast() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.List;
-
-              import static java.util.Collections.EMPTY_LIST;
-
-              @SuppressWarnings("unchecked")
-              class A {
-                  List<String> cast = (List<String>) (EMPTY_LIST);
-                  List<String> ordinary = EMPTY_LIST;
-                  List<String> throughCall = (List<String>) identity(EMPTY_LIST);
-
-                  static Object identity(Object value) {
-                      return value;
-                  }
-              }
-              """,
-            """
-              import java.util.List;
-
-              import static java.util.Collections.EMPTY_LIST;
-              import static java.util.Collections.emptyList;
-
-              @SuppressWarnings("unchecked")
-              class A {
-                  List<String> cast = (List<String>) (EMPTY_LIST);
-                  List<String> ordinary = emptyList();
-                  List<String> throughCall = (List<String>) identity(emptyList());
-
-                  static Object identity(Object value) {
-                      return value;
-                  }
               }
               """
           )

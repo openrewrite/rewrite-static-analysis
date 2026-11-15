@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +30,42 @@ class RemoveMethodsOnlyCallSuperCommentsTest implements RewriteTest {
         spec.recipe(new RemoveMethodsOnlyCallSuper())
           .cycles(2)
           .expectedCyclesThatMakeChanges(0);
+    }
+
+    @DocumentExample
+    @Test
+    void removeUncommentedOverrideDespiteUnrelatedParentAndClassComments() {
+        rewriteRun(
+          spec -> spec.expectedCyclesThatMakeChanges(1),
+          //language=java
+          java(
+            """
+              // The parent owns the shared implementation.
+              class Parent {
+                  // TODO improve the parent implementation independently.
+                  void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              // This comment describes the child class, not its override.
+              class Child extends Parent {
+                  @Override
+                  void foo() {
+                      super.foo();
+                  }
+              }
+              """,
+            """
+              // This comment describes the child class, not its override.
+              class Child extends Parent {
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -159,41 +196,6 @@ class RemoveMethodsOnlyCallSuperCommentsTest implements RewriteTest {
                   void foo(int value) {
                       super.foo(/* TODO validate this value in the child implementation. */ value);
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeUncommentedOverrideDespiteUnrelatedParentAndClassComments() {
-        rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(1),
-          //language=java
-          java(
-            """
-              // The parent owns the shared implementation.
-              class Parent {
-                  // TODO improve the parent implementation independently.
-                  void foo() {
-                  }
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              // This comment describes the child class, not its override.
-              class Child extends Parent {
-                  @Override
-                  void foo() {
-                      super.foo();
-                  }
-              }
-              """,
-            """
-              // This comment describes the child class, not its override.
-              class Child extends Parent {
               }
               """
           )

@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class AbstractClassPublicConstructor extends Recipe {

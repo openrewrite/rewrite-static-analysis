@@ -30,6 +30,38 @@ class MoveConditionsToWhileTest implements RewriteTest {
         spec.recipe(new MoveConditionsToWhile());
     }
 
+    @DocumentExample
+    @Test
+    void basicTransformation() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void foo(int counter) {
+                      while (true) {
+                          if (counter >= 5) {
+                              break;
+                          }
+                          System.out.println("Counter: " + counter);
+                          counter++;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void foo(int counter) {
+                      while (counter < 5) {
+                          System.out.println("Counter: " + counter);
+                          counter++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void keepUnrelatedBooleanExpressions() {
         rewriteRun(
@@ -58,38 +90,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
 
                   void foo(int counter) {
                       while (counter < 5) {
-                          counter++;
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void basicTransformation() {
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  void foo(int counter) {
-                      while (true) {
-                          if (counter >= 5) {
-                              break;
-                          }
-                          System.out.println("Counter: " + counter);
-                          counter++;
-                      }
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void foo(int counter) {
-                      while (counter < 5) {
-                          System.out.println("Counter: " + counter);
                           counter++;
                       }
                   }

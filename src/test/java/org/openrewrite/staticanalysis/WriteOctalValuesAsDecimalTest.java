@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.python.Assertions.python;

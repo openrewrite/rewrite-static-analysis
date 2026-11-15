@@ -20,13 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.groovy.Assertions.groovy;
+import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SequencedCollectionMethodCanBeUsed"})
@@ -35,6 +35,36 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new EqualsAvoidsNull());
+    }
+
+    @DocumentExample
+    @Test
+    void invertConditional() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if(s.equals("test")) {}
+                      if(s.equalsIgnoreCase("test")) {}
+                      System.out.println(s.contentEquals("test"));
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if("test".equals(s)) {}
+                      if("test".equalsIgnoreCase(s)) {}
+                      System.out.println("test".contentEquals(s));
+                  }
+              }
+              """
+          )
+        );
     }
 
     @ParameterizedTest
@@ -168,36 +198,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
               }
               """.formatted(annotation)
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void invertConditional() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if(s.equals("test")) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                      System.out.println(s.contentEquals("test"));
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equalsIgnoreCase(s)) {}
-                      System.out.println("test".contentEquals(s));
-                  }
-              }
-              """
           )
         );
     }

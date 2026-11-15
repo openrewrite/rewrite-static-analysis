@@ -22,8 +22,9 @@ import org.openrewrite.test.RewriteTest;
 
 import java.math.BigDecimal;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static java.math.BigDecimal.valueOf;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("UnpredictableBigDecimalConstructorCall")
@@ -64,11 +65,11 @@ class BigDecimalDoubleConstructorTest implements RewriteTest {
     void exactBinaryValueAndScaleDifferFromDecimalRoundTrip() {
         assertThat(new BigDecimal(0.1)).isEqualTo(
           new BigDecimal("0.1000000000000000055511151231257827021181583404541015625"));
-        assertThat(BigDecimal.valueOf(0.1)).isEqualTo(new BigDecimal("0.1"));
-        assertThat(new BigDecimal(0.1).compareTo(BigDecimal.valueOf(0.1))).isPositive();
+        assertThat(valueOf(0.1)).isEqualTo(new BigDecimal("0.1"));
+        assertThat(new BigDecimal(0.1)).isGreaterThan(valueOf(0.1));
         assertThat(new BigDecimal(1.0).scale()).isZero();
-        assertThat(BigDecimal.valueOf(1.0).scale()).isEqualTo(1);
-        assertThat(new BigDecimal(1.0)).isNotEqualTo(BigDecimal.valueOf(1.0));
+        assertThat(valueOf(1.0).scale()).isOne();
+        assertThat(new BigDecimal(1.0)).isNotEqualTo(valueOf(1.0));
     }
 
 }

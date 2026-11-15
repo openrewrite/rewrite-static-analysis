@@ -29,6 +29,7 @@ import org.openrewrite.marker.SearchResult;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 
@@ -54,9 +55,9 @@ class CSharpExplicitInitializationTest {
     private static Cs.CompilationUnit source(String field, boolean constant, InMemoryExecutionContext ctx) {
         J.CompilationUnit cu = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { " + field + " }").findFirst().orElseThrow();
-        J.ClassDeclaration clazz = cu.getClasses().get(0);
+        J.ClassDeclaration clazz = cu.getClasses().getFirst();
         if (constant) {
-            J.VariableDeclarations declaration = (J.VariableDeclarations) clazz.getBody().getStatements().get(0);
+            J.VariableDeclarations declaration = (J.VariableDeclarations) clazz.getBody().getStatements().getFirst();
             declaration = declaration.withModifiers(singletonList(new J.Modifier(randomId(), Space.EMPTY,
               Markers.EMPTY, "const", J.Modifier.Type.LanguageExtension, emptyList())));
             clazz = clazz.withBody(clazz.getBody().withStatements(singletonList(declaration)));

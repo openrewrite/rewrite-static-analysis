@@ -34,8 +34,9 @@ import org.openrewrite.test.RewriteTest;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.openrewrite.java.Assertions.java;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.openrewrite.groovy.Assertions.groovy;
+import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.python.Assertions.python;
 import static org.openrewrite.scala.Assertions.scala;
 
@@ -143,8 +144,8 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
               .map(reversed -> Arguments.of(type, operator, reversed))));
     }
 
-    @ParameterizedTest
     @MethodSource("floatingRelationalComparisons")
+    @ParameterizedTest
     void preserveFloatingRelationalComparison(String type, String operator, boolean reversed) {
         String comparison = reversed ? "0 " + operator + " value" : "value " + operator + " 0";
         rewriteRun(
@@ -161,7 +162,6 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
         );
     }
 
-    @ParameterizedTest
     @CsvSource({
       "int, <, >=",
       "long, >, <=",
@@ -174,6 +174,7 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
       "Byte, >=, <",
       "Short, <, >="
     })
+    @ParameterizedTest
     void continueInvertingIntegralComparisons(String type, String beforeOperator, String afterOperator) {
         rewriteRun(
           spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
@@ -196,13 +197,13 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
         );
     }
 
-    @ParameterizedTest
     @CsvSource({
       "double, ==, !=",
       "float, !=, ==",
       "Double, ==, !=",
       "Float, !=, =="
     })
+    @ParameterizedTest
     void continueInvertingFloatingEquality(String type, String beforeOperator, String afterOperator) {
         rewriteRun(
           spec -> spec.cycles(3).expectedCyclesThatMakeChanges(1),
@@ -267,25 +268,25 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
             .map(type -> Arguments.of(type, right)));
     }
 
-    @ParameterizedTest
     @MethodSource("missingOperandTypes")
+    @ParameterizedTest
     void preserveComparisonWithMissingOperandType(JavaType missingType, boolean right) {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> {
             throw new AssertionError(t);
         });
-        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+        var parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
           "class Test { boolean test(int left, int right) { return !(left > right); } }")
           .findFirst().orElseThrow();
         // Deliberately remove only operand attribution in this visitor contract test.
         // The RewriteTest cases above retain their normal type validation.
-        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+        var unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Binary visitBinary(J.Binary binary, ExecutionContext executionContext) {
                 return right ? binary.withRight(binary.getRight().withType(missingType)) :
                   binary.withLeft(binary.getLeft().withType(missingType));
             }
         }.visit(parsed, ctx);
-        J.CompilationUnit result = (J.CompilationUnit) new BooleanChecksNotInverted()
+        var result = (J.CompilationUnit) new BooleanChecksNotInverted()
           .getVisitor().visit(unattributed, ctx);
         assertThat(result).isNotNull();
         assertThat(result.printAll()).isEqualTo(unattributed.printAll());
@@ -320,8 +321,8 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
           groovy(
             "assert !!('very long foo' == 'very long bar')" + message,
             spec -> spec.afterRecipe(cu -> {
-                groovy.lang.GroovyShell shell = new groovy.lang.GroovyShell();
-                org.assertj.core.api.Assertions.assertThatThrownBy(() -> shell.evaluate(cu.printAll()))
+                var shell = new groovy.lang.GroovyShell();
+                assertThatThrownBy(() -> shell.evaluate(cu.printAll()))
                   .isInstanceOf(AssertionError.class);
             })
           )
@@ -357,12 +358,12 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
         String before = "def foo = 'very long foo'; def bar = 'very long bar'; assert !!(foo == bar)" + message;
         org.openrewrite.SourceFile parsed = org.openrewrite.groovy.GroovyParser.builder().build()
           .parse(ctx, before).findFirst().orElseThrow();
-        org.openrewrite.SourceFile after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
+        var after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
           .getVisitor().visit(parsed, ctx);
         assertThat(after).isNotNull();
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(before))
+        assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(before))
           .isInstanceOf(AssertionError.class);
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(after.printAll()))
+        assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(after.printAll()))
           .as("Emitted assertion: %s", after.printAll()).isInstanceOf(AssertionError.class);
     }
 
@@ -403,7 +404,7 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
         org.openrewrite.SourceFile parsed = org.openrewrite.groovy.GroovyParser.builder().build()
           .parse(ctx, before).findFirst().orElseThrow();
-        org.openrewrite.SourceFile after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
+        var after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
           .getVisitor().visit(parsed, ctx);
         assertThat(after).isNotNull();
         Object expected = new groovy.lang.GroovyShell().evaluate(before);

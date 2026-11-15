@@ -143,24 +143,57 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
         return Stream.of(null, JavaType.Unknown.getInstance());
     }
 
-    @ParameterizedTest
+    @DocumentExample
+    @SuppressWarnings({"removal", "UnnecessaryTemporaryOnConversionToString"})
+    @Test
+    void noPrimitiveWrapperForToString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                   String a = new Integer(3).toString();
+                   String b = Long.valueOf(3).toString();
+                   String c = Double.valueOf(3.0).toString();
+                   String d = Float.valueOf("4").toString();
+                   String e = new Float("3").toString();
+                   String f = Boolean.valueOf(true).toString();
+                   String G = Boolean.valueOf("true").toString();
+              }
+              """,
+            """
+              class T {
+                   String a = Integer.toString(3);
+                   String b = Long.toString(3);
+                   String c = Double.toString(3.0);
+                   String d = Float.valueOf("4").toString();
+                   String e = new Float("3").toString();
+                   String f = Boolean.toString(true);
+                   String G = Boolean.valueOf("true").toString();
+              }
+              """
+          )
+        );
+    }
+
     @MethodSource("missingArgumentTypes")
+    @ParameterizedTest
     void preserveDoubleConstructorWithMissingArgumentType(JavaType missingType) {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
-        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+        var parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
           "class T { String text(Double value) { return new Float(value).toString(); } " +
           "int comparison(Double value, Float other) { return new Float(value).compareTo(other); } }")
           .findFirst().orElseThrow();
         // Remove argument attribution only in this visitor contract test. RewriteTest
         // cases retain normal type validation and prove the compiler-attributed overloads.
-        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+        var unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
-                Expression argument = newClass.getArguments().get(0).withType(missingType);
+                Expression argument = newClass.getArguments().getFirst().withType(missingType);
                 return newClass.withArguments(List.of(argument));
             }
         }.visit(parsed, ctx);
-        J.CompilationUnit result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
+        var result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
           .getVisitor().visit(unattributed, ctx);
         assertThat(result).isNotNull();
         assertThat(result.printAll()).isEqualTo(unattributed.printAll());
@@ -169,37 +202,37 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
     @Test
     void preserveConstructorWithMissingAttribution() {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
-        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+        var parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
           "class T { String text(double value) { return new Float(value).toString(); } " +
           "int comparison(double value, Float other) { return new Float(value).compareTo(other); } }")
           .findFirst().orElseThrow();
-        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+        var unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
                 return newClass.withConstructorType(null);
             }
         }.visit(parsed, ctx);
-        J.CompilationUnit result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
+        var result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
           .getVisitor().visit(unattributed, ctx);
         assertThat(result).isNotNull();
         assertThat(result.printAll()).isEqualTo(unattributed.printAll());
     }
 
-    @ParameterizedTest
     @MethodSource("missingArgumentTypes")
+    @ParameterizedTest
     void preserveDoubleConstructorWithMissingReturnType(JavaType missingType) {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
-        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+        var parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
           "class T { String text(double value) { return new Float(value).toString(); } " +
           "int comparison(double value, Float other) { return new Float(value).compareTo(other); } }")
           .findFirst().orElseThrow();
-        J.CompilationUnit unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
+        var unattributed = (J.CompilationUnit) new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
                 return newClass.withConstructorType(newClass.getConstructorType().withReturnType(missingType));
             }
         }.visit(parsed, ctx);
-        J.CompilationUnit result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
+        var result = (J.CompilationUnit) new NoPrimitiveWrappersForToStringOrCompareTo()
           .getVisitor().visit(unattributed, ctx);
         assertThat(result).isNotNull();
         assertThat(result.printAll()).isEqualTo(unattributed.printAll());
@@ -269,39 +302,6 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
                   String valueOf(float value) {
                       return Float.toString(value);
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @SuppressWarnings({"removal", "UnnecessaryTemporaryOnConversionToString"})
-    @Test
-    void noPrimitiveWrapperForToString() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class T {
-                   String a = new Integer(3).toString();
-                   String b = Long.valueOf(3).toString();
-                   String c = Double.valueOf(3.0).toString();
-                   String d = Float.valueOf("4").toString();
-                   String e = new Float("3").toString();
-                   String f = Boolean.valueOf(true).toString();
-                   String G = Boolean.valueOf("true").toString();
-              }
-              """,
-            """
-              class T {
-                   String a = Integer.toString(3);
-                   String b = Long.toString(3);
-                   String c = Double.toString(3.0);
-                   String d = Float.valueOf("4").toString();
-                   String e = new Float("3").toString();
-                   String f = Boolean.toString(true);
-                   String G = Boolean.valueOf("true").toString();
               }
               """
           )

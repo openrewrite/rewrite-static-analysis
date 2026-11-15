@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
 @EqualsAndHashCode(callSuper = false)

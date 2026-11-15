@@ -37,13 +37,10 @@ import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
+import static java.util.Collections.newSetFromMap;
 import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
@@ -117,7 +114,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     // Legacy shared runtimes compare substituted generic bounds structurally without cycle protection.
     // Retain reflection when that graph is recursive: erasure alone cannot prove Java cast compatibility.
     private static boolean hasRecursiveBounds(@Nullable JavaType type) {
-        Set<JavaType> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<JavaType> visited = newSetFromMap(new IdentityHashMap<>());
         List<JavaType> pending = new ArrayList<>();
         if (type != null) {
             pending.add(type);
@@ -139,7 +136,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     // Require a path from a variable's bounds back to that exact variable. Ordinary class cycles
     // (String implements Comparable<String>) and acyclic wildcard bounds remain eligible.
     private static boolean boundReachesVariable(JavaType.GenericTypeVariable variable) {
-        Set<JavaType> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<JavaType> visited = newSetFromMap(new IdentityHashMap<>());
         List<JavaType> pending = new ArrayList<>(variable.getBounds());
         for (int i = 0; i < pending.size(); i++) {
             JavaType current = pending.get(i);

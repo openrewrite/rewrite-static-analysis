@@ -30,6 +30,37 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
         spec.recipe(new RemoveMethodsOnlyCallSuper());
     }
 
+    @DocumentExample
+    @Test
+    void removeVoidMethodOnlyCallingSuper() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  void foo() {
+                      super.foo();
+                  }
+              }
+              """,
+            """
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void removeOnlyTheImportsOfTheRemovedMethod() {
         rewriteRun(
@@ -60,37 +91,6 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
             """
               import java.util.Map;
 
-              class Child extends Parent {
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void removeVoidMethodOnlyCallingSuper() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Parent {
-                  void foo() {
-                  }
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              class Child extends Parent {
-                  @Override
-                  void foo() {
-                      super.foo();
-                  }
-              }
-              """,
-            """
               class Child extends Parent {
               }
               """

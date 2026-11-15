@@ -33,6 +33,31 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         spec.recipe(new NoToStringOnStringType());
     }
 
+    @DocumentExample
+    @SuppressWarnings("StringOperationCanBeSimplified")
+    @Test
+    void toStringOnString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static String method() {
+                      return "hello".toString();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static String method() {
+                      return "hello";
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"@BeforeTemplate", "public @BeforeTemplate",
       "public @com.google.errorprone.refaster.annotation.BeforeTemplate"})
@@ -74,31 +99,6 @@ class NoToStringOnStringTypeTest implements RewriteTest {
                   }
               }
               """.formatted(annotation)
-          )
-        );
-    }
-
-    @DocumentExample
-    @SuppressWarnings("StringOperationCanBeSimplified")
-    @Test
-    void toStringOnString() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static String method() {
-                      return "hello".toString();
-                  }
-              }
-              """,
-            """
-              class Test {
-                  static String method() {
-                      return "hello";
-                  }
-              }
-              """
           )
         );
     }

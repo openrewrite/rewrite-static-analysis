@@ -25,6 +25,7 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.test.AdHocRecipe;
 
 import static java.util.Collections.emptyList;
+
 import static org.openrewrite.test.RewriteTest.toRecipe;
 
 public class JavaToCsharp {

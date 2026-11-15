@@ -36,6 +36,7 @@ import java.util.*;
 
 import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class UnnecessaryThrows extends Recipe {

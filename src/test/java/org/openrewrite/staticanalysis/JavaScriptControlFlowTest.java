@@ -23,15 +23,16 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.javascript.tree.JS;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.marker.SearchResult;
-import org.openrewrite.javascript.tree.JS;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 
@@ -52,9 +53,9 @@ class JavaScriptControlFlowTest {
         InMemoryExecutionContext ctx = new InMemoryExecutionContext();
         J.CompilationUnit javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { " + methodText + " }").findFirst().orElseThrow();
-        J.MethodDeclaration method = (J.MethodDeclaration) javaSource.getClasses().get(0).getBody().getStatements().get(0);
+        J.MethodDeclaration method = (J.MethodDeclaration) javaSource.getClasses().getFirst().getBody().getStatements().getFirst();
         JS.CompilationUnit source = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
-          Paths.get("example.ts"), null, "UTF-8", false, null, emptyList(),
+          Path.of("example.ts"), null, "UTF-8", false, null, emptyList(),
           singletonList(JRightPadded.build(method)), Space.format("\n"));
         assertThat(recipe.getVisitor().visit(source, ctx)).isSameAs(source);
         JS.CompilationUnit marked = SearchResult.found(source);

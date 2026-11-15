@@ -32,6 +32,30 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         spec.recipe(new ReplaceStringBuilderWithString());
     }
 
+    @DocumentExample
+    @Test
+    void replaceLiteralConcatenation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      String s = new StringBuilder().append("A").append("B").toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      String s = new String("A" + "B");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void preserveFreshStringIdentity() {
         rewriteRun(java(
@@ -87,30 +111,6 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void preserveCharSequenceAppend() {
         rewriteRun(java("class A { String f(CharSequence value) { return new StringBuilder().append(value).append(\"suffix\").toString(); } }"));
-    }
-
-    @DocumentExample
-    @Test
-    void replaceLiteralConcatenation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void foo() {
-                      String s = new StringBuilder().append("A").append("B").toString();
-                  }
-              }
-              """,
-            """
-              class A {
-                  void foo() {
-                      String s = new String("A" + "B");
-                  }
-              }
-              """
-          )
-        );
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")

@@ -27,6 +27,7 @@ import org.openrewrite.test.RewriteTest;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;

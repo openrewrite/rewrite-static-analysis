@@ -17,17 +17,16 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.marker.JavaVersion;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.openrewrite.Tree.randomId;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 import static org.openrewrite.kotlin.Assertions.kotlin;
@@ -38,6 +37,40 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseDiamondOperator());
+    }
+
+    @DocumentExample
+    @Test
+    void useDiamondOperator() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              class Test<X, Y> {
+                  void test() {
+                      List<String> ls = new ArrayList<String>();
+                      Map<X,Y> map = new HashMap<X,Y>();
+                      List<String> ls2 = new ArrayList<String>() {
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.*;
+
+              class Test<X, Y> {
+                  void test() {
+                      List<String> ls = new ArrayList<>();
+                      Map<X,Y> map = new HashMap<>();
+                      List<String> ls2 = new ArrayList<String>() {
+                      };
+                  }
+              }
+              """
+          )
+        );
     }
 
     @ParameterizedTest
@@ -129,7 +162,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @ParameterizedTest
     @ValueSource(strings = {"6", "7"})
     void respectReleaseForOrdinaryDiamond(String release) {
-        String before = "import java.util.*; class Test { List<String> values = new ArrayList<String>(); }";
+        var before = "import java.util.*; class Test { List<String> values = new ArrayList<String>(); }";
         String after = "6".equals(release) ? before : before.replace("new ArrayList<String>()", "new ArrayList<>()");
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(new JavaVersion(randomId(), "25", "test", "25", release))),
@@ -173,40 +206,6 @@ class UseDiamondOperatorTest implements RewriteTest {
                   Box(T... values) {}
                   static String[] values() { return new String[0]; }
                   static Box<String> create() { return new Box<>(values()); }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void useDiamondOperator() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.*;
-
-              class Test<X, Y> {
-                  void test() {
-                      List<String> ls = new ArrayList<String>();
-                      Map<X,Y> map = new HashMap<X,Y>();
-                      List<String> ls2 = new ArrayList<String>() {
-                      };
-                  }
-              }
-              """,
-            """
-              import java.util.*;
-
-              class Test<X, Y> {
-                  void test() {
-                      List<String> ls = new ArrayList<>();
-                      Map<X,Y> map = new HashMap<>();
-                      List<String> ls2 = new ArrayList<String>() {
-                      };
-                  }
               }
               """
           )

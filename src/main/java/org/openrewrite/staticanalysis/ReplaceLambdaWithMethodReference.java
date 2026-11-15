@@ -38,6 +38,7 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 @EqualsAndHashCode(callSuper = false)

@@ -30,6 +30,32 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         spec.recipe(new SimplifyConstantIfBranchExecution());
     }
 
+    @DocumentExample
+    @Test
+    void simplifyConstantIfTrue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      if (true) {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void keepUnrelatedBlocksInTheSameMethod() {
         rewriteRun(
@@ -66,32 +92,6 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                       if (b) {
                           System.out.println("b");
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void simplifyConstantIfTrue() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  public void test() {
-                      if (true) {
-                          System.out.println("hello");
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  public void test() {
-                      System.out.println("hello");
                   }
               }
               """

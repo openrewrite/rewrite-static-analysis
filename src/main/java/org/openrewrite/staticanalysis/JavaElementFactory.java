@@ -24,6 +24,7 @@ import java.util.Scanner;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.Tree.randomId;
 
 final class JavaElementFactory {

@@ -48,6 +48,7 @@ import java.util.*;
 
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
 @Value

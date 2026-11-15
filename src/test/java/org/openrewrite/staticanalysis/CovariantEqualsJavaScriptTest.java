@@ -30,11 +30,9 @@ import org.openrewrite.marker.SearchResult;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import java.nio.file.Paths;
-import java.util.Arrays;
+import java.nio.file.Path;
+import java.util.List;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.javascript.Assertions.javascript;
@@ -70,7 +68,6 @@ class CovariantEqualsJavaScriptTest implements RewriteTest {
         ));
     }
 
-    @ParameterizedTest
     @CsvSource({
       "example.js, (Anonymous class)",
       "example.ts, (Anonymous class)",
@@ -78,23 +75,24 @@ class CovariantEqualsJavaScriptTest implements RewriteTest {
       "example.js, Example",
       "example.ts, Example"
     })
+    @ParameterizedTest
     void retainNativeEquals(String path, String typeName) {
         // Exercise real JS visitor dispatch without depending on an external JavaScript RPC install.
-        InMemoryExecutionContext ctx = new InMemoryExecutionContext();
-        J.CompilationUnit javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
+        var ctx = new InMemoryExecutionContext();
+        var javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { public boolean equals(Example other) { return this == other; } " +
                       "public int hashCode() { return 0; } }")
           .findFirst().orElseThrow();
-        J.ClassDeclaration clazz = javaSource.getClasses().get(0);
+        J.ClassDeclaration clazz = javaSource.getClasses().getFirst();
         JavaType.FullyQualified type = JavaType.ShallowClass.build(typeName);
-        J.MethodDeclaration equals = (J.MethodDeclaration) clazz.getBody().getStatements().get(0);
+        var equals = (J.MethodDeclaration) clazz.getBody().getStatements().getFirst();
         equals = equals.withMethodType(equals.getMethodType().withDeclaringType(type)
-          .withParameterTypes(singletonList(type)));
+          .withParameterTypes(List.of(type)));
         clazz = clazz.withType(type).withBody(clazz.getBody().withStatements(
-          Arrays.asList(equals, clazz.getBody().getStatements().get(1))));
-        JS.CompilationUnit source = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
-          Paths.get(path), null, "UTF-8", false, null, emptyList(),
-          singletonList(JRightPadded.build(clazz)), Space.EMPTY);
+          List.of(equals, clazz.getBody().getStatements().get(1))));
+        var source = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
+          Path.of(path), null, "UTF-8", false, null, List.of(),
+          List.of(JRightPadded.build(clazz)), Space.EMPTY);
         assertThat(new org.openrewrite.java.MethodMatcher("* equals(..)").matches(equals.getMethodType())).isTrue();
         assertThat(new CovariantEquals().getVisitor().visit(source, ctx)).isSameAs(source);
         JS.CompilationUnit marked = SearchResult.found(source);

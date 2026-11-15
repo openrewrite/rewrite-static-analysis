@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -27,23 +28,7 @@ class EmptyBlockJavaUnboxingTest implements RewriteTest {
         spec.recipe(new EmptyBlock());
     }
 
-    @Test
-    void preserveBooleanUnboxing() {
-        rewriteRun(java(
-          """
-            import java.util.Map;
-            class A {
-                void direct(Map<String, Boolean> values) {
-                    if (values.get("required")) {}
-                }
-                void compound(Boolean flag) {
-                    if (flag && true) {}
-                }
-            }
-            """
-        ));
-    }
-
+    @DocumentExample
     @Test
     void preservePrimitiveInvocationWhileRemovingEmptyIf() {
         rewriteRun(java(
@@ -60,6 +45,23 @@ class EmptyBlockJavaUnboxingTest implements RewriteTest {
             class A {
                 void direct(BooleanSupplier value) {
                     value.getAsBoolean();
+                }
+            }
+            """
+        ));
+    }
+
+    @Test
+    void preserveBooleanUnboxing() {
+        rewriteRun(java(
+          """
+            import java.util.Map;
+            class A {
+                void direct(Map<String, Boolean> values) {
+                    if (values.get("required")) {}
+                }
+                void compound(Boolean flag) {
+                    if (flag && true) {}
                 }
             }
             """

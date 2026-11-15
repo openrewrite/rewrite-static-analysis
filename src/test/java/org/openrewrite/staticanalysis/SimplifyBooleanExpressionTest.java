@@ -489,6 +489,28 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
 
     @Nested
     class Kotlin {
+
+        @DocumentExample
+        @Test
+        void regular() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun getSymbol() : String? {
+                      return null
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  val isPositive = getSymbol().equals("+") == true
+                  """,
+                """
+                  val isPositive = getSymbol().equals("+")
+                  """
+              )
+            );
+        }
         @Test
         void distinctNullableStringGuards() {
             rewriteRun(
@@ -537,28 +559,6 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
             );
         }
 
-        @DocumentExample
-        @Test
-        void regular() {
-            rewriteRun(
-              kotlin(
-                """
-                  fun getSymbol() : String? {
-                      return null
-                  }
-                  """
-              ),
-              kotlin(
-                """
-                  val isPositive = getSymbol().equals("+") == true
-                  """,
-                """
-                  val isPositive = getSymbol().equals("+")
-                  """
-              )
-            );
-        }
-
         @Test
         void doNotChangeWithNullable() {
             rewriteRun(
@@ -602,12 +602,12 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
             rewriteRun(
               kotlin(
                 """
-                  class State(val failed: Boolean)
-                  fun failed(state: State?) = state?.failed == true
-                  fun notFailed(state: State?) = state?.failed != true
-                  fun clear(state: State?) = state?.failed == false
-                  fun notClear(state: State?) = state?.failed != false
-                  fun grouped(state: State?) = (state?.failed) == true
+                class State(val failed: Boolean)
+                fun failed(state: State?) = state?.failed == true
+                fun notFailed(state: State?) = state?.failed != true
+                fun clear(state: State?) = state?.failed == false
+                fun notClear(state: State?) = state?.failed != false
+                fun grouped(state: State?) = (state?.failed) == true
                 """
               )
             );
