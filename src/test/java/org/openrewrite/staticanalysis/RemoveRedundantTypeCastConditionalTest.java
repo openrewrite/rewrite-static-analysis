@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -26,6 +27,32 @@ class RemoveRedundantTypeCastConditionalTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new RemoveRedundantTypeCast());
+    }
+
+    @DocumentExample
+    @Test
+    void removeWideningCastInOrdinaryInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Number widen(Integer integer) {
+                      Number number = (Number) integer;
+                      return number;
+                  }
+              }
+              """,
+            """
+              class A {
+                  Number widen(Integer integer) {
+                      Number number = integer;
+                      return number;
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
@@ -47,31 +74,6 @@ class RemoveRedundantTypeCastConditionalTest implements RewriteTest {
                           choose(false, 7, 3.5),
                           choose(true, null, 3.5)
                       };
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeWideningCastInOrdinaryInitializer() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  Number widen(Integer integer) {
-                      Number number = (Number) integer;
-                      return number;
-                  }
-              }
-              """,
-            """
-              class A {
-                  Number widen(Integer integer) {
-                      Number number = integer;
-                      return number;
                   }
               }
               """

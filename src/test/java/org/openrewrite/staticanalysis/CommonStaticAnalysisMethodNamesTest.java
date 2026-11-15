@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -61,15 +62,7 @@ class CommonStaticAnalysisMethodNamesTest implements RewriteTest {
       }
       """;
 
-    @Test
-    void preserveStackTraceMethodNameContract() throws Exception {
-        assertThat(evaluate(STACK_CONTRACT)).isTrue();
-        rewriteRun(
-          srcMainJava(java(STACK_CONTRACT,
-            spec -> spec.afterRecipe(cu -> assertThat(evaluate(cu.printAll())).isTrue())))
-        );
-    }
-
+    @DocumentExample
     @Test
     void explicitMethodNameRefactoringRemainsAvailable() {
         rewriteRun(
@@ -83,13 +76,22 @@ class CommonStaticAnalysisMethodNamesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void preserveStackTraceMethodNameContract() throws Exception {
+        assertThat(evaluate(STACK_CONTRACT)).isTrue();
+        rewriteRun(
+          srcMainJava(java(STACK_CONTRACT,
+            spec -> spec.afterRecipe(cu -> assertThat(evaluate(cu.printAll())).isTrue())))
+        );
+    }
+
     private boolean evaluate(String source) throws Exception {
         Path file = classes.resolve("StackContract.java");
         Files.write(file, source.getBytes(StandardCharsets.UTF_8));
         assertThat(ToolProvider.getSystemJavaCompiler().run(null, null, null,
           "-d", classes.toString(), file.toString())).isZero();
-        try (URLClassLoader loader = new URLClassLoader(new URL[]{classes.toUri().toURL()}, null)) {
-            Class<?> type = loader.loadClass("StackContract");
+        try (var loader = new URLClassLoader(new URL[]{classes.toUri().toURL()}, null)) {
+            var type = loader.loadClass("StackContract");
             return (boolean) type.getMethod("detectsForbiddenCall").invoke(type.getConstructor().newInstance());
         }
     }

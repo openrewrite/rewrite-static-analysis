@@ -198,9 +198,9 @@ public class InlineVariable extends Recipe {
                     if (!varDec.getLeadingAnnotations().isEmpty()) {
                         return statement;
                     }
-                    J.VariableDeclarations remaining = varDec.withVariables(ListUtils.map(varDec.getVariables(), v ->
-                            TypeUtils.isOfType(requireNonNull(variable.getFieldType()), v.getVariableType()) &&
-                                    !SideEffects.mayHaveSideEffects(v.getInitializer()) ? null : v));
+                    J.VariableDeclarations remaining = varDec.withVariables(ListUtils.filter(varDec.getVariables(), v ->
+                            !(TypeUtils.isOfType(requireNonNull(variable.getFieldType()), v.getVariableType()) &&
+                                    !SideEffects.mayHaveSideEffects(v.getInitializer()))));
                     if (remaining.getVariables().isEmpty()) {
                         return varDec.getComments().isEmpty() ? null : statement;
                     }

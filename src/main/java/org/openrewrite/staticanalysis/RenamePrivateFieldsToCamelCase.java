@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.emptyList;
+
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
 @EqualsAndHashCode(callSuper = false)

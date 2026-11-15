@@ -16,16 +16,19 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RewriteTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 class IsEmptyCallOnMockReceiversTest implements RewriteTest {
+    @DocumentExample
     @Test
     void ordinaryForInitializersInDistinctScopesStillTransform() {
-        String before = """
+        var before = """
           import java.util.*;
           import static org.mockito.Mockito.mock;
           class Example {
@@ -82,7 +85,7 @@ class IsEmptyCallOnMockReceiversTest implements RewriteTest {
 
     @Test
     void legacyGroovyModelWithMissingFactoryMethodTypes() {
-        String before = """
+        var before = """
           package spock.lang
           class Specification { def Mock() { null } }
           class Example extends Specification {
@@ -102,7 +105,7 @@ class IsEmptyCallOnMockReceiversTest implements RewriteTest {
           """;
         assertLegacyModel(before, before.replace("ordinary.size() == 0", "ordinary.isEmpty()")
           .replace("return list.size() == 0", "return list.isEmpty()"));
-        String detached = """
+        var detached = """
           package org.spockframework.mock
           class MockUtil {
               Object createDetachedMock(Object... args) { null }
@@ -115,7 +118,7 @@ class IsEmptyCallOnMockReceiversTest implements RewriteTest {
           }
           """;
         assertLegacyModel(detached, detached);
-        String shadowed = """
+        var shadowed = """
           package spock.lang
           class Specification {}
           class Example extends Specification {
@@ -135,7 +138,7 @@ class IsEmptyCallOnMockReceiversTest implements RewriteTest {
             @Override
             public org.openrewrite.java.tree.J.MethodInvocation visitMethodInvocation(org.openrewrite.java.tree.J.MethodInvocation m, Integer p) {
                 var method = super.visitMethodInvocation(m, p);
-                if (method.getSimpleName().equals("Mock") || method.getSimpleName().equals("createDetachedMock")) {
+                if ("Mock".equals(method.getSimpleName()) || "createDetachedMock".equals(method.getSimpleName())) {
                     method = method.withMethodType(null);
                     if (method.getSelect() instanceof org.openrewrite.java.tree.J.Identifier) {
                         method = method.withSelect(((org.openrewrite.java.tree.J.Identifier) method.getSelect())
@@ -145,9 +148,9 @@ class IsEmptyCallOnMockReceiversTest implements RewriteTest {
                 return method;
             }
         }.visitNonNull(parsed, 0);
-        org.openrewrite.SourceFile after = (org.openrewrite.SourceFile) new IsEmptyCallOnCollections().getVisitor().visitNonNull(legacy, ctx);
+        var after = (org.openrewrite.SourceFile) new IsEmptyCallOnCollections().getVisitor().visitNonNull(legacy, ctx);
         after = (org.openrewrite.SourceFile) new IsEmptyCallOnMaps().getVisitor().visitNonNull(after, ctx);
-        org.assertj.core.api.Assertions.assertThat(after.printAll()).isEqualTo(expected);
+        assertThat(after.printAll()).isEqualTo(expected);
     }
 
     @Test

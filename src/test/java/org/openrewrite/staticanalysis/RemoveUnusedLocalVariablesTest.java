@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
@@ -31,19 +32,19 @@ import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
-  "ConstantConditions",
-  "StatementWithEmptyBody",
-  "EmptyTryBlock",
-  "UnusedAssignment",
-  "ResultOfMethodCallIgnored",
-  "BooleanMethodNameMustStartWithQuestion",
-  "PointlessBooleanExpression",
-  "UseOfObsoleteCollectionType",
-  "UnnecessaryLocalVariable",
-  "EmptyFinallyBlock",
-  "ClassInitializerMayBeStatic",
-  "FunctionName",
-  "ParameterCanBeLocal"
+        "ConstantConditions",
+        "StatementWithEmptyBody",
+        "EmptyTryBlock",
+        "UnusedAssignment",
+        "ResultOfMethodCallIgnored",
+        "BooleanMethodNameMustStartWithQuestion",
+        "PointlessBooleanExpression",
+        "UseOfObsoleteCollectionType",
+        "UnnecessaryLocalVariable",
+        "EmptyFinallyBlock",
+        "ClassInitializerMayBeStatic",
+        "FunctionName",
+        "ParameterCanBeLocal"
 })
 class RemoveUnusedLocalVariablesTest implements RewriteTest {
 

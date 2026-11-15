@@ -25,7 +25,8 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static java.util.Collections.emptyList;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
@@ -36,52 +37,6 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new CatchClauseOnlyRethrows());
-    }
-
-    @Test
-    void preserveKotlinRethrowBeforeThrowableHandler() {
-        rewriteRun(
-          kotlin(
-            """
-              class Aborted : RuntimeException()
-              fun run() {
-                  try {
-                      throw Aborted()
-                  } catch (e: Aborted) {
-                      throw e
-                  } catch (e: Throwable) {
-                      println("handled")
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void preserveUnnamedCatchThrowingOuterVariable() {
-        ExecutionContext ctx = new InMemoryExecutionContext();
-        J.CompilationUnit parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
-          """
-            class Test {
-                void run(Exception outer) throws Exception {
-                    try {
-                        System.out.println("run");
-                    } catch (Exception ignored) {
-                        throw outer;
-                    }
-                }
-            }
-            """).findFirst().orElseThrow();
-        // C# permits a typed catch without a variable binding; its body may throw an outer variable.
-        J.CompilationUnit unnamed = new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public J.Try.Catch visitCatch(J.Try.Catch aCatch, ExecutionContext context) {
-                return aCatch.withParameter(aCatch.getParameter().withTree(
-                  aCatch.getParameter().getTree().withVariables(emptyList())));
-            }
-        }.visitCompilationUnit(parsed, ctx);
-        assertThat(new CatchClauseOnlyRethrows().getVisitor().visit(unnamed, ctx)).isSameAs(unnamed);
     }
 
     @DocumentExample
@@ -116,6 +71,52 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void preserveKotlinRethrowBeforeThrowableHandler() {
+        rewriteRun(
+          kotlin(
+            """
+              class Aborted : RuntimeException()
+              fun run() {
+                  try {
+                      throw Aborted()
+                  } catch (e: Aborted) {
+                      throw e
+                  } catch (e: Throwable) {
+                      println("handled")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveUnnamedCatchThrowingOuterVariable() {
+        ExecutionContext ctx = new InMemoryExecutionContext();
+        var parsed = (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(ctx,
+          """
+            class Test {
+                void run(Exception outer) throws Exception {
+                    try {
+                        System.out.println("run");
+                    } catch (Exception ignored) {
+                        throw outer;
+                    }
+                }
+            }
+            """).findFirst().orElseThrow();
+        // C# permits a typed catch without a variable binding; its body may throw an outer variable.
+        J.CompilationUnit unnamed = new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.Try.Catch visitCatch(J.Try.Catch aCatch, ExecutionContext context) {
+                return aCatch.withParameter(aCatch.getParameter().withTree(
+                  aCatch.getParameter().getTree().withVariables(List.of())));
+            }
+        }.visitCompilationUnit(parsed, ctx);
+        assertThat(new CatchClauseOnlyRethrows().getVisitor().visit(unnamed, ctx)).isSameAs(unnamed);
     }
 
     @Test

@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 

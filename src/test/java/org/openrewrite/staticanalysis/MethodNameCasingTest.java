@@ -47,6 +47,30 @@ class MethodNameCasingTest implements RewriteTest {
         spec.recipe(new MethodNameCasing(false, false));
     }
 
+    @DocumentExample
+    @Test
+    void changeMethodDeclaration() {
+        rewriteRun(
+          srcMainJava(
+            //language=java
+            java(
+              """
+                class Test {
+                    void MyMethod_with_über() {
+                    }
+                }
+                """,
+              """
+                class Test {
+                    void myMethodWithUber() {
+                    }
+                }
+                """
+            )
+          )
+        );
+    }
+
     @Test
     void preserveAbstractMethodImplementedByGeneratedSource() {
         rewriteRun(
@@ -175,30 +199,6 @@ class MethodNameCasingTest implements RewriteTest {
                     @Override
                     protected String mergeModel_Name(String source) {
                         return super.mergeModel_Name(source);
-                    }
-                }
-                """
-            )
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void changeMethodDeclaration() {
-        rewriteRun(
-          srcMainJava(
-            //language=java
-            java(
-              """
-                class Test {
-                    void MyMethod_with_über() {
-                    }
-                }
-                """,
-              """
-                class Test {
-                    void myMethodWithUber() {
                     }
                 }
                 """

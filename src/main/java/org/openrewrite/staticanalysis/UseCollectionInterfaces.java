@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.*;
+
 import static org.openrewrite.Tree.randomId;
 
 public class UseCollectionInterfaces extends Recipe {

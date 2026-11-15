@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.staticanalysis.ModifierOrder.sortModifiers;
 

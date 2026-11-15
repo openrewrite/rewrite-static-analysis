@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @Getter

@@ -36,7 +36,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
         spec.recipe(new MinimumSwitchCases());
     }
 
-    @DocumentExample
     @ParameterizedTest
     @ValueSource(strings = {"next()", "counter++"})
     void preserveSelectorEvaluationAcrossTwoCases(String selector) {
@@ -74,7 +73,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
 
     @Test
     void preserveDefaultOnlySelectorEvaluation() {
-        rewriteRun(java("""
+        rewriteRun(java(
+          """
           class Example {
               int counter;
               int next() { return ++counter; }

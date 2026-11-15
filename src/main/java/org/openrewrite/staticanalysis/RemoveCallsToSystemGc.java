@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 public class RemoveCallsToSystemGc extends Recipe {
@@ -64,9 +65,9 @@ public class RemoveCallsToSystemGc extends Recipe {
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = (J.Block) super.visitBlock(block, ctx);
-                b = b.withStatements(ListUtils.map(b.getStatements(), s -> isEmptied(s) ||
+                b = b.withStatements(ListUtils.filter(b.getStatements(), s -> !(isEmptied(s) ||
                         s instanceof J.If && ((J.If) s).getElsePart() == null && isEmptied(((J.If) s).getThenPart()) &&
-                        !mayHaveSideEffects(((J.If) s).getIfCondition()) ? null : s));
+                        !mayHaveSideEffects(((J.If) s).getIfCondition()))));
                 if (b.getStatements().isEmpty() && !block.getStatements().isEmpty() && b.getEnd().getComments().isEmpty()) {
                     emptiedBlocks.add(b.getId());
                 }

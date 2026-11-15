@@ -32,9 +32,32 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
         spec.recipe(new AbstractClassPublicConstructor());
     }
 
+    @DocumentExample
+    @Test
+    void replacePublicByProtected() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            abstract class Test {
+                public Test() {
+                }
+            }
+            """,
+            """
+            abstract class Test {
+                protected Test() {
+                }
+            }
+            """
+          )
+        );
+    }
+
     @Test
     void preserveInheritedPublicNestedConstructor() {
-        rewriteRun(java("""
+        rewriteRun(java(
+          """
           public class Api extends Internal {}
           class Internal {
               public abstract static class Nested {
@@ -46,7 +69,8 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
 
     @Test
     void preservePublicLeafNodeConstructor() {
-        rewriteRun(java("""
+        rewriteRun(java(
+          """
           package org.jsoup.nodes;
           public abstract class LeafNode {
               Object value;
@@ -59,7 +83,8 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
 
     @Test
     void preservePublicNestedEvaluatorConstructors() {
-        rewriteRun(java("""
+        rewriteRun(java(
+          """
           package org.jsoup.select;
           public abstract class Evaluator {
               public abstract static class AttributeKeyPair extends Evaluator {
@@ -120,7 +145,8 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
     @Test
     void preserveProtectedAndImplicitPublicNestedClasses() {
         rewriteRun(
-          java("""
+          java(
+            """
             public class Api {
                 protected abstract static class ProtectedBase {
                     public ProtectedBase() {}
@@ -131,58 +157,41 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
                     }
                 }
             }
-            """));
+            """
+          ));
     }
 
     @Test
     void restrictConstructorsInInternalNestedClasses() {
-        rewriteRun(java("""
+        rewriteRun(java(
+          """
           class Internal {
               abstract static class Nested {
                   public Nested() {}
               }
           }
-          """, """
+          """,
+          """
           class Internal {
               abstract static class Nested {
                   protected Nested() {}
               }
           }
-          """), java("""
+          """), java(
+          """
           public class Api {
               private abstract static class Internal {
                   public Internal() {}
               }
           }
-          """, """
+          """,
+          """
           public class Api {
               private abstract static class Internal {
                   protected Internal() {}
               }
           }
-          """));
-    }
-
-    @DocumentExample
-    @Test
-    void replacePublicByProtected() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            abstract class Test {
-                public Test() {
-                }
-            }
-            """,
-            """
-            abstract class Test {
-                protected Test() {
-                }
-            }
-            """
-          )
-        );
+          """ ));
     }
 
     @Test

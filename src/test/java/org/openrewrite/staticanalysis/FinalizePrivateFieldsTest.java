@@ -38,6 +38,33 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         spec.recipe(new FinalizePrivateFields());
     }
 
+    @DocumentExample("Finalize private field.")
+    @Test
+    void fieldWithInitializerMadeFinal() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private String name = "ABC";
+
+                  String getName() {
+                      return name;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private final String name = "ABC";
+
+                  String getName() {
+                      return name;
+                  }
+              }
+              """
+          ));
+    }
+
     @Test
     void finalizeFieldAssignedBeforeConstructorReturn() {
         rewriteRun(
@@ -271,33 +298,6 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               """
           )
         );
-    }
-
-    @DocumentExample("Finalize private field.")
-    @Test
-    void fieldWithInitializerMadeFinal() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private String name = "ABC";
-
-                  String getName() {
-                      return name;
-                  }
-              }
-              """,
-            """
-              class A {
-                  private final String name = "ABC";
-
-                  String getName() {
-                      return name;
-                  }
-              }
-              """
-          ));
     }
 
     @Test

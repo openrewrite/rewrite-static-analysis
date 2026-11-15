@@ -30,79 +30,6 @@ class FinalClassTest implements RewriteTest {
         spec.recipe(new FinalClass());
     }
 
-    @Test
-    void preserveInheritedPublicNestedClass() {
-        rewriteRun(java("""
-          public class Api extends Internal {}
-          class Internal {
-              public static class Nested {
-                  private Nested() {}
-              }
-          }
-          """));
-    }
-
-    @Test
-    void preservePublicRangeModifiers() {
-        rewriteRun(java("""
-          package org.jsoup.nodes;
-          public class Range {
-              private Range(int startPos, int endPos) {}
-              public static class Position {
-                  private Position(int pos, int line, int column) {}
-              }
-              public static class AttributeRange {
-                  private AttributeRange(Range nameRange, Range valueRange) {}
-              }
-          }
-          """));
-    }
-
-    @Test
-    void preserveProtectedAndImplicitPublicNestedClasses() {
-        rewriteRun(java("""
-          public class Api {
-              protected static class ProtectedType {
-                  private ProtectedType() {}
-              }
-              public interface Contract {
-                  class ImplicitlyPublic {
-                      private ImplicitlyPublic() {}
-                  }
-              }
-          }
-          """));
-    }
-
-    @Test
-    void finalizeInternalNestedClasses() {
-        rewriteRun(java("""
-          class Internal {
-              static class Nested {
-                  private Nested() {}
-              }
-          }
-          """, """
-          class Internal {
-              static final class Nested {
-                  private Nested() {}
-              }
-          }
-          """), java("""
-          public class Api {
-              private static class Internal {
-                  private Internal() {}
-              }
-          }
-          """, """
-          public class Api {
-              private static final class Internal {
-                  private Internal() {}
-              }
-          }
-          """));
-    }
-
     @DocumentExample
     @Test
     void finalizeClass() {
@@ -129,6 +56,86 @@ class FinalClassTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void preserveInheritedPublicNestedClass() {
+        rewriteRun(java(
+          """
+          public class Api extends Internal {}
+          class Internal {
+              public static class Nested {
+                  private Nested() {}
+              }
+          }
+          """));
+    }
+
+    @Test
+    void preservePublicRangeModifiers() {
+        rewriteRun(java(
+          """
+          package org.jsoup.nodes;
+          public class Range {
+              private Range(int startPos, int endPos) {}
+              public static class Position {
+                  private Position(int pos, int line, int column) {}
+              }
+              public static class AttributeRange {
+                  private AttributeRange(Range nameRange, Range valueRange) {}
+              }
+          }
+          """));
+    }
+
+    @Test
+    void preserveProtectedAndImplicitPublicNestedClasses() {
+        rewriteRun(java(
+          """
+          public class Api {
+              protected static class ProtectedType {
+                  private ProtectedType() {}
+              }
+              public interface Contract {
+                  class ImplicitlyPublic {
+                      private ImplicitlyPublic() {}
+                  }
+              }
+          }
+          """));
+    }
+
+    @Test
+    void finalizeInternalNestedClasses() {
+        rewriteRun(java(
+          """
+          class Internal {
+              static class Nested {
+                  private Nested() {}
+              }
+          }
+          """,
+          """
+          class Internal {
+              static final class Nested {
+                  private Nested() {}
+              }
+          }
+          """), java(
+          """
+          public class Api {
+              private static class Internal {
+                  private Internal() {}
+              }
+          }
+          """,
+          """
+          public class Api {
+              private static final class Internal {
+                  private Internal() {}
+              }
+          }
+          """ ));
     }
 
     @Issue("https://github.com/openrewrite/rewrite/issues/2954")

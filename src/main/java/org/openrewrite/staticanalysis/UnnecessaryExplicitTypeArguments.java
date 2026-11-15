@@ -65,33 +65,32 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         // arguments constrain inference, removing a witness can narrow it (e.g.
                         // singletonList<Interface>(implementation).iterator() to Iterator<Implementation>).
                         return m;
-                    } else {
-                        // As above, retain unless inferable from this call's own arguments (static or not).
-                        if (!canInferTypeArgumentsFromArguments(methodType)) {
-                            return m;
-                        }
-                        // Cannot remove type parameters if it would introduce ambiguity about which method should be called
-                        if (enclosingMethod.getMethodType() == null) {
-                            return m;
-                        }
-                        // The enclosing method's type parameters may be interdependent (e.g. `<T, S extends T>`).
-                        // Inference then resolves them jointly against the target type, so this argument's witness
-                        // can be load-bearing even though this call's own type variables are inferable from its
-                        // arguments. Retain it rather than reason about the enclosing method's inference.
-                        if (hasInterdependentTypeParameters(enclosingMethod.getMethodType())) {
-                            return m;
-                        }
-                        if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
-                            return m;
-                        }
-                        JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
-                        // If there's another method on the class with the same name, skip removing type parameters
-                        // More nuanced detection of ambiguity introduction is possible
-                        if (declaringClass.getMethods().stream()
-                                .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
-                                .count() > 1) {
-                            return m;
-                        }
+                    }
+                    // As above, retain unless inferable from this call's own arguments (static or not).
+                    if (!canInferTypeArgumentsFromArguments(methodType)) {
+                        return m;
+                    }
+                    // Cannot remove type parameters if it would introduce ambiguity about which method should be called
+                    if (enclosingMethod.getMethodType() == null) {
+                        return m;
+                    }
+                    // The enclosing method's type parameters may be interdependent (e.g. `<T, S extends T>`).
+                    // Inference then resolves them jointly against the target type, so this argument's witness
+                    // can be load-bearing even though this call's own type variables are inferable from its
+                    // arguments. Retain it rather than reason about the enclosing method's inference.
+                    if (hasInterdependentTypeParameters(enclosingMethod.getMethodType())) {
+                        return m;
+                    }
+                    if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
+                        return m;
+                    }
+                    JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
+                    // If there's another method on the class with the same name, skip removing type parameters
+                    // More nuanced detection of ambiguity introduction is possible
+                    if (declaringClass.getMethods().stream()
+                            .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
+                            .count() > 1) {
+                        return m;
                     }
                     inferredType = methodType.getReturnType();
                 } else if (enclosing instanceof J.Assignment) {

@@ -21,9 +21,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.test.RecipeSpec;
@@ -41,6 +41,58 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceLambdaWithMethodReference());
+    }
+
+    @DocumentExample
+    @Test
+    void functionMultiParamReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+
+                  ChangeListener listener = (o, oldVal, newVal) -> {
+                      onChange(o, oldVal, newVal);
+                  };
+
+                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+                      String strVal = newVal.toString();
+                      System.out.println(strVal);
+                  }
+
+                  interface ObservableValue<T> {
+                  }
+
+                  @FunctionalInterface
+                  interface ChangeListener<T> {
+                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+
+                  ChangeListener listener = this::onChange;
+
+                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+                      String strVal = newVal.toString();
+                      System.out.println(strVal);
+                  }
+
+                  interface ObservableValue<T> {
+                  }
+
+                  @FunctionalInterface
+                  interface ChangeListener<T> {
+                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -153,58 +205,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class A {
                   Supplier<String> literal() { return " text "::trim; }
                   Supplier<String> type() { return String.class::getName; }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void functionMultiParamReference() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-
-                  ChangeListener listener = (o, oldVal, newVal) -> {
-                      onChange(o, oldVal, newVal);
-                  };
-
-                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
-                      String strVal = newVal.toString();
-                      System.out.println(strVal);
-                  }
-
-                  interface ObservableValue<T> {
-                  }
-
-                  @FunctionalInterface
-                  interface ChangeListener<T> {
-                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
-                  }
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-
-                  ChangeListener listener = this::onChange;
-
-                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
-                      String strVal = newVal.toString();
-                      System.out.println(strVal);
-                  }
-
-                  interface ObservableValue<T> {
-                  }
-
-                  @FunctionalInterface
-                  interface ChangeListener<T> {
-                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
-                  }
               }
               """
           )

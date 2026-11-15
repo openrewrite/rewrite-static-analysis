@@ -44,6 +44,33 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         spec.recipe(new UseLambdaForFunctionalInterface());
     }
 
+    @DocumentExample
+    @Test
+    void useLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer n) {
+                          return n + 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> n + 1;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void removeOnlyTheImportsOfTheReplacedClass() {
         rewriteRun(
@@ -73,33 +100,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Integer lengthOf(Map<String, Integer> lengths, String key) {
                       return lengths.computeIfAbsent(key, s -> s.length());
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void useLambda() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
-                      @Override
-                      public Integer apply(Integer n) {
-                          return n + 1;
-                      }
-                  };
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = n -> n + 1;
               }
               """
           )

@@ -95,7 +95,7 @@ public class RemoveUnneededAssertion extends Recipe {
             @Override
             public J visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
                 J.CompilationUnit cu = (J.CompilationUnit) super.visitCompilationUnit(compilationUnit, ctx);
-                return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(matchers)
+                return new RemoveMethodInvocationsVisitor(matchers)
                         .visitNonNull(cu, ctx, getCursor().getParentOrThrow());
             }
 

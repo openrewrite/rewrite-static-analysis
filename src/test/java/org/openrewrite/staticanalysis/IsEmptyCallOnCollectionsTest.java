@@ -37,22 +37,6 @@ import static org.openrewrite.java.Assertions.java;
   "Convert2MethodRef"
 })
 class IsEmptyCallOnCollectionsTest implements RewriteTest {
-    @ParameterizedTest
-    @ValueSource(strings = {"size() == 0", "this.size() < 1", "0 == size()"})
-    void retainIsEmptyImplementation(String comparison) {
-        rewriteRun(
-          java(
-            """
-              class Test extends java.util.AbstractCollection<String> {
-                  public java.util.Iterator<String> iterator() { return java.util.Collections.emptyIterator(); }
-                  public int size() { return 0; }
-                  @Override
-                  public boolean isEmpty() { return %s; }
-              }
-              """.formatted(comparison)
-          )
-        );
-    }
 
     @Override
     public void defaults(RecipeSpec spec) {
@@ -89,6 +73,22 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"size() == 0", "this.size() < 1", "0 == size()"})
+    void retainIsEmptyImplementation(String comparison) {
+        rewriteRun(
+          java(
+            """
+              class Test extends java.util.AbstractCollection<String> {
+                  public java.util.Iterator<String> iterator() { return java.util.Collections.emptyIterator(); }
+                  public int size() { return 0; }
+                  @Override
+                  public boolean isEmpty() { return %s; }
+              }
+              """.formatted(comparison)
           )
         );
     }

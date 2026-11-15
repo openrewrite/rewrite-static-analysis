@@ -212,7 +212,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                     }
                     return Space.format(space.getWhitespace().isEmpty() ? " " : space.getWhitespace());
                 }
-            }.visitNonNull((TypeTree) instanceOf.getClazz(), 0).withPrefix(Space.EMPTY);
+            }.visitNonNull(instanceOf.getClazz(), 0).withPrefix(Space.EMPTY);
         }
 
         private J.TypeCast typeCast(TypeTree typeTree, Expression expression) {

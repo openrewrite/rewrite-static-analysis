@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.Tree.randomId;
 
 public class ObjectFinalizeCallsSuper extends Recipe {
@@ -91,9 +92,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     }
                 }
 
-                md = JavaTemplate.builder("super.finalize()")
-                        .build()
-                        .apply(updateCursor(md), body.getCoordinates().lastStatement());
+                md = JavaTemplate.apply("super.finalize()", updateCursor(md), body.getCoordinates().lastStatement());
                 // The template can't attribute `super` against a superclass it only knows from the type table
                 J.Block withCall = requireNonNull(md.getBody());
                 return md.withBody(withCall.withStatements(ListUtils.mapLast(withCall.getStatements(), s -> {

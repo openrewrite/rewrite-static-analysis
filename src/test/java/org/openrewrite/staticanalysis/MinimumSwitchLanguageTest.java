@@ -30,9 +30,9 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.test.RewriteTest;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.scala.Assertions.scala;
@@ -41,16 +41,16 @@ class MinimumSwitchLanguageTest implements RewriteTest {
     @ParameterizedTest
     @ValueSource(strings = {"example.go", "example.java"})
     void retainGoSourceWithAnyPath(String path) {
-        InMemoryExecutionContext ctx = new InMemoryExecutionContext();
-        J.CompilationUnit javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
+        var ctx = new InMemoryExecutionContext();
+        var javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { void f() { switch (0) { default: effect(); } } void effect() {} }")
           .findFirst().orElseThrow();
-        J.MethodDeclaration method = (J.MethodDeclaration) javaSource.getClasses().get(0).getBody().getStatements().get(0);
-        J.Identifier packageName = javaSource.getClasses().get(0).getName().withId(randomId())
+        var method = (J.MethodDeclaration) javaSource.getClasses().getFirst().getBody().getStatements().getFirst();
+        J.Identifier packageName = javaSource.getClasses().getFirst().getName().withId(randomId())
           .withSimpleName("example").withType(null);
-        Go.CompilationUnit source = new Go.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
-          Paths.get(path), null, "UTF-8", false, null, JRightPadded.build(packageName), JContainer.empty(),
-          singletonList(JRightPadded.build((Statement) method)), Space.format("\n"));
+        var source = new Go.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
+          Path.of(path), null, "UTF-8", false, null, JRightPadded.build(packageName), JContainer.empty(),
+          List.of(JRightPadded.build((Statement) method)), Space.format("\n"));
         assertThat(new MinimumSwitchCases().getVisitor().visit(source, ctx)).isSameAs(source);
         Go.CompilationUnit marked = SearchResult.found(source);
         assertThat(new MinimumSwitchCases().getVisitor().visit(marked, ctx)).isSameAs(marked);
@@ -58,8 +58,8 @@ class MinimumSwitchLanguageTest implements RewriteTest {
 
     @Test
     void rewritesMarkedJavaSource() {
-        InMemoryExecutionContext ctx = new InMemoryExecutionContext();
-        J.CompilationUnit source = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
+        var ctx = new InMemoryExecutionContext();
+        var source = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { void f() { switch (0) { default: effect(); } } void effect() {} }")
           .findFirst().orElseThrow();
         J.CompilationUnit marked = SearchResult.found(source);

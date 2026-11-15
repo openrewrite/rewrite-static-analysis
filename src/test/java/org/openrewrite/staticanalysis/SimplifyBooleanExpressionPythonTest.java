@@ -26,10 +26,11 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.python.tree.Py;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 
@@ -44,7 +45,7 @@ class SimplifyBooleanExpressionPythonTest {
         J.Unary unary = new J.Unary(randomId(), Space.EMPTY, Markers.EMPTY,
           JLeftPadded.build(J.Unary.Type.Not), literal, JavaType.Primitive.Boolean);
         Py.CompilationUnit source = new Py.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
-          Paths.get("example.py"), null, "UTF-8", false, null, emptyList(),
+          Path.of("example.py"), null, "UTF-8", false, null, emptyList(),
           singletonList(JRightPadded.build(unary)), Space.format("\n"));
 
         assertThat(new SimplifyBooleanExpression().getVisitor().visit(source, new InMemoryExecutionContext()))

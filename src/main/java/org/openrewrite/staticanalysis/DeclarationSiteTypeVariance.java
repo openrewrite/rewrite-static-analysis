@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Extends;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Super;
 

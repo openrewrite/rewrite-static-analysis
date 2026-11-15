@@ -25,15 +25,14 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.test.RecipeSpec;
+import org.openrewrite.test.RewriteTest;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.groovy.Assertions.groovy;
-import org.openrewrite.test.RecipeSpec;
-import org.openrewrite.test.RewriteTest;
-
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 
@@ -112,7 +111,7 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
 
     @Test
     void nestedWildcardOperand() {
-        AtomicReference<Expression> original = new AtomicReference<>();
+        var original = new AtomicReference<Expression>();
         rewriteRun(
           java(
             """
@@ -142,11 +141,11 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
                     if (!"isInstance".equals(m.getSimpleName())) {
                         return m;
                     }
-                    J.Identifier operand = (J.Identifier) m.getArguments().get(0);
-                    JavaType.Parameterized table = (JavaType.Parameterized) operand.getType();
-                    JavaType.GenericTypeVariable columnBound = (JavaType.GenericTypeVariable) table.getTypeParameters().get(0);
-                    JavaType.Parameterized column = (JavaType.Parameterized) columnBound.getBounds().get(0);
-                    JavaType.GenericTypeVariable wildcard = (JavaType.GenericTypeVariable) column.getTypeParameters().get(0);
+                    var operand = (J.Identifier) m.getArguments().getFirst();
+                    var table = (JavaType.Parameterized) operand.getType();
+                    var columnBound = (JavaType.GenericTypeVariable) table.getTypeParameters().getFirst();
+                    var column = (JavaType.Parameterized) columnBound.getBounds().getFirst();
+                    var wildcard = (JavaType.GenericTypeVariable) column.getTypeParameters().getFirst();
                     // Legacy LSTs retain a captured wildcard as the bound of another wildcard.
                     JavaType captured = new JavaType.GenericTypeVariable(null, "?",
                       JavaType.GenericTypeVariable.Variance.COVARIANT, List.of(wildcard));
@@ -258,8 +257,8 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, p);
                 if ("isInstance".equals(m.getSimpleName())) {
-                    J.FieldAccess select = (J.FieldAccess) m.getSelect();
-                    J.FieldAccess typed = (J.FieldAccess) attributed[0].getSelect();
+                    var select = (J.FieldAccess) m.getSelect();
+                    var typed = (J.FieldAccess) attributed[0].getSelect();
                     return m.withMethodType(attributed[0].getMethodType())
                       .withSelect(select.withTarget(select.getTarget().withType(typed.getTarget().getType()))
                         .withType(typed.getType()));

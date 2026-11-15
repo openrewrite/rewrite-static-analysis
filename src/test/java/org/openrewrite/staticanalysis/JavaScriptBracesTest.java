@@ -18,17 +18,18 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.marker.Semicolon;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.javascript.tree.JS;
-import org.openrewrite.java.marker.Semicolon;
 import org.openrewrite.marker.Markers;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.Tree.randomId;
 
@@ -39,14 +40,14 @@ class JavaScriptBracesTest {
         J.CompilationUnit javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
           .parse(ctx, "class Example { void f(boolean b) { if (b) System.out.println(1); else System.out.println(2); } }")
           .findFirst().orElseThrow();
-        J.MethodDeclaration method = (J.MethodDeclaration) javaSource.getClasses().get(0).getBody().getStatements().get(0);
-        J.If iff = (J.If) method.getBody().getStatements().get(0);
+        J.MethodDeclaration method = (J.MethodDeclaration) javaSource.getClasses().getFirst().getBody().getStatements().getFirst();
+        J.If iff = (J.If) method.getBody().getStatements().getFirst();
         // JS stores the semicolon on the padded statement. Java-only block wrapping leaves it outside the new block.
         iff = iff.getPadding().withThenPart(iff.getPadding().getThenPart()
           .withMarkers(Markers.EMPTY.add(new Semicolon(randomId()))));
         method = method.withBody(method.getBody().withStatements(singletonList(iff)));
         JS.CompilationUnit source = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
-          Paths.get("example.ts"), null, "UTF-8", false, null, emptyList(),
+          Path.of("example.ts"), null, "UTF-8", false, null, emptyList(),
           singletonList(JRightPadded.build(method)), Space.format("\n"));
         assertThat(new NeedBraces().getVisitor().visit(source, ctx)).isSameAs(source);
     }

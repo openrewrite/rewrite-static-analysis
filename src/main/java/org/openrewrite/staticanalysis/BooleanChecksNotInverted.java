@@ -20,8 +20,8 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
-import org.openrewrite.groovy.tree.G;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.groovy.tree.G;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 
 public class BooleanChecksNotInverted extends Recipe {

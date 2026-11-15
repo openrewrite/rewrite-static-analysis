@@ -32,9 +32,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.reverse;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
+
 import static org.openrewrite.Tree.randomId;
 
 @EqualsAndHashCode(callSuper = false)

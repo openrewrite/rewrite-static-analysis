@@ -37,6 +37,39 @@ import static org.openrewrite.java.Assertions.java;
   "Convert2MethodRef"
 })
 class IsEmptyCallOnMapsTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new IsEmptyCallOnMaps());
+    }
+
+    @DocumentExample
+    @Test
+    void mapWithNullGuard() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map == null || map.size() == 0;
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map == null || map.isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
     @ParameterizedTest
     @ValueSource(strings = {"size() == 0", "this.size() < 1", "0 == size()"})
     void retainIsEmptyImplementation(String comparison) {
@@ -52,11 +85,6 @@ class IsEmptyCallOnMapsTest implements RewriteTest {
               """.formatted(comparison)
           )
         );
-    }
-
-    @Override
-    public void defaults(RecipeSpec spec) {
-        spec.recipe(new IsEmptyCallOnMaps());
     }
 
     @Test
@@ -138,34 +166,6 @@ class IsEmptyCallOnMapsTest implements RewriteTest {
                       } else if (map.size() <= 1 || 1 >= map.size()) {
                           // empty body
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void mapWithNullGuard() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Map;
-
-              class Test {
-                  boolean empty(Map<String, String> map) {
-                      return map == null || map.size() == 0;
-                  }
-              }
-              """,
-            """
-              import java.util.Map;
-
-              class Test {
-                  boolean empty(Map<String, String> map) {
-                      return map == null || map.isEmpty();
                   }
               }
               """

@@ -40,6 +40,7 @@ import java.util.Set;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 

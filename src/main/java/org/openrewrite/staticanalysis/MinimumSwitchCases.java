@@ -33,6 +33,7 @@ import java.util.*;
 
 import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.Tree.randomId;
 
 public class MinimumSwitchCases extends Recipe {

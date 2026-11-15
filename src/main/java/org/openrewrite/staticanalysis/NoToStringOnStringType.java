@@ -22,9 +22,9 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;

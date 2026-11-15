@@ -36,6 +36,33 @@ class TernaryOperatorsShouldNotBeNestedTest {
             spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(11)));
         }
 
+        @DocumentExample
+        @Test
+        void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                        if ("a".equals(a)) {
+                            return "a";
+                        }
+                        return "b".equals(b) ? "b" : "nope";
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
         @Test
         void keepUnrelatedBlocks() {
             rewriteRun(
@@ -65,33 +92,6 @@ class TernaryOperatorsShouldNotBeNestedTest {
                           }
                           return c == 3 ? "three" : "other";
                       }
-                  }
-                  """
-              )
-            );
-        }
-
-        @DocumentExample
-        @Test
-        void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  class Test {
-                    public String determineSomething(String a, String b) {
-                      return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
-                    }
-                  }
-                  """,
-                """
-                  class Test {
-                    public String determineSomething(String a, String b) {
-                        if ("a".equals(a)) {
-                            return "a";
-                        }
-                        return "b".equals(b) ? "b" : "nope";
-                    }
                   }
                   """
               )

@@ -95,8 +95,8 @@ public class NoEmptyCollectionWithRawType extends Recipe {
                     if (isDirectCastOperand()) {
                         return identifier;
                     }
-                    maybeAddImport("java.util.Collections", updateFields.get(varType.getName()));
                     maybeRemoveImport("java.util.Collections." + varType.getName());
+                    maybeAddImport("java.util.Collections", updateFields.get(varType.getName()));
                     return JavaTemplate.builder(updateFields.get(varType.getName()) + "()")
                             .contextSensitive() // context sensitive due to generics
                             .staticImports("java.util.Collections." + updateFields.get(varType.getName()))

@@ -36,6 +36,42 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         spec.recipe(new UnnecessaryExplicitTypeArguments());
     }
 
+    @DocumentExample
+    @Test
+    void unnecessaryExplicitTypeArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  <T> T test() {
+                      String s = this.<String>test();
+                      Object o = this.<String>test();
+                      return this.<T>test();
+                  }
+
+                  Object o() {
+                      return this.<String>test();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  <T> T test() {
+                      String s = this.test();
+                      Object o = this.<String>test();
+                      return this.test();
+                  }
+
+                  Object o() {
+                      return this.<String>test();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"value -> value.trim()", "(value) -> value.trim()", "(var value) -> value.trim()"})
     void retainWitnessThatTypesLambdaParameter(String lambda) {
@@ -167,42 +203,6 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
 
                   int test() {
                       return Test.<String>apply(new Wrapper<>(value -> value.trim()));
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void unnecessaryExplicitTypeArguments() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  <T> T test() {
-                      String s = this.<String>test();
-                      Object o = this.<String>test();
-                      return this.<T>test();
-                  }
-
-                  Object o() {
-                      return this.<String>test();
-                  }
-              }
-              """,
-            """
-              class Test {
-                  <T> T test() {
-                      String s = this.test();
-                      Object o = this.<String>test();
-                      return this.test();
-                  }
-
-                  Object o() {
-                      return this.<String>test();
                   }
               }
               """

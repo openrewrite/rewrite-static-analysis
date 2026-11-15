@@ -33,6 +33,48 @@ class SimplifyBooleanReturnTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanReturn());
     }
 
+    @DocumentExample
+    @Test
+    void simplifyBooleanReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  boolean ifNoElse() {
+                      if (isOddMillis()) {
+                          return true;
+                      }
+                      return false;
+                  }
+
+                  static boolean isOddMillis() {
+                      boolean even = System.currentTimeMillis() % 2 == 0;
+                      if (even == true) {
+                          return false;
+                      }
+                      else {
+                          return true;
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  boolean ifNoElse() {
+                      return isOddMillis();
+                  }
+
+                  static boolean isOddMillis() {
+                      boolean even = System.currentTimeMillis() % 2 == 0;
+                      return !(even == true);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void preserveBoxedConditionUnboxing() {
         rewriteRun(
@@ -76,48 +118,6 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                       } else {
                           return true;
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void simplifyBooleanReturn() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  boolean ifNoElse() {
-                      if (isOddMillis()) {
-                          return true;
-                      }
-                      return false;
-                  }
-
-                  static boolean isOddMillis() {
-                      boolean even = System.currentTimeMillis() % 2 == 0;
-                      if (even == true) {
-                          return false;
-                      }
-                      else {
-                          return true;
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  boolean ifNoElse() {
-                      return isOddMillis();
-                  }
-
-                  static boolean isOddMillis() {
-                      boolean even = System.currentTimeMillis() % 2 == 0;
-                      return !(even == true);
                   }
               }
               """

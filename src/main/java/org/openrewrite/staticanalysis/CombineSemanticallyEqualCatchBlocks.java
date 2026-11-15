@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.*;
+
 import static org.openrewrite.java.tree.Space.EMPTY;
 
 public class CombineSemanticallyEqualCatchBlocks extends Recipe {

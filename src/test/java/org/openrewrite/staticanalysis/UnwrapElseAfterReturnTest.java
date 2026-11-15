@@ -30,6 +30,36 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
         spec.recipe(new UnwrapElseAfterReturn());
     }
 
+    @DocumentExample
+    @Test
+    void simpleIfElseWithReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      } else {
+                          return 2;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      return 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void keepFormattingOfUnrelatedStatements() {
         rewriteRun(
@@ -60,36 +90,6 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                           x=2;
                       }
                       return x;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void simpleIfElseWithReturn() {
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  int foo(boolean condition) {
-                      if (condition) {
-                          return 1;
-                      } else {
-                          return 2;
-                      }
-                  }
-              }
-              """,
-            """
-              class Test {
-                  int foo(boolean condition) {
-                      if (condition) {
-                          return 1;
-                      }
-                      return 2;
                   }
               }
               """
