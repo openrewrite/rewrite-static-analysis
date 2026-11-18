@@ -25,6 +25,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
@@ -96,48 +97,18 @@ public class InstanceOfPatternMatch extends Recipe {
                     return instanceOf;
                 }
 
-                Cursor maybeReplacementRoot = null;
-                J additionalContext = null;
-                boolean flowScopeBreakEncountered = false;
-                for (Iterator<Cursor> it = getCursor().getPathAsCursors(); it.hasNext(); ) {
-                    Cursor next = it.next();
-                    Object value = next.getValue();
-                    if (value instanceof J.Binary) {
-                        J.Binary binary = (J.Binary) value;
-                        if (!flowScopeBreakEncountered && binary.getOperator() == J.Binary.Type.And) {
-                            additionalContext = binary;
-                        } else {
-                            flowScopeBreakEncountered = true;
-                        }
-                    } else if (value instanceof J.Unary && ((J.Unary) value).getOperator() == J.Unary.Type.Not) {
-                        // TODO this could be improved (the pattern variable may be applicable in the else case
-                        // or even in subsequent statements (due to the flow scope semantics)
-                        flowScopeBreakEncountered = true;
-                    } else if (value instanceof Statement) {
-                        maybeReplacementRoot = next;
-                        break;
-                    }
+                // The nearest statement holds the casts this check can replace and is rewritten as a whole. A negation
+                // is a statement to the tree, as `i++` is, and is passed over.
+                Cursor root = getCursor().getParentTreeCursor();
+                while (!(root.getValue() instanceof Statement) && !(root.getValue() instanceof SourceFile) ||
+                       root.getValue() instanceof J.Unary) {
+                    root = root.getParentTreeCursor();
                 }
-
-                if (maybeReplacementRoot != null) {
-                    J root = maybeReplacementRoot.getValue();
-                    Set<J> contexts = new HashSet<>();
-                    if (!flowScopeBreakEncountered) {
-                        if (root instanceof J.If) {
-                            contexts.add(((J.If) root).getThenPart());
-                        } else if (root instanceof J.Ternary) {
-                            contexts.add(((J.Ternary) root).getTruePart());
-                        }
-                    }
-                    if (additionalContext != null) {
-                        contexts.add(additionalContext);
-                    }
-
-                    if (!contexts.isEmpty()) {
-                        InstanceOfPatternReplacements replacements = maybeReplacementRoot
-                                .computeMessageIfAbsent("flowTypeScope", k -> new InstanceOfPatternReplacements(root));
-                        replacements.registerInstanceOf(instanceOf, contexts);
-                    }
+                if (root.getValue() instanceof Statement) {
+                    J rootTree = root.getValue();
+                    InstanceOfPatternReplacements replacements = root
+                            .computeMessageIfAbsent("flowTypeScope", k -> new InstanceOfPatternReplacements(rootTree));
+                    replacements.registerInstanceOf(instanceOf, getCursor());
                 }
                 return instanceOf;
             }
@@ -200,12 +171,12 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class InstanceOfPatternReplacements {
         private final J root;
         private final Map<ExpressionAndType, J.InstanceOf> instanceOfs = new HashMap<>();
-        private final Map<J.InstanceOf, Set<J>> contexts = new HashMap<>();
+        private final Map<J.InstanceOf, Cursor> cursors = new HashMap<>();
         private final Map<J.InstanceOf, Set<Cursor>> contextScopes = new HashMap<>();
         private final Map<J.TypeCast, J.InstanceOf> replacements = new HashMap<>();
         private final Map<J.InstanceOf, List<VariableAndTypeTree>> variablesToDelete = new HashMap<>();
 
-        public void registerInstanceOf(J.InstanceOf instanceOf, Set<J> contexts) {
+        public void registerInstanceOf(J.InstanceOf instanceOf, Cursor cursor) {
             Expression expression = instanceOf.getExpression();
             JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             if (type == null) {
@@ -218,7 +189,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     .findAny();
             if (!existing.isPresent()) {
                 instanceOfs.put(new ExpressionAndType(expression, type), instanceOf);
-                this.contexts.put(instanceOf, contexts);
+                cursors.put(instanceOf, cursor);
             }
         }
 
@@ -235,32 +206,27 @@ public class InstanceOfPatternMatch extends Recipe {
             if (match.isPresent()) {
                 Cursor parent = cursor.getParentTreeCursor();
                 J.InstanceOf instanceOf = instanceOfs.get(match.get());
-                Set<J> validContexts = contexts.get(instanceOf);
-                for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
-                    Object next = it.next();
-                    if (validContexts.contains(next)) {
-                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
-                                cursor.firstEnclosing(J.Try.Resource.class) == null) {
-                            if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                    shouldDeleteVariableDeclaration(parent, instanceOf)) {
-                                variablesToDelete
-                                        .computeIfAbsent(instanceOf, i -> new ArrayList<>())
-                                        .add(new VariableAndTypeTree(parent.getValue(),
-                                                requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
-                            } else {
-                                replacements.put(typeCast, instanceOf);
-                            }
-                            contextScopes.computeIfAbsent(instanceOf, k -> new HashSet<>()).add(cursor);
+                // A pattern variable is in scope exactly where the check is known to have been true
+                ScopeService scopes = cursor.firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class);
+                if (scopes.isMatchedAt(cursors.get(instanceOf), cursor)) {
+                    if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
+                            cursor.firstEnclosing(J.Try.Resource.class) == null) {
+                        if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
+                                shouldDeleteVariableDeclaration(parent, instanceOf)) {
+                            variablesToDelete
+                                    .computeIfAbsent(instanceOf, i -> new ArrayList<>())
+                                    .add(new VariableAndTypeTree(parent.getValue(),
+                                            requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
                         } else {
-                            replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
-                            variablesToDelete.remove(instanceOf);
-                            contextScopes.remove(instanceOf);
-                            contexts.remove(instanceOf);
-                            instanceOfs.entrySet().removeIf(e -> e.getValue() == instanceOf);
+                            replacements.put(typeCast, instanceOf);
                         }
-                        break;
-                    } else if (root == next) {
-                        break;
+                        contextScopes.computeIfAbsent(instanceOf, k -> new HashSet<>()).add(cursor);
+                    } else {
+                        replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
+                        variablesToDelete.remove(instanceOf);
+                        contextScopes.remove(instanceOf);
+                        cursors.remove(instanceOf);
+                        instanceOfs.entrySet().removeIf(e -> e.getValue() == instanceOf);
                     }
                 }
             }
