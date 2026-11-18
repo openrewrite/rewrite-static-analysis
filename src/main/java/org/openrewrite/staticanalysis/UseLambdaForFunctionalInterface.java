@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -638,68 +639,18 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return referencesUninitializedFinalField.get();
     }
 
-    // if the contents of the cursor value shadow a local variable in its containing name scope
+    /**
+     * Whether a variable the anonymous class body declares has the name of a local in scope at the class, which a
+     * lambda may not redeclare, or of a field of the enclosing class.
+     */
     private static boolean shadowsLocalVariable(Cursor cursor) {
         J.NewClass n = cursor.getValue();
-        AtomicBoolean hasShadow = new AtomicBoolean(false);
-
-        List<String> localVariables = new ArrayList<>();
-        List<J.Block> nameScopeBlocks = new ArrayList<>();
-        J nameScope = cursor.dropParentUntil(p -> {
-            if (p instanceof J.Block) {
-                nameScopeBlocks.add((J.Block) p);
-            }
-            return p instanceof J.MethodDeclaration || p instanceof J.ClassDeclaration;
-        }).getValue();
-        if (nameScope instanceof J.MethodDeclaration) {
-            J.MethodDeclaration m = (J.MethodDeclaration) nameScope;
-            localVariables.addAll(parameterNames(m));
-            localVariables.addAll(classFields(cursor.firstEnclosingOrThrow(J.ClassDeclaration.class)));
-        } else {
-            J.ClassDeclaration c = (J.ClassDeclaration) nameScope;
-            localVariables.addAll(classFields(c));
-        }
-
-        new JavaVisitor<List<String>>() {
-            @Override
-            public J visitVariable(J.VariableDeclarations.NamedVariable variable, List<String> variables) {
-                variables.add(variable.getSimpleName());
-                return variable;
-            }
-
-            @Override
-            public J visitBlock(J.Block block, List<String> strings) {
-                return nameScopeBlocks.contains(block) ? super.visitBlock(block, strings) : block;
-            }
-
-            @Override
-            public J visitNewClass(J.NewClass newClass, List<String> variables) {
-                if (newClass == n) {
-                    getCursor().putMessageOnFirstEnclosing(JavaSourceFile.class, "stop", true);
-                }
-                return newClass;
-            }
-
-            @Override
-            public @Nullable J visit(@Nullable Tree tree, List<String> variables) {
-                if (getCursor().getNearestMessage("stop") != null) {
-                    return (J) tree;
-                }
-                return super.visit(tree, variables);
-            }
-        }.visit(nameScope, localVariables);
-
-        new JavaVisitor<Integer>() {
-            @Override
-            public J visitVariable(J.VariableDeclarations.NamedVariable variable, Integer integer) {
-                if (localVariables.contains(variable.getSimpleName())) {
-                    hasShadow.set(true);
-                }
-                return super.visitVariable(variable, integer);
-            }
-        }.visit(n.getBody(), 0, cursor);
-
-        return hasShadow.get();
+        List<String> fields = classFields(cursor.firstEnclosingOrThrow(J.ClassDeclaration.class));
+        Scope scope = Scope.at(cursor);
+        return Scope.declaredWithin(new Cursor(cursor, n.getBody()))
+                .filter(declared -> declared.getNamespace() == Scope.Namespace.VARIABLE)
+                .anyMatch(declared -> fields.contains(declared.getName()) ||
+                                      scope.lookup(declared.getName()).filter(outer -> !outer.isMember()).isPresent());
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {

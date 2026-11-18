@@ -1807,4 +1807,28 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
             }
         }.visitNonNull(cu, 0);
     }
+
+    @Test
+    void keepAnonymousClassWhoseLocalHasAPatternVariablesName() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          Runnable r = new Runnable() {
+                              @Override
+                              public void run() {
+                                  String s = "x";
+                                  System.out.println(s);
+                              }
+                          };
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
