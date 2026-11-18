@@ -1060,6 +1060,56 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void negatedInstanceOfThatLeavesMatchesInLaterStatements() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          String s = (String) o;
+                          System.out.println(s.length() + ((String) o).length());
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String s)) {
+                              return;
+                          }
+                          System.out.println(s.length() + s.length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepCastAfterTheCheckedVariableIsAssigned() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o, Object other) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          o = other;
+                          System.out.println(((String) o).length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void negatedInstanceOfMatchedInElse() {
             rewriteRun(
               //language=java

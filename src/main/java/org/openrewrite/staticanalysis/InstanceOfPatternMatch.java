@@ -104,11 +104,25 @@ public class InstanceOfPatternMatch extends Recipe {
                        root.getValue() instanceof J.Unary) {
                     root = root.getParentTreeCursor();
                 }
+                boolean inIf = root.getValue() instanceof J.If;
+                // A check that holds in the statements after its own is rewritten with the block holding them
+                Cursor block = root.getParentTreeCursor();
+                if (block.getValue() instanceof J.Block) {
+                    List<Statement> statements = block.<J.Block>getValue().getStatements();
+                    int next = statements.indexOf(root.<Statement>getValue()) + 1;
+                    ScopeService scopes = getCursor().firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class);
+                    // A later check in that block joins it, so that names are given out in source order
+                    if (block.getMessage("flowTypeScope") != null ||
+                        next > 0 && next < statements.size() &&
+                        scopes.isMatchedAt(getCursor(), new Cursor(block, statements.get(next)))) {
+                        root = block;
+                    }
+                }
                 if (root.getValue() instanceof Statement) {
                     J rootTree = root.getValue();
                     InstanceOfPatternReplacements replacements = root
                             .computeMessageIfAbsent("flowTypeScope", k -> new InstanceOfPatternReplacements(rootTree));
-                    replacements.registerInstanceOf(instanceOf, getCursor());
+                    replacements.registerInstanceOf(instanceOf, getCursor(), inIf);
                 }
                 return instanceOf;
             }
@@ -172,11 +186,12 @@ public class InstanceOfPatternMatch extends Recipe {
         private final J root;
         private final Map<ExpressionAndType, J.InstanceOf> instanceOfs = new HashMap<>();
         private final Map<J.InstanceOf, Cursor> cursors = new HashMap<>();
+        private final Set<J.InstanceOf> inIfs = new HashSet<>();
         private final Map<J.InstanceOf, Set<Cursor>> contextScopes = new HashMap<>();
         private final Map<J.TypeCast, J.InstanceOf> replacements = new HashMap<>();
         private final Map<J.InstanceOf, List<VariableAndTypeTree>> variablesToDelete = new HashMap<>();
 
-        public void registerInstanceOf(J.InstanceOf instanceOf, Cursor cursor) {
+        public void registerInstanceOf(J.InstanceOf instanceOf, Cursor cursor, boolean inIf) {
             Expression expression = instanceOf.getExpression();
             JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             if (type == null) {
@@ -190,6 +205,9 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!existing.isPresent()) {
                 instanceOfs.put(new ExpressionAndType(expression, type), instanceOf);
                 cursors.put(instanceOf, cursor);
+                if (inIf) {
+                    inIfs.add(instanceOf);
+                }
             }
         }
 
@@ -362,7 +380,7 @@ public class InstanceOfPatternMatch extends Recipe {
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
-            if (root instanceof J.If) {
+            if (inIfs.contains(instanceOf)) {
                 VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
                 if (variableData != null) {
                     // under the assumption that the code compiled previously we don't need to check for duplicates
@@ -373,7 +391,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 strategy = VariableNameStrategy.short_();
             }
             String baseName = strategy.variableName(type);
-            if (root instanceof J.If) {
+            if (inIfs.contains(instanceOf)) {
                 J.If enclosingIf = cursor.firstEnclosing(J.If.class);
                 String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
 
