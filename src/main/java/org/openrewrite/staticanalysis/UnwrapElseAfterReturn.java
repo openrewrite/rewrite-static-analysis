@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
@@ -24,14 +25,18 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 
@@ -67,9 +72,12 @@ public class UnwrapElseAfterReturn extends Recipe {
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
+                                    if (widenedScopeCollides(b, ifStatement, innermostElseBody)) {
+                                        return statement;
+                                    }
                                     return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
                                 }
-                            } else {
+                            } else if (!widenedScopeCollides(b, ifStatement, elsePart)) {
                                 J.If newIf = ifStatement.withElsePart(null);
                                 return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
@@ -80,6 +88,33 @@ public class UnwrapElseAfterReturn extends Recipe {
 
                 Space end = blockEnd.get();
                 return end == null ? alteredBlock : alteredBlock.withEnd(end);
+            }
+
+            /**
+             * Whether a name the else body declares would, once in scope for the rest of the enclosing block, clash
+             * with a later declaration there or capture a name a later statement reads.
+             */
+            private boolean widenedScopeCollides(J.Block enclosing, J.If ifStatement, Statement elseBody) {
+                if (!(elseBody instanceof J.Block)) {
+                    return false;
+                }
+                Cursor elseCursor = new Cursor(new Cursor(getCursor(), ifStatement), elseBody);
+                Set<String> widened = new HashSet<>();
+                for (Scope.Binding binding : new Scope(elseCursor, elseCursor).getBindings()) {
+                    widened.add(binding.getName());
+                }
+                if (widened.isEmpty()) {
+                    return false;
+                }
+                List<Statement> statements = enclosing.getStatements();
+                for (int i = statements.indexOf(ifStatement) + 1; i < statements.size(); i++) {
+                    Cursor later = new Cursor(getCursor(), statements.get(i));
+                    if (Stream.concat(Scope.declaredWithin(later), Scope.readWithin(later))
+                            .anyMatch(binding -> widened.contains(binding.getName()))) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,

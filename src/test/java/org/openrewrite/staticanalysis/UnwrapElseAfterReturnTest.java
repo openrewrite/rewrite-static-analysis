@@ -802,4 +802,50 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepElseWhoseLocalALaterDeclarationRepeats() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void plain(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          int value = 1;
+                          System.out.println(value);
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepElseWhoseLocalWouldCaptureALaterFieldRead() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int value;
+                  int sameType(boolean stop) {
+                      if (stop) {
+                          return -1;
+                      } else {
+                          int value = 1;
+                          System.out.println(value);
+                      }
+                      return value;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
