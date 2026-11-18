@@ -1536,4 +1536,34 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
             );
         }
     }
+
+    @Test
+    void removeUnusedLocalNamedLikeAUsedOneInAnotherBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                      int x = 1;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

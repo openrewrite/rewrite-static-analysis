@@ -26,6 +26,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.go.GoFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
@@ -35,9 +36,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
 
 import static org.openrewrite.Preconditions.and;
 import static org.openrewrite.Preconditions.not;
@@ -163,9 +166,15 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     return variable;
                 }
 
-                List<J> readReferences = VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName());
+                // The identifiers that refer to this declaration, which another local of its name and type does not
+                Set<UUID> own = new Scope.Binding.Matcher().get(new Cursor(getCursor(), variable.getName()))
+                        .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
+                        .orElse(null);
+                List<J> readReferences = ListUtils.filter(VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName()),
+                        reference -> own == null || own.contains(reference.getId()));
                 if (readReferences.isEmpty()) {
-                    List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
+                    List<Statement> assignmentReferences = ListUtils.filter(VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName()),
+                            reference -> own == null || own.contains(assigned(reference).getId()));
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment && mightSideEffect(((J.Assignment) ref).getAssignment()) ||
                             ref instanceof J.AssignmentOperation && mightSideEffect(((J.AssignmentOperation) ref).getAssignment())) {
@@ -182,6 +191,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }
 
                 return super.visitVariable(variable, ctx);
+            }
+
+            private J assigned(Statement write) {
+                return write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
+                        write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
+                                ((J.Unary) write).getExpression();
             }
 
             @Override
