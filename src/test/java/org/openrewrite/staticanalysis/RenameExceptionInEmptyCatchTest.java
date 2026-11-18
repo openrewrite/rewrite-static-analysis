@@ -179,4 +179,47 @@ class RenameExceptionInEmptyCatchTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void avoidLocalOfAnEarlierSwitchCase() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(int k) {
+                      switch (k) {
+                          case 1:
+                              int ignored = 0;
+                              break;
+                          case 2:
+                              try {
+                                  Integer.parseInt("x");
+                              } catch (NumberFormatException e) {
+                              }
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m(int k) {
+                      switch (k) {
+                          case 1:
+                              int ignored = 0;
+                              break;
+                          case 2:
+                              try {
+                                  Integer.parseInt("x");
+                              } catch (NumberFormatException ignored1) {
+                              }
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
