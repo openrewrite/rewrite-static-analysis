@@ -561,4 +561,47 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
             );
         }
     }
+
+    @Test
+    void renameBesideALocalOfTheNewNameInAnotherBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m() {
+                      {
+                          int foo_bar = 1;
+                          use(foo_bar);
+                      }
+                      {
+                          int fooBar = 2;
+                          use(fooBar);
+                      }
+                  }
+
+                  void use(int i) {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m() {
+                      {
+                          int fooBar = 1;
+                          use(fooBar);
+                      }
+                      {
+                          int fooBar = 2;
+                          use(fooBar);
+                      }
+                  }
+
+                  void use(int i) {
+                  }
+              }
+              """
+          )
+        );
+    }
 }

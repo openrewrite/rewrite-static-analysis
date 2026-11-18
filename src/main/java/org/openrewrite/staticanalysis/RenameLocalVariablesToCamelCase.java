@@ -18,14 +18,18 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -62,7 +66,31 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return isAvailableIdentifier(toName, variable, hasNameSet);
+                // A name another local took earlier in this pass is not in the tree the cursor holds
+                Set<String> taken = getCursor().computeMessageIfAbsent("RENAMED_TO", k -> new HashSet<>());
+                String key = computeKey(toName, variable);
+                if (taken.contains(key)) {
+                    return false;
+                }
+                AtomicBoolean safe = new AtomicBoolean();
+                new JavaIsoVisitor<Integer>() {
+                    @Override
+                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable candidate, Integer p) {
+                        if (candidate.isScope(variable)) {
+                            // A local is also kept from hiding a field of the new name, which would compile
+                            Cursor name = new Cursor(getCursor(), candidate.getName());
+                            safe.set(!Scope.at(name).lookup(toName).isPresent() &&
+                                     new Scope.Binding.Matcher().get(name)
+                                             .map(binding -> binding.canRenameTo(toName))
+                                             .orElse(false));
+                        }
+                        return super.visitVariable(candidate, p);
+                    }
+                }.visit(getCursor().getValue(), 0, getCursor().getParentOrThrow());
+                if (safe.get()) {
+                    taken.add(key);
+                }
+                return safe.get();
             }
 
             @Override
@@ -151,29 +179,6 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                                 is instanceof J.Lambda ||
                                 is instanceof JavaSourceFile
                 );
-            }
-
-            private boolean isAvailableIdentifier(String identifier, J context, Set<String> hasNameSet) {
-                if (hasNameSet.contains(identifier)) {
-                    return false;
-                }
-                JavaType.Variable fieldType = getFieldType(context);
-                if (fieldType != null && fieldType.getOwner() != null) {
-                    if (hasNameSet.contains(fieldType.getOwner() + " " + identifier)) {
-                        return false;
-                    }
-                    if (fieldType.getOwner() instanceof JavaType.Method) {
-                        // Add all enclosing classes
-                        JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
-                        while (declaringType != null) {
-                            if (hasNameSet.contains(declaringType + " " + identifier)) {
-                                return false;
-                            }
-                            declaringType = declaringType.getOwningClass();
-                        }
-                    }
-                }
-                return true;
             }
         });
     }
