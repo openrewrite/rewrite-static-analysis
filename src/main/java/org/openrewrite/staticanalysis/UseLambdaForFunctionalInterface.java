@@ -494,8 +494,17 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             // but the rewrite only handles a single abstract method declared on the interface itself.
             return "the abstract method is inherited or declared alongside an `Object` method";
         }
-        if (usesThis(cursor)) {
+        if (usesKeyword(cursor, "this")) {
             return "references `this`";
+        }
+        if (usesKeyword(cursor, "super")) {
+            return "references `super`";
+        }
+        if (usesOwnMember(cursor)) {
+            return "uses a member of the anonymous class";
+        }
+        if (initializesFieldFromItself(cursor)) {
+            return "initializes a field from itself";
         }
         if (shadowsLocalVariable(cursor)) {
             return "shadows a local variable";
@@ -546,19 +555,54 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return false;
     }
 
-    private static boolean usesThis(Cursor cursor) {
+    private static boolean usesKeyword(Cursor cursor, String keyword) {
         J.NewClass n = cursor.getValue();
         AtomicBoolean hasThis = new AtomicBoolean(false);
         new JavaVisitor<Integer>() {
             @Override
             public J visitIdentifier(J.Identifier ident, Integer integer) {
-                if ("this".equals(ident.getSimpleName())) {
+                if (keyword.equals(ident.getSimpleName())) {
                     hasThis.set(true);
                 }
                 return super.visitIdentifier(ident, integer);
             }
         }.visit(n.getBody(), 0, cursor);
         return hasThis.get();
+    }
+
+    /**
+     * Whether the method's body uses a name by itself that the anonymous class provides, declared or inherited.
+     * In a lambda that name is not in scope, or reads something of the enclosing class.
+     */
+    private static boolean usesOwnMember(Cursor cursor) {
+        J.NewClass n = cursor.getValue();
+        return Scope.referencedWithin(methodBody(cursor))
+                .anyMatch(binding -> binding.getScope().getTree().isScope(n));
+    }
+
+    /**
+     * Whether the anonymous class initializes a field that its method reads. A lambda in a field's initializer
+     * may not name that field.
+     */
+    private static boolean initializesFieldFromItself(Cursor cursor) {
+        Cursor initialized = cursor.getParentTreeCursor();
+        while (initialized.getValue() instanceof J.Parentheses || initialized.getValue() instanceof J.TypeCast) {
+            initialized = initialized.getParentTreeCursor();
+        }
+        if (!(initialized.getValue() instanceof J.VariableDeclarations.NamedVariable)) {
+            return false;
+        }
+        Scope.Binding field = Scope.bindingOf(initialized, initialized.getValue())
+                .filter(binding -> binding.getKind() == Scope.Kind.MEMBER)
+                .orElse(null);
+        return field != null && Scope.referencedWithin(methodBody(cursor)).anyMatch(field::equals);
+    }
+
+    private static Cursor methodBody(Cursor anonymousClass) {
+        J.NewClass n = anonymousClass.getValue();
+        Cursor classBody = new Cursor(anonymousClass, requireNonNull(n.getBody()));
+        J.MethodDeclaration method = (J.MethodDeclaration) n.getBody().getStatements().get(0);
+        return new Cursor(new Cursor(classBody, method), requireNonNull(method.getBody()));
     }
 
     private static List<String> parameterNames(J.MethodDeclaration method) {
