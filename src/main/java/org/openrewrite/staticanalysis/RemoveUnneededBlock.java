@@ -118,8 +118,9 @@ public class RemoveUnneededBlock extends Recipe {
                         nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
                     return rp;
                 }
-                // A pattern variable or local class the block declares would clash with a later one of its name
-                if (i < padded.size() - 1) {
+                // A pattern variable or local class the block declares would clash with a later one of its name.
+                // After a block that returns, what follows is unreachable and is removed along with its declarations.
+                if (i < padded.size() - 1 && nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
                     Cursor nestedCursor = stmt == nested ? new Cursor(getCursor(), nested) : new Cursor(new Cursor(getCursor(), stmt), nested);
                     List<Cursor> later = new ArrayList<>();
                     for (Statement following : statements.subList(i + 1, statements.size())) {
