@@ -1676,4 +1676,43 @@ class MinimumSwitchCasesTest implements RewriteTest {
             );
         }
     }
+
+    @Test
+    void redeclareACaseLocalOnlyAtItsFirstAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(int k) {
+                      switch (k) {
+                          case 1:
+                              int x = 1;
+                              System.out.println(x);
+                              break;
+                          default:
+                              x = 2;
+                              x = 3;
+                              System.out.println(x);
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m(int k) {
+                      if (k == 1) {
+                          int x = 1;
+                          System.out.println(x);
+                      } else {
+                          int x = 2;
+                          x = 3;
+                          System.out.println(x);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
