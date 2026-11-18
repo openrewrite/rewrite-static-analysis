@@ -21,7 +21,6 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.service.AnnotationService;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
@@ -32,7 +31,6 @@ import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 
@@ -72,19 +70,9 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 if (hasNameSet.contains(computeKey(toName, variable))) {
                     return false;
                 }
-                AtomicBoolean safe = new AtomicBoolean();
-                new JavaIsoVisitor<Integer>() {
-                    @Override
-                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable candidate, Integer p) {
-                        if (candidate.isScope(variable)) {
-                            safe.set(new Scope.Binding.Matcher().get(new Cursor(getCursor(), candidate.getName()))
-                                    .map(binding -> binding.canRenameTo(toName))
-                                    .orElse(false));
-                        }
-                        return super.visitVariable(candidate, p);
-                    }
-                }.visit(getCursor().getValue(), 0, getCursor().getParentOrThrow());
-                return safe.get();
+                return Scope.declaredWithin(getCursor())
+                        .filter(binding -> binding.getTree().isScope(variable.getName()))
+                        .anyMatch(binding -> binding.canRenameTo(toName));
             }
 
             @Override

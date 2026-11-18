@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
@@ -29,7 +28,6 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -72,25 +70,15 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 if (taken.contains(key)) {
                     return false;
                 }
-                AtomicBoolean safe = new AtomicBoolean();
-                new JavaIsoVisitor<Integer>() {
-                    @Override
-                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable candidate, Integer p) {
-                        if (candidate.isScope(variable)) {
-                            // A local is also kept from hiding a field of the new name, which would compile
-                            Cursor name = new Cursor(getCursor(), candidate.getName());
-                            safe.set(!Scope.at(name).lookup(toName).isPresent() &&
-                                     new Scope.Binding.Matcher().get(name)
-                                             .map(binding -> binding.canRenameTo(toName))
-                                             .orElse(false));
-                        }
-                        return super.visitVariable(candidate, p);
-                    }
-                }.visit(getCursor().getValue(), 0, getCursor().getParentOrThrow());
-                if (safe.get()) {
+                // A local is also kept from hiding a field of the new name, which would compile
+                boolean safe = Scope.declaredWithin(getCursor())
+                        .filter(binding -> binding.getTree().isScope(variable.getName()))
+                        .anyMatch(binding -> !Scope.at(binding.getCursor()).lookup(toName).isPresent() &&
+                                             binding.canRenameTo(toName));
+                if (safe) {
                     taken.add(key);
                 }
-                return safe.get();
+                return safe;
             }
 
             @Override
