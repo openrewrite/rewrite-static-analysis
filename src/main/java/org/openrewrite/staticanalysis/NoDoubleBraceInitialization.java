@@ -136,7 +136,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                         for (Statement following : bodyStatements.subList(bodyStatements.indexOf(varDeclsCursor.<Statement>getValue()) + 1, bodyStatements.size())) {
                             later.add(new Cursor(parentBlockCursor, following));
                         }
-                        if (new Scope(initCursor, initCursor).collidesAcross(later)) {
+                        if (Scope.at(initCursor).collidesAcross(later)) {
                             return nc;
                         }
                         initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);

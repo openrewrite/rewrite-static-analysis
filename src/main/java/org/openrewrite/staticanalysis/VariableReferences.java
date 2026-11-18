@@ -219,7 +219,7 @@ public class VariableReferences {
         boolean blankLocal = variable.getInitializer() == null && (position instanceof J.Block || position instanceof J.Case);
 
         // The identifiers that refer to this declaration, which a same-named variable of a nested class does not
-        Set<UUID> own = new Scope.Binding.Matcher().get(new Cursor(new Cursor(declarations, variable), variable.getName()))
+        Set<UUID> own = Scope.bindingOf(new Cursor(declarations, variable), variable)
                 .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
                 .orElse(null);
         List<Cursor> writes = new JavaIsoVisitor<List<Cursor>>() {

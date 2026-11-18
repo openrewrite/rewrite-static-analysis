@@ -126,7 +126,7 @@ public class RemoveUnneededBlock extends Recipe {
                     for (Statement following : statements.subList(i + 1, statements.size())) {
                         later.add(new Cursor(getCursor(), following));
                     }
-                    if (new Scope(nestedCursor, nestedCursor).collidesAcross(later)) {
+                    if (Scope.at(nestedCursor).collidesAcross(later)) {
                         return rp;
                     }
                 }

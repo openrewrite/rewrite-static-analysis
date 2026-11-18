@@ -167,7 +167,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }
 
                 // The identifiers that refer to this declaration, which another local of its name and type does not
-                Set<UUID> own = new Scope.Binding.Matcher().get(new Cursor(getCursor(), variable.getName()))
+                Set<UUID> own = Scope.bindingOf(getCursor(), variable)
                         .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
                         .orElse(null);
                 List<J> readReferences = ListUtils.filter(VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName()),

@@ -650,7 +650,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return Scope.declaredWithin(new Cursor(cursor, n.getBody()))
                 .filter(declared -> declared.getNamespace() == Scope.Namespace.VARIABLE)
                 .anyMatch(declared -> fields.contains(declared.getName()) ||
-                                      scope.lookup(declared.getName()).filter(outer -> !outer.isMember()).isPresent());
+                                      scope.lookup(declared.getName()).filter(Scope.Binding::isLocal).isPresent());
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {

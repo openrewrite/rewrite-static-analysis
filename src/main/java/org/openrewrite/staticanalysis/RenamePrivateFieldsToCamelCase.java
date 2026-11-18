@@ -70,9 +70,9 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 if (hasNameSet.contains(computeKey(toName, variable))) {
                     return false;
                 }
-                return Scope.declaredWithin(getCursor())
-                        .filter(binding -> binding.getTree().isScope(variable.getName()))
-                        .anyMatch(binding -> binding.canRenameTo(toName));
+                return Scope.bindingOf(getCursor(), variable)
+                        .filter(binding -> binding.canRenameTo(toName))
+                        .isPresent();
             }
 
             @Override

@@ -71,10 +71,10 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                     return false;
                 }
                 // A local is also kept from hiding a field of the new name, which would compile
-                boolean safe = Scope.declaredWithin(getCursor())
-                        .filter(binding -> binding.getTree().isScope(variable.getName()))
-                        .anyMatch(binding -> !Scope.at(binding.getCursor()).lookup(toName).isPresent() &&
-                                             binding.canRenameTo(toName));
+                boolean safe = Scope.bindingOf(getCursor(), variable)
+                        .filter(binding -> !Scope.at(binding.getCursor()).lookup(toName).isPresent() &&
+                                             binding.canRenameTo(toName))
+                        .isPresent();
                 if (safe) {
                     taken.add(key);
                 }

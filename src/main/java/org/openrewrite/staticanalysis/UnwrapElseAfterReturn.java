@@ -102,7 +102,7 @@ public class UnwrapElseAfterReturn extends Recipe {
                 for (Statement statement : statements.subList(statements.indexOf(ifStatement) + 1, statements.size())) {
                     later.add(new Cursor(getCursor(), statement));
                 }
-                return new Scope(elseCursor, elseCursor).collidesAcross(later);
+                return Scope.at(elseCursor).collidesAcross(later);
             }
 
             private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,
