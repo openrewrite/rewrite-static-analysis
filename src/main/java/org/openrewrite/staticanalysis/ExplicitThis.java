@@ -273,7 +273,7 @@ public class ExplicitThis extends Recipe {
                         Markers.EMPTY,
                         outerClassIdentifier,
                         JLeftPadded.build(thisIdentifier),
-                        null
+                        ownerType
                 );
             }
 
