@@ -20,15 +20,19 @@ import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class VariableReferences {
     private static boolean isIncrementKind(Cursor tree) {
@@ -214,7 +218,10 @@ public class VariableReferences {
         }
         boolean blankLocal = variable.getInitializer() == null && (position instanceof J.Block || position instanceof J.Case);
 
-        // Matching by name also counts writes to a same-named variable in a nested class, which only errs towards false.
+        // The identifiers that refer to this declaration, which a same-named variable of a nested class does not
+        Set<UUID> own = new Scope.Binding.Matcher().get(new Cursor(new Cursor(declarations, variable), variable.getName()))
+                .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
+                .orElse(null);
         List<Cursor> writes = new JavaIsoVisitor<List<Cursor>>() {
             @Override
             public J.Assignment visitAssignment(J.Assignment assignment, List<Cursor> writes) {
@@ -238,7 +245,8 @@ public class VariableReferences {
 
             private void record(Expression target, List<Cursor> writes) {
                 Expression unwrapped = target.unwrap();
-                if (unwrapped instanceof J.Identifier && ((J.Identifier) unwrapped).getSimpleName().equals(variable.getSimpleName())) {
+                if (unwrapped instanceof J.Identifier && ((J.Identifier) unwrapped).getSimpleName().equals(variable.getSimpleName()) &&
+                    (own == null || own.contains(unwrapped.getId()))) {
                     writes.add(getCursor());
                 }
             }
