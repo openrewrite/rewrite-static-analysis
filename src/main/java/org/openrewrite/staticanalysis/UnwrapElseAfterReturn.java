@@ -32,11 +32,9 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 
@@ -99,22 +97,12 @@ public class UnwrapElseAfterReturn extends Recipe {
                     return false;
                 }
                 Cursor elseCursor = new Cursor(new Cursor(getCursor(), ifStatement), elseBody);
-                Set<String> widened = new HashSet<>();
-                for (Scope.Binding binding : new Scope(elseCursor, elseCursor).getBindings()) {
-                    widened.add(binding.getName());
-                }
-                if (widened.isEmpty()) {
-                    return false;
-                }
+                List<Cursor> later = new ArrayList<>();
                 List<Statement> statements = enclosing.getStatements();
-                for (int i = statements.indexOf(ifStatement) + 1; i < statements.size(); i++) {
-                    Cursor later = new Cursor(getCursor(), statements.get(i));
-                    if (Stream.concat(Scope.declaredWithin(later), Scope.readWithin(later))
-                            .anyMatch(binding -> widened.contains(binding.getName()))) {
-                        return true;
-                    }
+                for (Statement statement : statements.subList(statements.indexOf(ifStatement) + 1, statements.size())) {
+                    later.add(new Cursor(getCursor(), statement));
                 }
-                return false;
+                return new Scope(elseCursor, elseCursor).collidesAcross(later);
             }
 
             private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,
