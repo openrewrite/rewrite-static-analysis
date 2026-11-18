@@ -57,22 +57,11 @@ public class UnwrapElseAfterReturn extends Recipe {
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-                        if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
-                            Statement elsePart = ifStatement.getElsePart().getBody();
-                            if (elsePart instanceof J.If) {
-                                J.If innermost = findInnermostIfWithElse((J.If) elsePart);
-                                if (innermost != null &&
-                                        innermost.getElsePart() != null &&
-                                        endsWithReturnOrThrow(innermost.getThenPart()) &&
-                                        !(innermost.getElsePart().getBody() instanceof J.If)) {
-                                    J.If modifiedChain = removeInnermostElse(ifStatement);
-                                    Statement innermostElseBody = innermost.getElsePart().getBody();
-                                    return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
-                                }
-                            } else {
-                                J.If newIf = ifStatement.withElsePart(null);
-                                return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
-                            }
+                        J.If tailIf = findTailIfToUnwrap(ifStatement);
+                        if (tailIf != null && tailIf.getElsePart() != null) {
+                            J.If modifiedChain = removeInnermostElse(ifStatement);
+                            Statement tailElseBody = tailIf.getElsePart().getBody();
+                            return flatten(ifStatement, tailIf, tailElseBody, b.getEnd(), blockEnd, modifiedChain);
                         }
                     }
                     return statement;
@@ -110,32 +99,28 @@ public class UnwrapElseAfterReturn extends Recipe {
                 }));
             }
 
-            private J.@Nullable If findInnermostIfWithElse(J.If ifStatement) {
-                if (ifStatement.getElsePart() == null) {
-                    return null;
+            // Every branch preceding the final `else` must exit via return/throw, otherwise hoisting
+            // the final `else` would execute it on fall-through from an earlier branch (see issue #1116).
+            private J.@Nullable If findTailIfToUnwrap(J.If ifStatement) {
+                J.If current = ifStatement;
+                while (current.getElsePart() != null) {
+                    if (!endsWithReturnOrThrow(current.getThenPart())) {
+                        return null;
+                    }
+                    Statement elseBody = current.getElsePart().getBody();
+                    if (elseBody instanceof J.If) {
+                        current = (J.If) elseBody;
+                    } else {
+                        return current;
+                    }
                 }
-                Statement elseBody = ifStatement.getElsePart().getBody();
-                if (elseBody instanceof J.If) {
-                    J.If result = findInnermostIfWithElse((J.If) elseBody);
-                    return result != null ? result : ifStatement;
-                }
-                return ifStatement;
+                return null;
             }
 
             private J.If removeInnermostElse(J.If ifStatement) {
-                if (ifStatement.getElsePart() == null) {
-                    return ifStatement;
-                }
-                Statement elseBody = ifStatement.getElsePart().getBody();
-                if (elseBody instanceof J.If) {
-                    J.If innerIf = (J.If) elseBody;
-                    if (innerIf.getElsePart() != null && !(innerIf.getElsePart().getBody() instanceof J.If)) {
-                        return ifStatement.withElsePart(
-                                ifStatement.getElsePart().withBody(innerIf.withElsePart(null))
-                        );
-                    }
+                if (ifStatement.getElsePart() != null && ifStatement.getElsePart().getBody() instanceof J.If) {
                     return ifStatement.withElsePart(
-                            ifStatement.getElsePart().withBody(removeInnermostElse(innerIf))
+                            ifStatement.getElsePart().withBody(removeInnermostElse((J.If) ifStatement.getElsePart().getBody()))
                     );
                 }
                 return ifStatement.withElsePart(null);
