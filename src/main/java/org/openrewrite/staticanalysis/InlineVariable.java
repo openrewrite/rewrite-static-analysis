@@ -24,15 +24,19 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 public class InlineVariable extends Recipe {
 
@@ -129,7 +133,16 @@ public class InlineVariable extends Recipe {
                         type == JavaType.Primitive.String || type == JavaType.Primitive.Null;
             }
 
+            /**
+             * The declaration the variable returned or thrown at the end of the visited block resolves to.
+             */
+            private Optional<Scope.Binding> bindingOf(J.Identifier variable) {
+                List<Statement> statements = getCursor().<J.Block>getValue().getStatements();
+                return Scope.at(new Cursor(getCursor(), statements.get(statements.size() - 1))).lookup(variable.getSimpleName());
+            }
+
             private boolean isReadInEnclosingCatchOrFinally(J.Identifier variable) {
+                Optional<Scope.Binding> binding = bindingOf(variable);
                 Cursor cursor = getCursor();
                 J child = cursor.getValue();
                 while (!cursor.isRoot()) {
@@ -137,7 +150,8 @@ public class InlineVariable extends Recipe {
                     if (value instanceof J.MethodDeclaration || value instanceof J.Lambda || value instanceof J.ClassDeclaration) {
                         break;
                     }
-                    if (value instanceof J.Try) {
+                    // A variable declared inside the try is out of scope in its catch and finally blocks
+                    if (value instanceof J.Try && !binding.filter(b -> b.getCursor().isScopeInPath((J.Try) value)).isPresent()) {
                         J.Try try_ = (J.Try) value;
                         if (try_.getFinally() != null && child != try_.getFinally() &&
                                 !VariableReferences.findRhsReferences(try_.getFinally(), variable).isEmpty()) {
@@ -186,8 +200,12 @@ public class InlineVariable extends Recipe {
             }
 
             private J.Block removeDeclarationLeftUnused(J.Block bl, J.Identifier variable) {
-                if (!VariableReferences.findRhsReferences(bl, variable).isEmpty() ||
-                        !VariableReferences.findLhsReferences(bl, variable).isEmpty()) {
+                // Another local of the variable's name and type in a nested block is not a use of it
+                Set<UUID> own = bindingOf(variable)
+                        .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
+                        .orElse(null);
+                if (VariableReferences.findRhsReferences(bl, variable).stream().anyMatch(read -> own == null || own.contains(read.getId())) ||
+                        VariableReferences.findLhsReferences(bl, variable).stream().anyMatch(write -> own == null || own.contains(assigned(write).getId()))) {
                     return bl;
                 }
                 return bl.withStatements(ListUtils.map(bl.getStatements(), statement -> {
@@ -206,6 +224,12 @@ public class InlineVariable extends Recipe {
                     }
                     return remaining;
                 }));
+            }
+
+            private J assigned(Statement write) {
+                return write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
+                        write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
+                                ((J.Unary) write).getExpression();
             }
 
             private J.@Nullable Identifier identReturnedOrThrown(List<Statement> stats) {
