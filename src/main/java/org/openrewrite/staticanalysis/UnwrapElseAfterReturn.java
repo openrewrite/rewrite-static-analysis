@@ -25,15 +25,14 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
+import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.trait.Scope;
-import org.openrewrite.java.tree.Comment;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
@@ -60,13 +59,13 @@ public class UnwrapElseAfterReturn extends Recipe {
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-                        if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
+                        if (ifStatement.getElsePart() != null && leavesByReturnOrThrow(ifStatement.getThenPart())) {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.If) {
                                 J.If innermost = findInnermostIfWithElse((J.If) elsePart);
                                 if (innermost != null &&
                                         innermost.getElsePart() != null &&
-                                        endsWithReturnOrThrow(innermost.getThenPart()) &&
+                                        leavesByReturnOrThrow(innermost.getThenPart()) &&
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
@@ -164,18 +163,32 @@ public class UnwrapElseAfterReturn extends Recipe {
                 return ifStatement.withElsePart(null);
             }
 
-            private boolean endsWithReturnOrThrow(Statement statement) {
-                if (statement instanceof J.Return || statement instanceof J.Throw) {
-                    return true;
+            /**
+             * Whether the then part cannot complete normally and leaves only by return or throw, which the recipe
+             * covers. A break counts as leaving unless a loop or switch inside the then part encloses it, and a
+             * continue unless a loop does.
+             */
+            private boolean leavesByReturnOrThrow(Statement thenPart) {
+                if (getCursor().firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class).completesNormally(thenPart)) {
+                    return false;
                 }
-                if (statement instanceof J.Block) {
-                    J.Block block = (J.Block) statement;
-                    if (!block.getStatements().isEmpty()) {
-                        Statement lastStatement = block.getStatements().get(block.getStatements().size() - 1);
-                        return lastStatement instanceof J.Return || lastStatement instanceof J.Throw;
+                return !new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Break visitBreak(J.Break breakStatement, AtomicBoolean leaves) {
+                        if (getCursor().firstEnclosing(Loop.class) == null && getCursor().firstEnclosing(J.Switch.class) == null) {
+                            leaves.set(true);
+                        }
+                        return breakStatement;
                     }
-                }
-                return false;
+
+                    @Override
+                    public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean leaves) {
+                        if (getCursor().firstEnclosing(Loop.class) == null) {
+                            leaves.set(true);
+                        }
+                        return continueStatement;
+                    }
+                }.reduce(thenPart, new AtomicBoolean()).get();
             }
         };
         return Repeat.repeatUntilStable(javaVisitor);

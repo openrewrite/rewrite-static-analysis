@@ -848,4 +848,134 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void unwrapElseAfterTryWhoseBodyAndCatchReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  Class<?> load(ClassLoader loader) {
+                      if (loader != null) {
+                          try {
+                              return loader.loadClass("Finalizer");
+                          } catch (ClassNotFoundException e) {
+                              return null;
+                          }
+                      } else {
+                          return null;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  Class<?> load(ClassLoader loader) {
+                      if (loader != null) {
+                          try {
+                              return loader.loadClass("Finalizer");
+                          } catch (ClassNotFoundException e) {
+                              return null;
+                          }
+                      }
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepElseAfterBreakOrContinue() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void drain(java.util.Iterator<String> it) {
+                      while (it.hasNext()) {
+                          String line = it.next();
+                          if (line.isEmpty()) {
+                              break;
+                          } else {
+                              System.out.println(line);
+                          }
+                          if (line.startsWith("#")) {
+                              continue;
+                          } else {
+                              System.out.println("text");
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unwrapElseAfterReturnThatFollowsALoopOrSwitchWithABreak() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int first(int[] values) {
+                      if (values.length > 0) {
+                          for (int value : values) {
+                              if (value < 0) {
+                                  break;
+                              }
+                          }
+                          return values[0];
+                      } else {
+                          return -1;
+                      }
+                  }
+
+                  int sign(int value) {
+                      if (value != 0) {
+                          switch (value) {
+                              case 1:
+                                  System.out.println("one");
+                                  break;
+                              default:
+                          }
+                          return Integer.signum(value);
+                      } else {
+                          return 0;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int first(int[] values) {
+                      if (values.length > 0) {
+                          for (int value : values) {
+                              if (value < 0) {
+                                  break;
+                              }
+                          }
+                          return values[0];
+                      }
+                      return -1;
+                  }
+
+                  int sign(int value) {
+                      if (value != 0) {
+                          switch (value) {
+                              case 1:
+                                  System.out.println("one");
+                                  break;
+                              default:
+                          }
+                          return Integer.signum(value);
+                      }
+                      return 0;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
