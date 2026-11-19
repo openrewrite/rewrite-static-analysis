@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import static java.util.Collections.singleton;
 
@@ -47,7 +48,10 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     String displayName = "Replace deprecated `Runtime#exec()` methods";
 
     String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-            "since Java 18 and is no longer recommended for use by the Java documentation.";
+            "since Java 18 and is no longer recommended for use by the Java documentation. Only commands made up entirely of " +
+            "string literals are replaced, because only then is it known at compile time which arguments " +
+            "`Runtime#exec(String)` would build; any other command is left unchanged rather than launched with " +
+            "different arguments.";
 
     Set<String> tags = singleton("RSPEC-S1874");
 
@@ -80,7 +84,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     StringBuilder sb = new StringBuilder();
                     if (flattenAble) {
                         for (Expression e : commands) {
-                            if (e instanceof J.Literal && ((J.Literal) e).getType() == JavaType.Primitive.String) {
+                            if (e instanceof J.Literal && ((J.Literal) e).getType() == JavaType.Primitive.String &&
+                                    isDecoded((J.Literal) e)) {
                                 sb.append(((J.Literal) e).getValue());
                             } else {
                                 flattenAble = false;
@@ -89,29 +94,31 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
                     }
 
+                    // Only an all-literal command can be tokenized the way `Runtime#exec(String)` does, on any of
+                    // ' ', '\t', '\n', '\r' and '\f', collapsing runs; anything else would launch a different process
+                    if (!flattenAble) {
+                        return m;
+                    }
+
+                    List<String> cmds = new ArrayList<>();
+                    for (StringTokenizer tokenizer = new StringTokenizer(sb.toString()); tokenizer.hasMoreTokens(); ) {
+                        cmds.add(tokenizer.nextToken());
+                    }
+                    // `exec("")` throws `IllegalArgumentException` where `exec(new String[]{})` throws
+                    // `IndexOutOfBoundsException`, so a command tokenizing to nothing is left alone
+                    JavaType.Method methodType = m.getMethodType();
+                    if (cmds.isEmpty() || methodType == null) {
+                        return m;
+                    }
+
                     updateCursor(m);
                     Expression arg0 = m.getArguments().get(0);
                     Cursor cursor = new Cursor(getCursor(), arg0);
-                    Expression newArg0;
-                    if (flattenAble) {
-                        String[] cmds = sb.toString().split(" ");
-                        String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
-                        newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
-                    } else {
-                        // replace argument to 'command.split(" ")'
-                        boolean needWrap = !(arg0 instanceof J.Identifier) &&
-                                           !(arg0 instanceof J.Literal) &&
-                                           !(arg0 instanceof J.MethodInvocation);
-                        String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        newArg0 = JavaTemplate.builder(code).contextSensitive().build()
-                                .apply(cursor, arg0.getCoordinates().replace(), arg0);
-                    }
-
-                    if (m.getMethodType() != null) {
-                        return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
-                                .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
-                                        m.getMethodType().getParameterTypes(), t -> JavaType.ShallowClass.build("java.lang.String[]"))));
-                    }
+                    String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
+                    Expression newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
+                    return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
+                            .withMethodType(methodType.withParameterTypes(ListUtils.mapFirst(methodType.getParameterTypes(),
+                                    t -> new JavaType.Array(null, JavaType.ShallowClass.build("java.lang.String"), null))));
                 }
 
                 return m;
@@ -119,17 +126,42 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
         });
     }
 
-    private static String toStringArguments(String[] cmds) {
+    // getValue() is not fully decoded when the literal contains Unicode escapes.
+    private static boolean isDecoded(J.Literal literal) {
+        List<J.Literal.UnicodeEscape> unicodeEscapes = literal.getUnicodeEscapes();
+        return literal.getValue() != null && (unicodeEscapes == null || unicodeEscapes.isEmpty());
+    }
+
+    private static final String TEMPLATE_INTERPOLATION_START = "#{";
+
+    private static String toStringArguments(List<String> cmds) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < cmds.length; i++) {
-            String token = cmds[i];
-            if (i != 0) {
+        for (String token : cmds) {
+            if (sb.length() != 0) {
                 sb.append(", ");
             }
-            sb.append("\"")
-                    .append(token)
-                    .append("\"");
+            sb.append('"');
+            for (int i = 0; i < token.length(); i++) {
+                char character = token.charAt(i);
+                if (character == '"' || character == '\\') {
+                    // Prefix a backslash so the character survives inside the generated string literal
+                    sb.append('\\').append(character);
+                } else if (Character.isISOControl(character) ||
+                        token.startsWith(TEMPLATE_INTERPOLATION_START, i)) {
+                    // Control characters stay legible rather than becoming invisible bytes, and `#{` needs escaping
+                    // because this text is also `JavaTemplate` source
+                    sb.append(unicodeEscape(character));
+                } else {
+                    sb.append(character);
+                }
+            }
+            sb.append('"');
         }
         return sb.toString();
+    }
+
+    // Formats the character as a Java Unicode escape, `\u0007` for the bell character
+    private static String unicodeEscape(char character) {
+        return String.format("\\u%04x", (int) character);
     }
 }
