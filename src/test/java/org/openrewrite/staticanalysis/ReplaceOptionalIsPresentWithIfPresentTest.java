@@ -230,6 +230,39 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     }
 
     @Test
+    void replaceWhenTheBodyUpdatesItsOwnLocal() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              public class A {
+                  void method(Optional<Integer> o) {
+                      if (o.isPresent()) {
+                          int n = o.get();
+                          n++;
+                          System.out.println(n);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              public class A {
+                  void method(Optional<Integer> o) {
+                      o.ifPresent(obj -> {
+                          int n = obj;
+                          n++;
+                          System.out.println(n);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void replace2() {
         rewriteRun(
           //language=java
