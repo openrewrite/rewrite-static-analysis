@@ -25,7 +25,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
-import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 
@@ -160,7 +159,7 @@ public class UnwrapElseAfterReturn extends Recipe {
              * continue unless a loop does.
              */
             private boolean leavesByReturnOrThrow(Statement thenPart) {
-                if (service(ScopeService.class).completesNormally(thenPart)) {
+                if (Scope.service(getCursor()).completesNormally(thenPart)) {
                     return false;
                 }
                 return !new JavaIsoVisitor<AtomicBoolean>() {

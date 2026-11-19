@@ -28,6 +28,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.FallThroughStyle;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
@@ -83,7 +84,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 return c;
             }
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c, service(ScopeService.class)).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c, Scope.service(getCursor())).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
