@@ -931,10 +931,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1915")
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
-    void dontUseLambdaWhenShadowsClassField() {
+    void useLambdaWhenALocalShadowsAField() {
         rewriteRun(
           //language=java
           java(
@@ -949,6 +948,18 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                               int n = 0;
                               return n;
                           }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+              class Test {
+                  int n = 1;
+                  void test() {
+                      Supplier<Integer> f = () -> {
+                          int n = 0;
+                          return n;
                       };
                   }
               }

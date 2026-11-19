@@ -34,7 +34,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
     @Getter
@@ -634,21 +633,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return null;
     }
 
-    private static List<String> parameterNames(J.MethodDeclaration method) {
-        return method.getParameters().stream()
-                .filter(J.VariableDeclarations.class::isInstance)
-                .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
-                .collect(toList());
-    }
-
-    // This does not recursive descend extended classes for inherited fields.
-    private static List<String> classFields(J.ClassDeclaration classDeclaration) {
-        return classDeclaration.getBody().getStatements().stream()
-                .filter(J.VariableDeclarations.class::isInstance)
-                .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
-                .collect(toList());
-    }
-
     private static boolean usedAsStatement(Cursor cursor) {
         Iterator<Object> path = cursor.getParentOrThrow().getPath();
         for (Object last = cursor.getValue(); path.hasNext(); ) {
@@ -714,16 +698,14 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     /**
      * Whether a variable the anonymous class body declares has the name of a local in scope at the class, which a
-     * lambda may not redeclare, or of a field of the enclosing class.
+     * lambda may not redeclare.
      */
     private static boolean shadowsLocalVariable(Cursor cursor) {
         J.NewClass n = cursor.getValue();
-        List<String> fields = classFields(cursor.firstEnclosingOrThrow(J.ClassDeclaration.class));
         Scope scope = Scope.at(cursor);
         return Scope.declaredWithin(new Cursor(cursor, n.getBody()))
                 .filter(declared -> declared.getNamespace() == Scope.Namespace.VARIABLE)
-                .anyMatch(declared -> fields.contains(declared.getName()) ||
-                                      scope.lookup(declared.getName()).filter(Scope.Binding::isLocal).isPresent());
+                .anyMatch(declared -> scope.lookup(declared.getName()).filter(Scope.Binding::isLocal).isPresent());
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {
