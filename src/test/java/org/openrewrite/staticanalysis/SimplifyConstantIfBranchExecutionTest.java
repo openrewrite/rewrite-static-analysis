@@ -301,6 +301,40 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
+    void simplifyConstantIfTrueWhoseBranchReturnsFromBothSidesOfAnIf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public int test(boolean b) {
+                      if (true) {
+                          if (b) {
+                              return 1;
+                          } else {
+                              return 2;
+                          }
+                      }
+                      return 3;
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public int test(boolean b) {
+                      if (b) {
+                          return 1;
+                      } else {
+                          return 2;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void simplifyConstantIfTrueElse() {
         rewriteRun(
           //language=java
@@ -1156,9 +1190,9 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
           java(
             """
               public class A {
-                  public void test() {
+                  public void test(boolean running) {
                       System.out.println("before while");
-                      while (true) {
+                      while (running) {
                           System.out.println("before if");
                           if (true) {
                               System.out.println("then");
@@ -1172,9 +1206,9 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
               """,
             """
               public class A {
-                  public void test() {
+                  public void test(boolean running) {
                       System.out.println("before while");
-                      while (true) {
+                      while (running) {
                           System.out.println("before if");
                           System.out.println("then");
                           continue;
@@ -1194,9 +1228,9 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
           java(
             """
               public class A {
-                  public void test() {
+                  public void test(boolean running) {
                       System.out.println("before while");
-                      while (true) {
+                      while (running) {
                           System.out.println("before if");
                           if (true) {
                               System.out.println("then");
@@ -1212,9 +1246,9 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
               """,
             """
               public class A {
-                  public void test() {
+                  public void test(boolean running) {
                       System.out.println("before while");
-                      while (true) {
+                      while (running) {
                           System.out.println("before if");
                           System.out.println("then");
                           continue;
@@ -1234,9 +1268,9 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
           java(
             """
               public class A {
-                  public void test() {
+                  public void test(boolean running) {
                       System.out.println("before while");
-                      while (true) {
+                      while (running) {
                           System.out.println("before if");
                           if (false) {
                               System.out.println("then");
@@ -1252,9 +1286,9 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
               """,
             """
               public class A {
-                  public void test() {
+                  public void test(boolean running) {
                       System.out.println("before while");
-                      while (true) {
+                      while (running) {
                           System.out.println("before if");
                           System.out.println("else");
                           continue;
