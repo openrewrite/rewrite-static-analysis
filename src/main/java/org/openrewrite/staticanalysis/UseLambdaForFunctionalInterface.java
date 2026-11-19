@@ -19,7 +19,6 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.trait.Scope;
@@ -33,9 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
     @Getter
@@ -113,34 +111,57 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         .filter(i -> i.getFullyQualifiedName().equals(type.getFullyQualifiedName()))
                         .findFirst()
                         .orElse(null);
-                JavaType.Method sam = getSamCompatible(type);
-
-                StringBuilder templateBuilder = new StringBuilder();
                 J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
 
-                if (methodDeclaration.getParameters().get(0) instanceof J.Empty) {
-                    templateBuilder.append("() -> {");
-                } else {
-                    templateBuilder.append(methodDeclaration.getParameters().stream()
-                            .map(param -> ((J.VariableDeclarations) param).getVariables().get(0).getSimpleName())
-                            .collect(joining(",", "(", ") -> {")));
+                // The variables the anonymous class's method owned belong to the lambda's owner instead.
+                JavaType.Method anonymousMethod = requireNonNull(methodDeclaration.getMethodType());
+                JavaType.Method owner = lambdaOwner(getCursor());
+                Map<JavaType.Variable, JavaType.Variable> reowned = new IdentityHashMap<>();
+                JavaIsoVisitor<Integer> reown = new JavaIsoVisitor<Integer>() {
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier identifier, Integer p) {
+                        return identifier.withFieldType(reown(identifier.getFieldType()));
+                    }
+
+                    @Override
+                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Integer p) {
+                        J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, p);
+                        return v.withVariableType(reown(v.getVariableType()));
+                    }
+
+                    private JavaType.@Nullable Variable reown(JavaType.@Nullable Variable variable) {
+                        return owner == null || variable == null || !anonymousMethod.equals(variable.getOwner()) ?
+                                variable : reowned.computeIfAbsent(variable, v -> v.withOwner(owner));
+                    }
+                };
+
+                List<JRightPadded<J>> parameters = new ArrayList<>();
+                for (Statement parameter : methodDeclaration.getParameters()) {
+                    if (parameter instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations declaration = (J.VariableDeclarations) parameter;
+                        J.VariableDeclarations.NamedVariable variable = declaration.getVariables().get(0);
+                        parameter = declaration.withPrefix(Space.EMPTY)
+                                .withLeadingAnnotations(emptyList())
+                                .withModifiers(emptyList())
+                                .withTypeExpression(null)
+                                .withVarargs(null)
+                                .withVariables(singletonList(variable.withPrefix(Space.EMPTY)
+                                        .withName(variable.getName().withPrefix(Space.EMPTY))
+                                        .withDimensionsAfterName(emptyList())));
+                    }
+                    parameters.add(JRightPadded.build(reown.visitNonNull(parameter.withPrefix(Space.EMPTY), 0)));
                 }
 
-                JavaType returnType = sam.getReturnType();
-                if (JavaType.Primitive.Void != returnType) {
-                    templateBuilder.append("return ").append(valueOfType(returnType)).append(';');
-                }
-                templateBuilder.append('}');
-
-                J.Lambda lambda = JavaTemplate.builder(templateBuilder.toString())
-                        .contextSensitive()
-                        .build()
-                        .apply(getCursor(), n.getCoordinates().replace());
-                lambda = lambda.withType(typedInterface);
+                // The body goes in only after the parentheses visitor has run, so that it drops the parentheses
+                // around a single parameter without touching any in the body.
+                J.Lambda lambda = new J.Lambda(Tree.randomId(), n.getPrefix(), Markers.EMPTY,
+                        new J.Lambda.Parameters(Tree.randomId(), Space.EMPTY, Markers.EMPTY, true, parameters),
+                        Space.format(" "), new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY), typedInterface);
                 lambda = (J.Lambda) new UnnecessaryParenthesesVisitor<>()
                         .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
 
-                lambda = lambda.withBody(requireNonNull(methodDeclaration.getBody()).withPrefix(Space.format(" ")));
+                lambda = lambda.withBody(reown.visitNonNull(requireNonNull(methodDeclaration.getBody()), 0)
+                        .withPrefix(Space.format(" ")));
 
                 lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
                 ReferencedImports.namesReferencedBy(n).forEach(this::maybeRemoveImport);
@@ -304,33 +325,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     }
                 }
                 return true;
-            }
-
-            private String valueOfType(@Nullable JavaType type) {
-                JavaType.Primitive primitive = TypeUtils.asPrimitive(type);
-                if (primitive != null) {
-                    switch (primitive) {
-                        case Boolean:
-                            return "true";
-                        case Byte:
-                        case Char:
-                        case Int:
-                        case Double:
-                        case Float:
-                        case Long:
-                        case Short:
-                            return "0";
-                        case String:
-                        case Null:
-                            return "null";
-                        case None:
-                        case Void:
-                        default:
-                            return "";
-                    }
-                }
-
-                return "null";
             }
         });
 
@@ -606,19 +600,37 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return new Cursor(new Cursor(classBody, method), requireNonNull(method.getBody()));
     }
 
-    private static List<String> parameterNames(J.MethodDeclaration method) {
-        return method.getParameters().stream()
-                .filter(J.VariableDeclarations.class::isInstance)
-                .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
-                .collect(toList());
-    }
-
-    // This does not recursive descend extended classes for inherited fields.
-    private static List<String> classFields(J.ClassDeclaration classDeclaration) {
-        return classDeclaration.getBody().getStatements().stream()
-                .filter(J.VariableDeclarations.class::isInstance)
-                .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
-                .collect(toList());
+    /**
+     * The method javac attributes the variables of a lambda at this cursor to. A field initializer or an initializer
+     * block runs in no declared method, so for those this builds the synthetic one the Java 25 parser records.
+     */
+    private static JavaType.@Nullable Method lambdaOwner(Cursor cursor) {
+        Object child = cursor.getValue();
+        for (Cursor c = cursor.getParentTreeCursor(); !c.isRoot(); child = c.getValue(), c = c.getParentTreeCursor()) {
+            Object value = c.getValue();
+            if (value instanceof J.MethodDeclaration) {
+                return ((J.MethodDeclaration) value).getMethodType();
+            }
+            Object parent = c.getParentTreeCursor().getValue();
+            if (value instanceof J.Block && (parent instanceof J.ClassDeclaration || parent instanceof J.NewClass)) {
+                JavaType.FullyQualified declaringType = TypeUtils.asFullyQualified(parent instanceof J.ClassDeclaration ?
+                        ((J.ClassDeclaration) parent).getType() : ((J.NewClass) parent).getType());
+                if (child instanceof J.Block) {
+                    return new JavaType.Method(null, 0, declaringType, "", JavaType.Primitive.Void,
+                            emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList());
+                }
+                if (!(child instanceof J.VariableDeclarations)) {
+                    return null;
+                }
+                return ((J.VariableDeclarations) child).hasModifier(J.Modifier.Type.Static) ||
+                       parent instanceof J.ClassDeclaration && ((J.ClassDeclaration) parent).getKind() == J.ClassDeclaration.Kind.Type.Interface ?
+                        new JavaType.Method(null, Flag.Private.getBitMask() | Flag.Static.getBitMask(), declaringType, "<clinit>",
+                                JavaType.Primitive.Void, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList()) :
+                        new JavaType.Method(null, Flag.Private.getBitMask(), declaringType, "<constructor>",
+                                declaringType, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList());
+            }
+        }
+        return null;
     }
 
     private static boolean usedAsStatement(Cursor cursor) {
@@ -686,16 +698,14 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     /**
      * Whether a variable the anonymous class body declares has the name of a local in scope at the class, which a
-     * lambda may not redeclare, or of a field of the enclosing class.
+     * lambda may not redeclare.
      */
     private static boolean shadowsLocalVariable(Cursor cursor) {
         J.NewClass n = cursor.getValue();
-        List<String> fields = classFields(cursor.firstEnclosingOrThrow(J.ClassDeclaration.class));
         Scope scope = Scope.at(cursor);
         return Scope.declaredWithin(new Cursor(cursor, n.getBody()))
                 .filter(declared -> declared.getNamespace() == Scope.Namespace.VARIABLE)
-                .anyMatch(declared -> fields.contains(declared.getName()) ||
-                                      scope.lookup(declared.getName()).filter(Scope.Binding::isLocal).isPresent());
+                .anyMatch(declared -> scope.lookup(declared.getName()).filter(Scope.Binding::isLocal).isPresent());
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {

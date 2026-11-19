@@ -99,14 +99,14 @@ recipeList:
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
   - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
-#  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn # declarations in the `else` block can collide, see #979
+  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 #  - org.openrewrite.staticanalysis.UnnecessaryThrows # changes method signatures that callers and overrides depend on
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces # may change public return types that other repositories use
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
   - org.openrewrite.staticanalysis.UsePortableNewlines
-#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface # slow on large code bases, and see #980
+  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
 #  - org.openrewrite.staticanalysis.UseStringReplace # re-escapes the replacement string, see D12 in #1116
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal

@@ -92,10 +92,10 @@ public class UnwrapElseAfterReturn extends Recipe {
              * with a later declaration there or capture a name a later statement reads.
              */
             private boolean widenedScopeCollides(J.Block enclosing, J.If ifStatement, Statement elseBody) {
-                if (!(elseBody instanceof J.Block)) {
-                    return false;
-                }
-                Cursor elseCursor = new Cursor(new Cursor(getCursor(), ifStatement), elseBody);
+                // A pattern variable escaping an else body without braces comes into scope once a block holds the body.
+                J.Block elseBlock = elseBody instanceof J.Block ? (J.Block) elseBody :
+                        J.Block.createEmptyBlock().withStatements(singletonList(elseBody));
+                Cursor elseCursor = new Cursor(new Cursor(getCursor(), ifStatement), elseBlock);
                 List<Cursor> later = new ArrayList<>();
                 List<Statement> statements = enclosing.getStatements();
                 for (Statement statement : statements.subList(statements.indexOf(ifStatement) + 1, statements.size())) {
