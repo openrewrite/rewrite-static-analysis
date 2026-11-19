@@ -581,7 +581,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenUsingAMemberOfTheAnonymousClass() {
         rewriteRun(
@@ -674,6 +673,29 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void dontUseLambdaWhenAFieldInitializerReadsItsOwnFieldFromAnArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  Thread t = new Thread(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              t.run();
+                          }
+                      }
+                  });
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenShadowsLocalVariable() {
         rewriteRun(

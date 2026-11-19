@@ -581,12 +581,13 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     /**
-     * Whether the anonymous class initializes a field that its method reads. A lambda in a field's initializer
-     * may not name that field.
+     * Whether the anonymous class sits in the initializer of a field that its method reads. A lambda anywhere in a
+     * field's initializer may not name that field, unless another class body lies between them.
      */
     private static boolean initializesFieldFromItself(Cursor cursor) {
         Cursor initialized = cursor.getParentTreeCursor();
-        while (initialized.getValue() instanceof J.Parentheses || initialized.getValue() instanceof J.TypeCast) {
+        while (initialized.getValue() instanceof Expression &&
+               !(initialized.getValue() instanceof J.NewClass && initialized.<J.NewClass>getValue().getBody() != null)) {
             initialized = initialized.getParentTreeCursor();
         }
         if (!(initialized.getValue() instanceof J.VariableDeclarations.NamedVariable)) {
