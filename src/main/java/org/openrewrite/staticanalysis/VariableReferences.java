@@ -143,6 +143,15 @@ public class VariableReferences {
     }
 
     /**
+     * The identifier written by a statement that {@link #findLhsReferences(J, J.Identifier)} found.
+     */
+    static J.Identifier assignedIdentifier(Statement write) {
+        return (J.Identifier) (write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
+                write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
+                        ((J.Unary) write).getExpression());
+    }
+
+    /**
      * Like {@link #isEffectivelyFinal(Cursor, J.VariableDeclarations.NamedVariable)}, for the local variable or
      * parameter that an identifier refers to. The cursor must reach up to the compilation unit, since the declaration
      * is looked up in the enclosing scopes. An identifier without type attribution gives {@code false}, and so does

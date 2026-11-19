@@ -178,7 +178,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         reference -> own == null || own.contains(reference.getId()));
                 if (readReferences.isEmpty()) {
                     List<Statement> assignmentReferences = ListUtils.filter(VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName()),
-                            reference -> own == null || own.contains(assigned(reference).getId()));
+                            reference -> own == null || own.contains(VariableReferences.assignedIdentifier(reference).getId()));
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment && mightSideEffect(((J.Assignment) ref).getAssignment()) ||
                             ref instanceof J.AssignmentOperation && mightSideEffect(((J.AssignmentOperation) ref).getAssignment())) {
@@ -216,12 +216,6 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         return super.visitInstanceOf(instanceOf, found);
                     }
                 }.reduce(region, new AtomicBoolean()).get();
-            }
-
-            private J assigned(Statement write) {
-                return write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
-                        write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
-                                ((J.Unary) write).getExpression();
             }
 
             @Override

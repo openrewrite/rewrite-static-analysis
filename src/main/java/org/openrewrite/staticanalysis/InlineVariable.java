@@ -205,7 +205,7 @@ public class InlineVariable extends Recipe {
                         .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
                         .orElse(null);
                 if (VariableReferences.findRhsReferences(bl, variable).stream().anyMatch(read -> own == null || own.contains(read.getId())) ||
-                        VariableReferences.findLhsReferences(bl, variable).stream().anyMatch(write -> own == null || own.contains(assigned(write).getId()))) {
+                        VariableReferences.findLhsReferences(bl, variable).stream().anyMatch(write -> own == null || own.contains(VariableReferences.assignedIdentifier(write).getId()))) {
                     return bl;
                 }
                 return bl.withStatements(ListUtils.map(bl.getStatements(), statement -> {
@@ -224,12 +224,6 @@ public class InlineVariable extends Recipe {
                     }
                     return remaining;
                 }));
-            }
-
-            private J assigned(Statement write) {
-                return write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
-                        write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
-                                ((J.Unary) write).getExpression();
             }
 
             private J.@Nullable Identifier identReturnedOrThrown(List<Statement> stats) {
