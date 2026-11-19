@@ -20,13 +20,15 @@ import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Collections.singletonList;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -96,29 +98,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
         }
 
         private static boolean isStatementLambdaConvertible(Statement statement, Cursor parent) {
-            return new JavaIsoVisitor<AtomicBoolean>() {
-                @Override
-                public J.Identifier visitIdentifier(J.Identifier id, AtomicBoolean convertible) {
-                    if (isLocal(id) && !VariableReferences.isEffectivelyFinal(getCursor())) {
-                        convertible.set(false);
-                    }
-                    return id;
-                }
-
-                @Override
-                public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean convertible) {
-                    // A lambda can't assign a captured local, even an effectively final one, so any local assignment blocks the conversion
-                    Expression target = assignment.getVariable().unwrap();
-                    if (target instanceof J.Identifier && isLocal((J.Identifier) target)) {
-                        convertible.set(false);
-                    }
-                    return super.visitAssignment(assignment, convertible);
-                }
-
-                private boolean isLocal(J.Identifier id) {
-                    return id.getType() != null && id.getFieldType() != null && !(id.getFieldType().getOwner() instanceof JavaType.Class);
-                }
-
+            return Scope.lambdaCanCapture(singletonList(new Cursor(parent, statement))) && new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, AtomicBoolean convertible) {
                     return classDecl;

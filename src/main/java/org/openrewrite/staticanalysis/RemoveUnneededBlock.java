@@ -29,7 +29,6 @@ import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -121,12 +120,8 @@ public class RemoveUnneededBlock extends Recipe {
                 // A pattern variable or local class the block declares would clash with a later one of its name.
                 // After a block that returns, what follows is unreachable and is removed along with its declarations.
                 if (i < padded.size() - 1 && nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
-                    Cursor nestedCursor = stmt == nested ? new Cursor(getCursor(), nested) : new Cursor(new Cursor(getCursor(), stmt), nested);
-                    List<Cursor> later = new ArrayList<>();
-                    for (Statement following : statements.subList(i + 1, statements.size())) {
-                        later.add(new Cursor(getCursor(), following));
-                    }
-                    if (Scope.at(nestedCursor).collidesAcross(later)) {
+                    Cursor stmtCursor = new Cursor(getCursor(), stmt);
+                    if (!Scope.at(Scope.cursorTo(stmtCursor, nested)).canMoveBefore(stmtCursor)) {
                         return rp;
                     }
                 }

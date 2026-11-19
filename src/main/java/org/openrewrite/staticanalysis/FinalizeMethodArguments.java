@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
-import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -24,6 +23,7 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
@@ -61,7 +61,7 @@ public class FinalizeMethodArguments extends Recipe {
 
                 if (methodDeclaration.getParameters().stream().anyMatch(p -> p instanceof J.VariableDeclarations &&
                         ((J.VariableDeclarations) p).getVariables().stream()
-                                .anyMatch(v -> !VariableReferences.isEffectivelyFinal(new Cursor(getCursor(), p), v)))) {
+                                .anyMatch(v -> !Scope.bindingOf(getCursor(), v).filter(Scope.Binding::isEffectivelyFinal).isPresent()))) {
                     return declarations;
                 }
 
