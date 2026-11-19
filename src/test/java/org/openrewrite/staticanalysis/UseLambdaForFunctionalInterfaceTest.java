@@ -606,6 +606,12 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                           return hashCode();
                       }
                   };
+                  Supplier<Class<?>> itsOwnClass = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return getClass();
+                      }
+                  };
                   Runnable itsOwnMethod = new Runnable() {
                       @Override
                       public void run() {
@@ -647,6 +653,209 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                           return super.toString();
                       }
                   };
+                  Supplier<Class<?>> c = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return super.getClass();
+                      }
+                  };
+                  Supplier<Supplier<Class<?>>> r = new Supplier<Supplier<Class<?>>>() {
+                      @Override
+                      public Supplier<Class<?>> get() {
+                          return super::getClass;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenImplicitGetClassIsNested() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> supplier(boolean b) {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              Supplier<Class<?>> nested = () -> getClass();
+                              return b ? String.valueOf(nested.get()) : "";
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenEnclosingExpressionOfQualifiedNewCallsGetClass() {
+        // The qualified `new`'s enclosing expression is evaluated in the outer anonymous class's scope
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  class Inner {
+                  }
+
+                  Test tag(Class<?> c) {
+                      return this;
+                  }
+
+                  Supplier<Object> supplier() {
+                      return new Supplier<Object>() {
+                          @Override
+                          public Object get() {
+                              return tag(getClass()).new Inner() {
+                              };
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenGetClassCannotBeAttributed() {
+        // Without a method type the receiver cannot be proven, so the site is left alone
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> s = new Supplier<String>() {
+                      @Override
+                      public String get() {
+                          return getClass(unknown);
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenGetClassIsCalledOnAnotherObject() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  Function<Object, Class<?>> f = new Function<Object, Class<?>>() {
+                      @Override
+                      public Class<?> apply(Object o) {
+                          return o.getClass();
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  Function<Object, Class<?>> f = o -> o.getClass();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenOnlyANestedAnonymousClassCallsGetClass() {
+        // The nested anonymous class keeps its own `this` either way
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return new Supplier<Supplier<Class<?>>>() {
+                          @Override
+                          public Supplier<Class<?>> get() {
+                              return new Supplier<Class<?>>() {
+                                  @Override
+                                  public Class<?> get() {
+                                      return getClass();
+                                  }
+                              };
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return () -> new Supplier<Class<?>>() {
+                          @Override
+                          public Class<?> get() {
+                              return getClass();
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenCallingAMethodOfTheEnclosingClass() {
+        // A call resolving to the enclosing class keeps its receiver in a lambda
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  String name() {
+                      return "x";
+                  }
+
+                  Supplier<String> supplier() {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              return name();
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  String name() {
+                      return "x";
+                  }
+
+                  Supplier<String> supplier() {
+                      return () -> name();
+                  }
               }
               """
           )
@@ -1413,6 +1622,31 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       @Override
                       public Integer get() {
                           return ++calls;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsUseOfAMemberOfTheAnonymousClass() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason()).isEqualTo("uses a member of the anonymous class");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              class Test {
+                  Supplier<Class<?>> s = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return getClass();
                       }
                   };
               }
