@@ -31,7 +31,9 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
@@ -1870,6 +1872,144 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
             spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
           )
         );
+    }
+
+    @Test
+    void lambdaParametersKeepOnlyTheirNames() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Joiner {
+                  String join(String first, int[] counts, String... rest);
+              }
+              class Test {
+                  Joiner j = new Joiner() {
+                      @Override
+                      public String join(@Deprecated final String first,
+                                         int counts[],
+                                         String... rest) {
+                          return first + counts.length + rest.length;
+                      }
+                  };
+              }
+              """,
+            """
+              interface Joiner {
+                  String join(String first, int[] counts, String... rest);
+              }
+              class Test {
+                  Joiner j = (first, counts, rest) -> first + counts.length + rest.length;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void variablesInTheLambdaAreAttributedAsInAFreshParse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  // Declared first, so javac names this anonymous class Test$1 both before and after the ones below are converted
+                  Object o = new Object() {
+                      Function<String, Integer> inner = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String a) {
+                              return a.length();
+                          }
+                      };
+                  };
+                  static Function<String, Integer> s = new Function<String, Integer>() {
+                      @Override
+                      public Integer apply(String b) {
+                          int n = b.length();
+                          return n;
+                      }
+                  };
+                  Function<String, Integer> f = new Function<String, Integer>() {
+                      @Override
+                      public Integer apply(String c) {
+                          return c.length();
+                      }
+                  };
+                  {
+                      Function<String, Integer> g = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String d) {
+                              return d.length();
+                          }
+                      };
+                  }
+                  interface Constants {
+                      Function<String, Integer> K = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String e) {
+                              return e.length();
+                          }
+                      };
+                  }
+                  void m() {
+                      Function<String, Function<String, Integer>> h = new Function<String, Function<String, Integer>>() {
+                          @Override
+                          public Function<String, Integer> apply(String x) {
+                              return y -> x.length() + y.length();
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  // Declared first, so javac names this anonymous class Test$1 both before and after the ones below are converted
+                  Object o = new Object() {
+                      Function<String, Integer> inner = a -> a.length();
+                  };
+                  static Function<String, Integer> s = b -> {
+                      int n = b.length();
+                      return n;
+                  };
+                  Function<String, Integer> f = c -> c.length();
+                  {
+                      Function<String, Integer> g = d -> d.length();
+                  }
+                  interface Constants {
+                      Function<String, Integer> K = e -> e.length();
+                  }
+                  void m() {
+                      Function<String, Function<String, Integer>> h = x -> y -> x.length() + y.length();
+                  }
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(lambdaVariables(cu)).isEqualTo(lambdaVariables(
+              (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(cu.printAll()).findFirst().orElseThrow())))
+          )
+        );
+    }
+
+    private static List<String> lambdaVariables(J.CompilationUnit cu) {
+        return new JavaIsoVisitor<List<String>>() {
+            @Override
+            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, List<String> variables) {
+                if (getCursor().firstEnclosing(J.Lambda.class) != null) {
+                    variables.add("declared " + variable.getVariableType());
+                }
+                return super.visitVariable(variable, variables);
+            }
+
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier identifier, List<String> variables) {
+                if (identifier.getFieldType() != null && identifier.getFieldType().getOwner() instanceof JavaType.Method &&
+                    getCursor().firstEnclosing(J.Lambda.class) != null) {
+                    variables.add(identifier.getSimpleName() + ": " + identifier.getType() + " " + identifier.getFieldType());
+                }
+                return super.visitIdentifier(identifier, variables);
+            }
+        }.reduce(cu, new ArrayList<>());
     }
 
     @Nested
