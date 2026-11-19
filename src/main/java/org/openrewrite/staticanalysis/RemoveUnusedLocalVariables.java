@@ -166,10 +166,14 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     return variable;
                 }
 
-                // The identifiers that refer to this declaration, which another local of its name and type does not
-                Set<UUID> own = Scope.bindingOf(getCursor(), variable)
-                        .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
-                        .orElse(null);
+                // SemanticallyEqual matches an attributed variable's references by owner, name and type, which only another
+                // variable of this name declared in the region can share. Scope tells those apart. It resolves every name
+                // in the scope, so it is asked only then.
+                Set<UUID> own = declaresNameAgain(parentScope.getValue(), variable) ?
+                        Scope.bindingOf(getCursor(), variable)
+                                .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
+                                .orElse(null) :
+                        null;
                 List<J> readReferences = ListUtils.filter(VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName()),
                         reference -> own == null || own.contains(reference.getId()));
                 if (readReferences.isEmpty()) {
@@ -191,6 +195,27 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }
 
                 return super.visitVariable(variable, ctx);
+            }
+
+            private boolean declaresNameAgain(J region, J.VariableDeclarations.NamedVariable variable) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable v, AtomicBoolean found) {
+                        if (!v.isScope(variable) && v.getSimpleName().equals(variable.getSimpleName())) {
+                            found.set(true);
+                        }
+                        return super.visitVariable(v, found);
+                    }
+
+                    @Override
+                    public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, AtomicBoolean found) {
+                        if (instanceOf.getPattern() instanceof J.Identifier &&
+                            ((J.Identifier) instanceOf.getPattern()).getSimpleName().equals(variable.getSimpleName())) {
+                            found.set(true);
+                        }
+                        return super.visitInstanceOf(instanceOf, found);
+                    }
+                }.reduce(region, new AtomicBoolean()).get();
             }
 
             private J assigned(Statement write) {

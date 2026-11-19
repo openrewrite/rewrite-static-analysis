@@ -1566,4 +1566,72 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void removeUnusedLocalNamedLikeAnEarlierPatternVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          System.out.println(s);
+                      }
+                      String s = "x";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          System.out.println(s);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUnusedLocalNamedLikeAnInheritedFieldANestedClassReads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  protected int x;
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  Object m() {
+                      int x = 1;
+                      return new Base() {
+                          int get() {
+                              return x;
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              class Test {
+                  Object m() {
+                      return new Base() {
+                          int get() {
+                              return x;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
 }
