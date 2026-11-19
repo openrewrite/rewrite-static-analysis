@@ -19,6 +19,7 @@ import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
@@ -66,7 +67,7 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                if (mv.getVariables().stream().allMatch(v -> VariableReferences.isEffectivelyFinal(getCursor(), v))) {
+                if (mv.getVariables().stream().allMatch(v -> Scope.bindingOf(getCursor(), v).filter(Scope.Binding::isEffectivelyFinal).isPresent())) {
                     mv = autoFormat(
                             mv.withModifiers(
                                     ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()))
