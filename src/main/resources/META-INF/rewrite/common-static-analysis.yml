@@ -99,7 +99,7 @@ recipeList:
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
   - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
-#  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn # declarations in the `else` block can collide, see #979
+  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 #  - org.openrewrite.staticanalysis.UnnecessaryThrows # changes method signatures that callers and overrides depend on
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces # may change public return types that other repositories use
