@@ -103,7 +103,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void stringVariableAsInput() {
+    void preservesDynamicCommandsAcrossAllOverloads() {
         rewriteRun(
           version(
             //language=java
@@ -123,31 +123,13 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                         Process process3 = runtime.exec(command, envp, dir);
                     }
                 }
-                """,
-              """
-                import java.io.File;
-                import java.io.IOException;
-                import java.util.Collections;
-                import java.util.StringTokenizer;
-
-                class B {
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        String command = "  ls  -a\\t-l\\n\\r\\f ";
-                        String[] envp = { "E1=1", "E2=2"};
-                        File dir = new File("/tmp");
-                        Process process1 = runtime.exec(Collections.list(new StringTokenizer(command)).toArray(new String[0]));
-                        Process process2 = runtime.exec(Collections.list(new StringTokenizer(command)).toArray(new String[0]), envp);
-                        Process process3 = runtime.exec(Collections.list(new StringTokenizer(command)).toArray(new String[0]), envp, dir);
-                    }
-                }
                 """
             ), 18)
         );
     }
 
     @Test
-    void methodInvocationAsInput() {
+    void preservesMethodInvocationAsInput() {
         rewriteRun(
           version(
             //language=java
@@ -162,21 +144,6 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                     void method() throws IOException {
                         Runtime runtime = Runtime.getRuntime();
                         Process process = runtime.exec(command());
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-                import java.util.Collections;
-                import java.util.StringTokenizer;
-
-                class B {
-                    String command() {
-                        return "ls -al";
-                    }
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        Process process = runtime.exec(Collections.list(new StringTokenizer(command())).toArray(new String[0]));
                     }
                 }
                 """
@@ -215,7 +182,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void concatenatedObjectsAsInput() {
+    void preservesConcatenationsWithDynamicParts() {
         rewriteRun(
           version(
             //language=java
@@ -228,19 +195,6 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                     void method() throws IOException {
                         Runtime runtime = Runtime.getRuntime();
                         Process process = runtime.exec("ls" + " " + options);
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-                import java.util.Collections;
-                import java.util.StringTokenizer;
-
-                class B {
-                    String options = "-a -l";
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        Process process = runtime.exec(Collections.list(new StringTokenizer("ls" + " " + options)).toArray(new String[0]));
                     }
                 }
                 """
@@ -386,14 +340,12 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                 """,
               """
                 import java.io.IOException;
-                import java.util.Collections;
-                import java.util.StringTokenizer;
 
                 class A {
                     void method(Runtime runtime, String command) throws IOException {
                         runtime.exec(new String[]{"ls", "-a"});
                         runtime.exec(new String[]{"ls", "-l"});
-                        runtime.exec(Collections.list(new StringTokenizer(command)).toArray(new String[0]));
+                        runtime.exec(command);
                     }
                 }
                 """

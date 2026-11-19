@@ -25,7 +25,6 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesJavaVersion;
-import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -49,8 +48,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
     String displayName = "Replace deprecated `Runtime#exec()` methods";
 
-    String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-            "since Java 18 and is no longer recommended for use by the Java documentation.";
+    String description = "Replace literal commands passed to deprecated Runtime.exec(String) methods with argument arrays. " +
+            "Dynamic commands are preserved because the original overloads still tokenize these commands at runtime.";
 
     Set<String> tags = singleton("RSPEC-S1874");
 
@@ -77,43 +76,30 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
                 if (RUNTIME_EXEC_CMD.matches(m) || RUNTIME_EXEC_CMD_ENVP.matches(m) || RUNTIME_EXEC_CMD_ENVP_FILE.matches(m)) {
                     Expression command = m.getArguments().get(0);
-                    List<Expression> commands = new ArrayList<>();
-                    boolean flattenAble = ChainStringBuilderAppendCalls.flatAdditiveExpressions(command, commands);
+                    List<Expression> parts = new ArrayList<>();
+                    if (!ChainStringBuilderAppendCalls.flatAdditiveExpressions(command, parts)) {
+                        return m;
+                    }
 
-                    StringBuilder sb = new StringBuilder();
-                    if (flattenAble) {
-                        for (Expression e : commands) {
-                            if (e instanceof J.Literal && ((J.Literal) e).getType() == JavaType.Primitive.String) {
-                                sb.append(((J.Literal) e).getValue());
-                            } else {
-                                flattenAble = false;
-                                break;
-                            }
+                    StringBuilder literalCommand = new StringBuilder();
+                    for (Expression part : parts) {
+                        if (!(part instanceof J.Literal) || ((J.Literal) part).getType() != JavaType.Primitive.String) {
+                            return m;
                         }
+                        literalCommand.append(((J.Literal) part).getValue());
+                    }
+
+                    if (literalCommand.length() == 0 || m.getMethodType() == null) {
+                        return m;
                     }
 
                     updateCursor(m);
-                    Expression arg0 = m.getArguments().get(0);
-                    Cursor cursor = new Cursor(getCursor(), arg0);
-                    Expression newArg0;
-                    if (flattenAble) {
-                        if (sb.length() == 0) {
-                            return m;
-                        }
-                        String templateCode = "new String[] {" + toStringArguments(new StringTokenizer(sb.toString())) + "}";
-                        newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
-                    } else {
-                        newArg0 = JavaTemplate.builder("java.util.Collections.list(new java.util.StringTokenizer(#{any(java.lang.String)})).toArray(new String[0])")
-                                .build()
-                                .apply(cursor, arg0.getCoordinates().replace(), arg0);
-                        doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(newArg0));
-                    }
-
-                    if (m.getMethodType() != null) {
-                        return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
-                                .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
-                                        m.getMethodType().getParameterTypes(), t -> newArg0.getType())));
-                    }
+                    Cursor cursor = new Cursor(getCursor(), command);
+                    String templateCode = "new String[] {" + toStringArguments(new StringTokenizer(literalCommand.toString())) + "}";
+                    Expression arguments = JavaTemplate.apply(templateCode, cursor, command.getCoordinates().replace());
+                    return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> arguments))
+                            .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
+                                    m.getMethodType().getParameterTypes(), t -> arguments.getType())));
                 }
 
                 return m;
