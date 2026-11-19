@@ -151,7 +151,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             private boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
-                        .map(s -> !RemoveUnreachableCodeVisitor.completesNormally(scopes, s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                        .map(s -> !scopes.completesNormally(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
                                 guardsWithEarlyExit(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/460
                                 s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
                                 s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
@@ -175,7 +175,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 }
                 if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() == null && !RemoveUnreachableCodeVisitor.completesNormally(scopes, iff.getThenPart());
+                    return iff.getElsePart() == null && !scopes.completesNormally(iff.getThenPart());
                 }
                 return false;
             }

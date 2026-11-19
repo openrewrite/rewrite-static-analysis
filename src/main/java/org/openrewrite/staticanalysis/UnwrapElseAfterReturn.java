@@ -169,7 +169,7 @@ public class UnwrapElseAfterReturn extends Recipe {
              * continue unless a loop does.
              */
             private boolean leavesByReturnOrThrow(Statement thenPart) {
-                if (RemoveUnreachableCodeVisitor.completesNormally(service(ScopeService.class), thenPart)) {
+                if (service(ScopeService.class).completesNormally(thenPart)) {
                     return false;
                 }
                 return !new JavaIsoVisitor<AtomicBoolean>() {

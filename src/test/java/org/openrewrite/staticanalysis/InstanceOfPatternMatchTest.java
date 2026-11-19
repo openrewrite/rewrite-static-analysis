@@ -1110,6 +1110,30 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void keepCastAfterNegatedCheckWhoseDoWhileCanFinish() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o, boolean c) {
+                          if (!(o instanceof String)) {
+                              do {
+                                  if (c) {
+                                      continue;
+                                  }
+                                  return;
+                              } while (c);
+                          }
+                          System.out.println(((String) o).length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void patternVariableAfterANegatedCheckAvoidsALaterLocal() {
             rewriteRun(
               //language=java
