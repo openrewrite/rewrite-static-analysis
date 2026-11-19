@@ -848,6 +848,52 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void addBreakAfterDoWhileThatContinues() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void n(int i, java.util.Iterator<String> it) {
+                      switch (i) {
+                          case 0:
+                              do {
+                                  if (it.next().isEmpty()) {
+                                      continue;
+                                  }
+                                  return;
+                              } while (it.hasNext());
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void n(int i, java.util.Iterator<String> it) {
+                      switch (i) {
+                          case 0:
+                              do {
+                                  if (it.next().isEmpty()) {
+                                      continue;
+                                  }
+                                  return;
+                              } while (it.hasNext());
+                              break;
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addBreaksFallthroughCasesComprehensive() {
         rewriteRun(
           //language=java

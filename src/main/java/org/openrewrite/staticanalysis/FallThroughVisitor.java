@@ -83,8 +83,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 return c;
             }
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                ScopeService scopes = getCursor().firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class);
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c, scopes).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c, service(ScopeService.class)).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -152,7 +151,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             private boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
-                        .map(s -> !scopes.completesNormally(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                        .map(s -> !RemoveUnreachableCodeVisitor.completesNormally(scopes, s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
                                 guardsWithEarlyExit(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/460
                                 s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
                                 s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
@@ -176,7 +175,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 }
                 if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() == null && !scopes.completesNormally(iff.getThenPart());
+                    return iff.getElsePart() == null && !RemoveUnreachableCodeVisitor.completesNormally(scopes, iff.getThenPart());
                 }
                 return false;
             }

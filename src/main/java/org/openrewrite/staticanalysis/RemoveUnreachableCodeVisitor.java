@@ -19,10 +19,10 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class RemoveUnreachableCodeVisitor extends JavaIsoVisitor<ExecutionContext> {
 
@@ -30,12 +30,29 @@ class RemoveUnreachableCodeVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
         J.Block b = super.visitBlock(block, ctx);
         List<Statement> statements = b.getStatements();
-        ScopeService scopes = getCursor().firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class);
+        ScopeService scopes = service(ScopeService.class);
         for (int i = 0; i < statements.size() - 1; i++) {
-            if (!scopes.completesNormally(statements.get(i))) {
+            if (!completesNormally(scopes, statements.get(i))) {
                 return b.withStatements(statements.subList(0, i + 1));
             }
         }
         return b;
+    }
+
+    /**
+     * Whether the statement can complete normally (JLS 14.22). {@link ScopeService#completesNormally(Statement)} does
+     * not count a continue as a way out of a do-while, so a statement with a continue inside a do-while is taken to
+     * complete.
+     */
+    static boolean completesNormally(ScopeService scopes, Statement statement) {
+        return scopes.completesNormally(statement) || new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean inDoWhile) {
+                if (getCursor().firstEnclosing(J.DoWhileLoop.class) != null) {
+                    inDoWhile.set(true);
+                }
+                return continueStatement;
+            }
+        }.reduce(statement, new AtomicBoolean()).get();
     }
 }

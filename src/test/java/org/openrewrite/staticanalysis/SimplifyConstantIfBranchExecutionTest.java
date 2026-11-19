@@ -335,6 +335,45 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
+    void keepStatementAfterDoWhileThatContinues() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test(java.util.Iterator<String> it) {
+                      if (true) {
+                          System.out.println("start");
+                      }
+                      do {
+                          if (it.next().isEmpty()) {
+                              continue;
+                          }
+                          return;
+                      } while (it.hasNext());
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test(java.util.Iterator<String> it) {
+                      System.out.println("start");
+                      do {
+                          if (it.next().isEmpty()) {
+                              continue;
+                          }
+                          return;
+                      } while (it.hasNext());
+                      System.out.println("after");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void simplifyConstantIfTrueElse() {
         rewriteRun(
           //language=java

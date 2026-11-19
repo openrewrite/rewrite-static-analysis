@@ -978,4 +978,29 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepElseAfterDoWhileThatContinues() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int m(boolean b, java.util.Iterator<String> it) {
+                      if (b) {
+                          do {
+                              if (it.next().isEmpty()) {
+                                  continue;
+                              }
+                              return 1;
+                          } while (it.hasNext());
+                      } else {
+                          System.out.println("else");
+                      }
+                      return 0;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
