@@ -106,7 +106,7 @@ recipeList:
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
   - org.openrewrite.staticanalysis.UsePortableNewlines
-#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface # slow on large code bases, and see #980
+  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
 #  - org.openrewrite.staticanalysis.UseStringReplace # re-escapes the replacement string, see D12 in #1116
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
