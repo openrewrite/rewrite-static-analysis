@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.ScopeService;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
@@ -29,7 +30,7 @@ class RemoveUnreachableCodeVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
         J.Block b = super.visitBlock(block, ctx);
         List<Statement> statements = b.getStatements();
-        ScopeService scopes = service(ScopeService.class);
+        ScopeService scopes = Scope.service(getCursor());
         for (int i = 0; i < statements.size() - 1; i++) {
             if (!scopes.completesNormally(statements.get(i))) {
                 return b.withStatements(statements.subList(0, i + 1));

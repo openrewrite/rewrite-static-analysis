@@ -114,7 +114,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     // A later check in that block joins it, so that names are given out in source order
                     if (block.getMessage("flowTypeScope") != null ||
                         next > 0 && next < statements.size() &&
-                        service(ScopeService.class).isMatchedAt(getCursor(), new Cursor(block, statements.get(next)))) {
+                        Scope.service(getCursor()).isMatchedAt(getCursor(), new Cursor(block, statements.get(next)))) {
                         root = block;
                     }
                 }
@@ -225,7 +225,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 Cursor parent = cursor.getParentTreeCursor();
                 J.InstanceOf instanceOf = instanceOfs.get(match.get());
                 // A pattern variable is in scope exactly where the check is known to have been true
-                ScopeService scopes = cursor.firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class);
+                ScopeService scopes = Scope.service(cursor);
                 if (scopes.isMatchedAt(cursors.get(instanceOf), cursor)) {
                     if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
                             cursor.firstEnclosing(J.Try.Resource.class) == null) {
