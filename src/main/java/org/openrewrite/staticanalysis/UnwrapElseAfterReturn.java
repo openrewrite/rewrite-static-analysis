@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
@@ -24,13 +25,14 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
-import org.openrewrite.java.tree.Comment;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.service.ScopeService;
+import org.openrewrite.java.trait.Scope;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
@@ -57,19 +59,22 @@ public class UnwrapElseAfterReturn extends Recipe {
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-                        if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
+                        if (ifStatement.getElsePart() != null && leavesByReturnOrThrow(ifStatement.getThenPart())) {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.If) {
                                 J.If innermost = findInnermostIfWithElse((J.If) elsePart);
                                 if (innermost != null &&
                                         innermost.getElsePart() != null &&
-                                        endsWithReturnOrThrow(innermost.getThenPart()) &&
+                                        leavesByReturnOrThrow(innermost.getThenPart()) &&
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
+                                    if (widenedScopeCollides(b, ifStatement, innermostElseBody)) {
+                                        return statement;
+                                    }
                                     return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
                                 }
-                            } else {
+                            } else if (!widenedScopeCollides(b, ifStatement, elsePart)) {
                                 J.If newIf = ifStatement.withElsePart(null);
                                 return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
@@ -80,6 +85,23 @@ public class UnwrapElseAfterReturn extends Recipe {
 
                 Space end = blockEnd.get();
                 return end == null ? alteredBlock : alteredBlock.withEnd(end);
+            }
+
+            /**
+             * Whether a name the else body declares would, once in scope for the rest of the enclosing block, clash
+             * with a later declaration there or capture a name a later statement reads.
+             */
+            private boolean widenedScopeCollides(J.Block enclosing, J.If ifStatement, Statement elseBody) {
+                if (!(elseBody instanceof J.Block)) {
+                    return false;
+                }
+                Cursor elseCursor = new Cursor(new Cursor(getCursor(), ifStatement), elseBody);
+                List<Cursor> later = new ArrayList<>();
+                List<Statement> statements = enclosing.getStatements();
+                for (Statement statement : statements.subList(statements.indexOf(ifStatement) + 1, statements.size())) {
+                    later.add(new Cursor(getCursor(), statement));
+                }
+                return Scope.at(elseCursor).collidesAcross(later);
             }
 
             private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,
@@ -141,18 +163,32 @@ public class UnwrapElseAfterReturn extends Recipe {
                 return ifStatement.withElsePart(null);
             }
 
-            private boolean endsWithReturnOrThrow(Statement statement) {
-                if (statement instanceof J.Return || statement instanceof J.Throw) {
-                    return true;
+            /**
+             * Whether the then part cannot complete normally and leaves only by return or throw, which the recipe
+             * covers. A break counts as leaving unless a loop or switch inside the then part encloses it, and a
+             * continue unless a loop does.
+             */
+            private boolean leavesByReturnOrThrow(Statement thenPart) {
+                if (service(ScopeService.class).completesNormally(thenPart)) {
+                    return false;
                 }
-                if (statement instanceof J.Block) {
-                    J.Block block = (J.Block) statement;
-                    if (!block.getStatements().isEmpty()) {
-                        Statement lastStatement = block.getStatements().get(block.getStatements().size() - 1);
-                        return lastStatement instanceof J.Return || lastStatement instanceof J.Throw;
+                return !new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Break visitBreak(J.Break breakStatement, AtomicBoolean leaves) {
+                        if (getCursor().firstEnclosing(Loop.class) == null && getCursor().firstEnclosing(J.Switch.class) == null) {
+                            leaves.set(true);
+                        }
+                        return breakStatement;
                     }
-                }
-                return false;
+
+                    @Override
+                    public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean leaves) {
+                        if (getCursor().firstEnclosing(Loop.class) == null) {
+                            leaves.set(true);
+                        }
+                        return continueStatement;
+                    }
+                }.reduce(thenPart, new AtomicBoolean()).get();
             }
         };
         return Repeat.repeatUntilStable(javaVisitor);

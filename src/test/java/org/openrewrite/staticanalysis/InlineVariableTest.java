@@ -919,4 +919,65 @@ class InlineVariableTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void anotherLocalOfTheNameIsNotAUse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int nested() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                      int x;
+                      x = 1;
+                      return x;
+                  }
+
+                  int inFinally() {
+                      try {
+                          int y;
+                          y = compute();
+                          return y;
+                      } finally {
+                          int y = 2;
+                          System.out.println(y);
+                      }
+                  }
+
+                  int compute() {
+                      return 1;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int nested() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                      return 1;
+                  }
+
+                  int inFinally() {
+                      try {
+                          return compute();
+                      } finally {
+                          int y = 2;
+                          System.out.println(y);
+                      }
+                  }
+
+                  int compute() {
+                      return 1;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

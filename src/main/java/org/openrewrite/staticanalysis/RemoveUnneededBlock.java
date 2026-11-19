@@ -17,16 +17,19 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -114,6 +117,18 @@ public class RemoveUnneededBlock extends Recipe {
                         nested.getStatements().stream().anyMatch(J.VariableDeclarations.class::isInstance) &&
                         nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
                     return rp;
+                }
+                // A pattern variable or local class the block declares would clash with a later one of its name.
+                // After a block that returns, what follows is unreachable and is removed along with its declarations.
+                if (i < padded.size() - 1 && nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
+                    Cursor nestedCursor = stmt == nested ? new Cursor(getCursor(), nested) : new Cursor(new Cursor(getCursor(), stmt), nested);
+                    List<Cursor> later = new ArrayList<>();
+                    for (Statement following : statements.subList(i + 1, statements.size())) {
+                        later.add(new Cursor(getCursor(), following));
+                    }
+                    if (Scope.at(nestedCursor).collidesAcross(later)) {
+                        return rp;
+                    }
                 }
 
                 return ListUtils.map(nested.getPadding().getStatements(), (j, innerRp) -> {

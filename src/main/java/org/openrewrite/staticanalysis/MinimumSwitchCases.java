@@ -373,13 +373,15 @@ public class MinimumSwitchCases extends Recipe {
                     return statements;
                 }
                 List<Statement> result = new ArrayList<>();
+                // Only a variable's first assignment declares it; the ones after assign to that declaration
+                Set<String> redeclared = new HashSet<>();
                 for (Statement s : statements) {
                     if (s instanceof J.Assignment) {
                         J.Assignment assignment = (J.Assignment) s;
                         if (assignment.getVariable() instanceof J.Identifier) {
                             String name = ((J.Identifier) assignment.getVariable()).getSimpleName();
                             J.VariableDeclarations originalDecl = declaredVars.get(name);
-                            if (originalDecl != null) {
+                            if (originalDecl != null && redeclared.add(name)) {
                                 J.VariableDeclarations.NamedVariable newVar = originalDecl.getVariables().get(0)
                                         .withName(((J.Identifier) assignment.getVariable()).withPrefix(Space.EMPTY))
                                         .withInitializer(assignment.getAssignment())

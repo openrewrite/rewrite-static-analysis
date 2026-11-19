@@ -581,6 +581,120 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void dontUseLambdaWhenUsingAMemberOfTheAnonymousClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Predicate;
+              import java.util.function.Supplier;
+
+              interface Check {
+                  int LIMIT = 3;
+                  boolean ok(int i);
+              }
+              class Test {
+                  int n;
+                  void run() {
+                  }
+                  Supplier<Integer> inheritedFromObject = new Supplier<Integer>() {
+                      @Override
+                      public Integer get() {
+                          return hashCode();
+                      }
+                  };
+                  Runnable itsOwnMethod = new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              run();
+                          }
+                      }
+                  };
+                  Predicate<String> defaultMethod = new Predicate<String>() {
+                      @Override
+                      public boolean test(String s) {
+                          return s.isEmpty() || negate() == null;
+                      }
+                  };
+                  Check constant = new Check() {
+                      @Override
+                      public boolean ok(int i) {
+                          return i < LIMIT;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenSuper() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> s = new Supplier<String>() {
+                      @Override
+                      public String get() {
+                          return super.toString();
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenAFieldInitializerReadsItsOwnField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  Runnable r = new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              r.run();
+                          }
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenAFieldInitializerReadsItsOwnFieldFromAnArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  Thread t = new Thread(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              t.run();
+                          }
+                      }
+                  });
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenShadowsLocalVariable() {
@@ -1806,5 +1920,29 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                 return super.visitClassDeclaration(classDecl, p);
             }
         }.visitNonNull(cu, 0);
+    }
+
+    @Test
+    void keepAnonymousClassWhoseLocalHasAPatternVariablesName() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          Runnable r = new Runnable() {
+                              @Override
+                              public void run() {
+                                  String s = "x";
+                                  System.out.println(s);
+                              }
+                          };
+                      }
+                  }
+              }
+              """
+          )
+        );
     }
 }

@@ -596,4 +596,47 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepBlockWhosePatternVariableALaterLocalRepeats() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(Object o) {
+                      {
+                          if (!(o instanceof String s)) {
+                              return;
+                          }
+                          System.out.println(s);
+                      }
+                      String s = "b";
+                      System.out.println(s);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepBlockWhoseLocalClassALaterOneRepeats() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m() {
+                      {
+                          class Helper {}
+                          new Helper();
+                      }
+                      class Helper {}
+                      new Helper();
+                  }
+              }
+              """
+          )
+        );
+    }
 }

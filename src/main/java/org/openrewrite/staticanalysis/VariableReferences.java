@@ -20,15 +20,20 @@ import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class VariableReferences {
     private static boolean isIncrementKind(Cursor tree) {
@@ -138,6 +143,15 @@ public class VariableReferences {
     }
 
     /**
+     * The identifier written by a statement that {@link #findLhsReferences(J, J.Identifier)} found.
+     */
+    static J.Identifier assignedIdentifier(Statement write) {
+        return (J.Identifier) (write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
+                write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
+                        ((J.Unary) write).getExpression());
+    }
+
+    /**
      * Like {@link #isEffectivelyFinal(Cursor, J.VariableDeclarations.NamedVariable)}, for the local variable or
      * parameter that an identifier refers to. The cursor must reach up to the compilation unit, since the declaration
      * is looked up in the enclosing scopes. An identifier without type attribution gives {@code false}, and so does
@@ -214,43 +228,49 @@ public class VariableReferences {
         }
         boolean blankLocal = variable.getInitializer() == null && (position instanceof J.Block || position instanceof J.Case);
 
-        // Matching by name also counts writes to a same-named variable in a nested class, which only errs towards false.
-        List<Cursor> writes = new JavaIsoVisitor<List<Cursor>>() {
+        Map<UUID, Cursor> writes = new JavaIsoVisitor<Map<UUID, Cursor>>() {
             @Override
-            public J.Assignment visitAssignment(J.Assignment assignment, List<Cursor> writes) {
+            public J.Assignment visitAssignment(J.Assignment assignment, Map<UUID, Cursor> writes) {
                 record(assignment.getVariable(), writes);
                 return super.visitAssignment(assignment, writes);
             }
 
             @Override
-            public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, List<Cursor> writes) {
+            public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, Map<UUID, Cursor> writes) {
                 record(assignOp.getVariable(), writes);
                 return super.visitAssignmentOperation(assignOp, writes);
             }
 
             @Override
-            public J.Unary visitUnary(J.Unary unary, List<Cursor> writes) {
+            public J.Unary visitUnary(J.Unary unary, Map<UUID, Cursor> writes) {
                 if (unary.getOperator().isModifying()) {
                     record(unary.getExpression(), writes);
                 }
                 return super.visitUnary(unary, writes);
             }
 
-            private void record(Expression target, List<Cursor> writes) {
+            private void record(Expression target, Map<UUID, Cursor> writes) {
                 Expression unwrapped = target.unwrap();
                 if (unwrapped instanceof J.Identifier && ((J.Identifier) unwrapped).getSimpleName().equals(variable.getSimpleName())) {
-                    writes.add(getCursor());
+                    writes.put(unwrapped.getId(), getCursor());
                 }
             }
-        }.reduce(scope.getValue(), new ArrayList<>(), scope.getParentOrThrow());
+        }.reduce(scope.getValue(), new LinkedHashMap<>(), scope.getParentOrThrow());
 
+        // The name also matches writes to a field or local of a nested class. Scope tells those apart. It resolves
+        // every name in the scope, so it is asked only when there are writes.
+        if (!writes.isEmpty()) {
+            Scope.bindingOf(new Cursor(declarations, variable), variable).ifPresent(binding ->
+                    writes.keySet().retainAll(binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet())));
+        }
         if (writes.isEmpty()) {
             return true;
         }
-        if (!blankLocal || writes.size() > 1 || !(writes.get(0).getValue() instanceof J.Assignment)) {
+        Cursor write = writes.values().iterator().next();
+        if (!blankLocal || writes.size() > 1 || !(write.getValue() instanceof J.Assignment)) {
             return false;
         }
-        for (Cursor c = writes.get(0); c.getValue() != scope.getValue(); c = c.getParentOrThrow()) {
+        for (Cursor c = write; c.getValue() != scope.getValue(); c = c.getParentOrThrow()) {
             if (c.getValue() instanceof Loop) {
                 return false;
             }

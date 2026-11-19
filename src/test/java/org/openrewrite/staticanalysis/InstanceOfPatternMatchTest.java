@@ -1060,6 +1060,113 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void negatedInstanceOfThatLeavesMatchesInLaterStatements() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          String s = (String) o;
+                          System.out.println(s.length() + ((String) o).length());
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String s)) {
+                              return;
+                          }
+                          System.out.println(s.length() + s.length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepCastAfterTheCheckedVariableIsAssigned() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o, Object other) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          o = other;
+                          System.out.println(((String) o).length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepCastAfterNegatedCheckWhoseDoWhileCanFinish() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o, boolean c) {
+                          if (!(o instanceof String)) {
+                              do {
+                                  if (c) {
+                                      continue;
+                                  }
+                                  return;
+                              } while (c);
+                          }
+                          System.out.println(((String) o).length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void patternVariableAfterANegatedCheckAvoidsALaterLocal() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          System.out.println(((String) o).length());
+                          String string = "x";
+                          System.out.println(string);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String string1)) {
+                              return;
+                          }
+                          System.out.println(string1.length());
+                          String string = "x";
+                          System.out.println(string);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void negatedInstanceOfMatchedInElse() {
             rewriteRun(
               //language=java
@@ -1071,6 +1178,17 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                               System.out.println(((String) o).length());
                           } else {
                               System.out.println(((String) o).length());
+                          }
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String string)) {
+                              System.out.println(((String) o).length());
+                          } else {
+                              System.out.println(string.length());
                           }
                       }
                   }
@@ -1692,6 +1810,36 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @Nested
     @SuppressWarnings({"unchecked", "rawtypes"})
     class Various {
+        @Test
+        void patternVariableInAWhileConditionTakesTheNameOfTheDeletedLocal() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          while (o instanceof String) {
+                              String str = (String) o;
+                              System.out.println(str);
+                              o = str.isEmpty() ? null : str.substring(1);
+                          }
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          while (o instanceof String str) {
+                              System.out.println(str);
+                              o = str.isEmpty() ? null : str.substring(1);
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @Test
         void unaryWithoutSideEffects() {
             rewriteRun(

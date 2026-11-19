@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.marker.SearchResult;
@@ -127,8 +128,22 @@ public class NoDoubleBraceInitialization extends Recipe {
                             parentBlockCursor.computeMessageIfAbsent("INIT_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         }
                     } else if (parentBlockCursor.getParent().getValue() instanceof J.MethodDeclaration) {
-                        initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
                         Cursor varDeclsCursor = getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance);
+                        // The statements move into the method body, where a local they declare may meet a later one, or
+                        // one already in scope there, which the anonymous class was allowed to shadow
+                        Cursor initCursor = new Cursor(new Cursor(getCursor(), nc.getBody()), secondBlock);
+                        List<Statement> bodyStatements = parentBlockCursor.<J.Block>getValue().getStatements();
+                        List<Cursor> later = new ArrayList<>();
+                        for (Statement following : bodyStatements.subList(bodyStatements.indexOf(varDeclsCursor.<Statement>getValue()) + 1, bodyStatements.size())) {
+                            later.add(new Cursor(parentBlockCursor, following));
+                        }
+                        Scope destination = Scope.at(getCursor().getParentTreeCursor());
+                        if (Scope.at(initCursor).collidesAcross(later) ||
+                            Scope.declaredWithin(initCursor).anyMatch(declared ->
+                                    destination.lookup(declared.getName(), declared.getNamespace()).filter(Scope.Binding::isLocal).isPresent())) {
+                            return nc;
+                        }
+                        initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
                         parentBlockCursor.computeMessageIfAbsent("METHOD_DECL_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         nc = nc.withBody(null);
                     }
