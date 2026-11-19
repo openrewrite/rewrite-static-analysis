@@ -732,6 +732,122 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void doNotAddBreakAfterSynchronizedReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int n(int i, Object lock) {
+                      switch (i) {
+                          case 0:
+                              synchronized (lock) {
+                                  return 0;
+                              }
+                          case 1:
+                              return 1;
+                      }
+                      return 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addBreakWhenElseCompletes() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void n(int i, boolean b) {
+                      switch (i) {
+                          case 0:
+                              if (b) {
+                                  return;
+                              } else {
+                                  System.out.println("zero");
+                              }
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void n(int i, boolean b) {
+                      switch (i) {
+                          case 0:
+                              if (b) {
+                                  return;
+                              } else {
+                                  System.out.println("zero");
+                              }
+                              break;
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addBreakAfterNestedSwitchThatCompletes() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void n(int i, int j) {
+                      switch (i) {
+                          case 0:
+                              switch (j) {
+                                  case 0:
+                                      System.out.println("zero");
+                                      break;
+                                  default:
+                                      return;
+                              }
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void n(int i, int j) {
+                      switch (i) {
+                          case 0:
+                              switch (j) {
+                                  case 0:
+                                      System.out.println("zero");
+                                      break;
+                                  default:
+                                      return;
+                              }
+                              break;
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addBreaksFallthroughCasesComprehensive() {
         rewriteRun(
           //language=java
