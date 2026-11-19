@@ -572,7 +572,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Function<Integer, Integer> f = new Function<Integer, Integer>() {
                       @Override
                       public Integer apply(Integer n) {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
@@ -1361,7 +1361,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Function<Integer, Integer> f = new Function<Integer, Integer>() {
                       @Override
                       public Integer apply(Integer n) {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
@@ -1449,7 +1449,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Supplier<Integer> untouched = new Supplier<Integer>() {
                       @Override
                       public Integer get() {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
@@ -1463,7 +1463,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Supplier<Integer> untouched = new Supplier<Integer>() {
                       @Override
                       public Integer get() {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
