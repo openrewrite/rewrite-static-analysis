@@ -30,7 +30,6 @@ import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,12 +68,12 @@ public class UnwrapElseAfterReturn extends Recipe {
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
-                                    if (widenedScopeCollides(b, ifStatement, innermostElseBody)) {
+                                    if (!elseCanFollow(ifStatement, innermost.getElsePart())) {
                                         return statement;
                                     }
                                     return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
                                 }
-                            } else if (!widenedScopeCollides(b, ifStatement, elsePart)) {
+                            } else if (elseCanFollow(ifStatement, ifStatement.getElsePart())) {
                                 J.If newIf = ifStatement.withElsePart(null);
                                 return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
@@ -87,21 +86,13 @@ public class UnwrapElseAfterReturn extends Recipe {
                 return end == null ? alteredBlock : alteredBlock.withEnd(end);
             }
 
-            /**
-             * Whether a name the else body declares would, once in scope for the rest of the enclosing block, clash
-             * with a later declaration there or capture a name a later statement reads.
-             */
-            private boolean widenedScopeCollides(J.Block enclosing, J.If ifStatement, Statement elseBody) {
+            private boolean elseCanFollow(J.If ifStatement, J.If.Else elsePart) {
+                Cursor ifCursor = new Cursor(getCursor(), ifStatement);
+                Statement elseBody = elsePart.getBody();
                 // A pattern variable escaping an else body without braces comes into scope once a block holds the body.
                 J.Block elseBlock = elseBody instanceof J.Block ? (J.Block) elseBody :
                         J.Block.createEmptyBlock().withStatements(singletonList(elseBody));
-                Cursor elseCursor = new Cursor(new Cursor(getCursor(), ifStatement), elseBlock);
-                List<Cursor> later = new ArrayList<>();
-                List<Statement> statements = enclosing.getStatements();
-                for (Statement statement : statements.subList(statements.indexOf(ifStatement) + 1, statements.size())) {
-                    later.add(new Cursor(getCursor(), statement));
-                }
-                return Scope.at(elseCursor).collidesAcross(later);
+                return Scope.at(new Cursor(Scope.cursorTo(ifCursor, elsePart), elseBlock)).canMoveAfter(ifCursor);
             }
 
             private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,
