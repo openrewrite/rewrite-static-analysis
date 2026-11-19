@@ -29,6 +29,7 @@ import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
@@ -110,11 +111,10 @@ public class InstanceOfPatternMatch extends Recipe {
                 if (block.getValue() instanceof J.Block) {
                     List<Statement> statements = block.<J.Block>getValue().getStatements();
                     int next = statements.indexOf(root.<Statement>getValue()) + 1;
-                    ScopeService scopes = getCursor().firstEnclosingOrThrow(JavaSourceFile.class).service(ScopeService.class);
                     // A later check in that block joins it, so that names are given out in source order
                     if (block.getMessage("flowTypeScope") != null ||
                         next > 0 && next < statements.size() &&
-                        scopes.isMatchedAt(getCursor(), new Cursor(block, statements.get(next)))) {
+                        service(ScopeService.class).isMatchedAt(getCursor(), new Cursor(block, statements.get(next)))) {
                         root = block;
                     }
                 }
@@ -378,20 +378,16 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
-            VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
-            if (inIfs.contains(instanceOf)) {
-                VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
-                if (variableData != null) {
-                    // under the assumption that the code compiled previously we don't need to check for duplicates
-                    return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
-                }
-                strategy = VariableNameStrategy.normal(contextScopes.get(instanceOf));
-            } else {
-                strategy = VariableNameStrategy.short_();
+            VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
+            if (variableData != null) {
+                // The pattern variable stands in for the deleted declaration, whose references keep its name. Under
+                // the assumption that the code compiled previously we don't need to check for duplicates.
+                return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
             }
-            String baseName = strategy.variableName(type);
+            String name;
             if (inIfs.contains(instanceOf)) {
+                String baseName = VariableNameStrategy.normal(contextScopes.get(instanceOf)).variableName(type);
                 J.If enclosingIf = cursor.firstEnclosing(J.If.class);
                 String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
 
@@ -402,9 +398,20 @@ public class InstanceOfPatternMatch extends Recipe {
                 }
 
                 String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
-                return nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
+                name = nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
+            } else {
+                name = VariableNameUtils.generateVariableName(VariableNameStrategy.short_().variableName(type), cursor, INCREMENT_NUMBER);
             }
-            return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
+            if (root instanceof J.Block) {
+                // The pattern variable stays in scope to the end of the block, so it also keeps clear of what the
+                // statements after the check declare or read
+                Cursor block = cursor;
+                while (!(block.getValue() instanceof J.Block && root.getId().equals(block.<J.Block>getValue().getId()))) {
+                    block = block.getParentOrThrow();
+                }
+                name = Scope.at(block).freeName(name, usedNames::contains);
+            }
+            return name;
         }
 
         private @Nullable VariableAndTypeTree getPrimaryVariableToDelete(J.InstanceOf instanceOf) {
