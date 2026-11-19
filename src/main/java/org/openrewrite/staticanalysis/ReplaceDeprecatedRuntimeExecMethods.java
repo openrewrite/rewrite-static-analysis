@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.apache.commons.text.StringEscapeUtils;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -24,6 +25,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -34,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import static java.util.Collections.singleton;
 
@@ -94,23 +97,22 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     Cursor cursor = new Cursor(getCursor(), arg0);
                     Expression newArg0;
                     if (flattenAble) {
-                        String[] cmds = sb.toString().split(" ");
-                        String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
+                        if (sb.length() == 0) {
+                            return m;
+                        }
+                        String templateCode = "new String[] {" + toStringArguments(new StringTokenizer(sb.toString())) + "}";
                         newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
                     } else {
-                        // replace argument to 'command.split(" ")'
-                        boolean needWrap = !(arg0 instanceof J.Identifier) &&
-                                           !(arg0 instanceof J.Literal) &&
-                                           !(arg0 instanceof J.MethodInvocation);
-                        String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        newArg0 = JavaTemplate.builder(code).contextSensitive().build()
+                        newArg0 = JavaTemplate.builder("java.util.Collections.list(new java.util.StringTokenizer(#{any(java.lang.String)})).toArray(new String[0])")
+                                .build()
                                 .apply(cursor, arg0.getCoordinates().replace(), arg0);
+                        doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(newArg0));
                     }
 
                     if (m.getMethodType() != null) {
                         return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
                                 .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
-                                        m.getMethodType().getParameterTypes(), t -> JavaType.ShallowClass.build("java.lang.String[]"))));
+                                        m.getMethodType().getParameterTypes(), t -> newArg0.getType())));
                     }
                 }
 
@@ -119,16 +121,13 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
         });
     }
 
-    private static String toStringArguments(String[] cmds) {
+    private static String toStringArguments(StringTokenizer tokens) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < cmds.length; i++) {
-            String token = cmds[i];
-            if (i != 0) {
+        while (tokens.hasMoreTokens()) {
+            if (sb.length() > 0) {
                 sb.append(", ");
             }
-            sb.append("\"")
-                    .append(token)
-                    .append("\"");
+            sb.append('"').append(StringEscapeUtils.escapeJava(tokens.nextToken())).append('"');
         }
         return sb.toString();
     }
