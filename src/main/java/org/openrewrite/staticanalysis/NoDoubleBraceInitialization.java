@@ -129,14 +129,18 @@ public class NoDoubleBraceInitialization extends Recipe {
                         }
                     } else if (parentBlockCursor.getParent().getValue() instanceof J.MethodDeclaration) {
                         Cursor varDeclsCursor = getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance);
-                        // The statements move into the method body, where a local they declare may meet a later one
+                        // The statements move into the method body, where a local they declare may meet a later one, or
+                        // one already in scope there, which the anonymous class was allowed to shadow
                         Cursor initCursor = new Cursor(new Cursor(getCursor(), nc.getBody()), secondBlock);
                         List<Statement> bodyStatements = parentBlockCursor.<J.Block>getValue().getStatements();
                         List<Cursor> later = new ArrayList<>();
                         for (Statement following : bodyStatements.subList(bodyStatements.indexOf(varDeclsCursor.<Statement>getValue()) + 1, bodyStatements.size())) {
                             later.add(new Cursor(parentBlockCursor, following));
                         }
-                        if (Scope.at(initCursor).collidesAcross(later)) {
+                        Scope destination = Scope.at(getCursor().getParentTreeCursor());
+                        if (Scope.at(initCursor).collidesAcross(later) ||
+                            Scope.declaredWithin(initCursor).anyMatch(declared ->
+                                    destination.lookup(declared.getName(), declared.getNamespace()).filter(Scope.Binding::isLocal).isPresent())) {
                             return nc;
                         }
                         initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
