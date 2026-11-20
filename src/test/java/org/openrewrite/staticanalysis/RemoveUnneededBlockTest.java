@@ -226,7 +226,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
               public class A {
                   void test() {
                       if (true) {
-                          System.out.println("hello!");
+                           System.out.println("hello!");
                       }
                   }
               }

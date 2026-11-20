@@ -102,7 +102,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
               import org.apache.commons.lang3.Validate;
               class Test {
                   void test(Object obj) {
-                        Validate.notNull(obj, "Object in %s should not be null", "request xyz");
+                      Validate.notNull(obj, "Object in %s should not be null", "request xyz");
                   }
               }
               """,
