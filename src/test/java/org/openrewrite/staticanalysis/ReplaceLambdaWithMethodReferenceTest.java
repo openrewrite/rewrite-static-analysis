@@ -1046,6 +1046,96 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1257")
+    @Test
+    void replacesExplicitLambdaWhenParameterTypeIsConstrained() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.function.Function;
+              import java.util.function.Supplier;
+
+              enum Kind { VALUE }
+
+              class Registry<F, T> {
+                  Registry(Class<T> type, Function<F, T> converter) {}
+              }
+
+              class A {
+                  <F, T> void register(Class<T> type, Function<F, T> converter) {}
+
+                  void overloaded(Class<Kind> type, Function<String, Kind> converter) {}
+                  <F, T> void overloaded(String name, Function<F, T> converter) {}
+
+                  <T> void overloadedGeneric(Class<T> type, Function<String, T> converter) {}
+                  <X, F, T> void overloadedGeneric(X key, Function<F, T> converter) {}
+
+                  <R> List<R> mapStrings(Function<String, R> mapper) {
+                      return null;
+                  }
+
+                  void test(int n) {
+                      Function<String, Kind> fn = (String s) -> Kind.valueOf(s);
+                      Function<String, Kind> varFn = (var s) -> Kind.valueOf(s);
+                      Supplier<Function<String, ?>> nestedReturnWildcard = () -> (String s) -> Kind.valueOf(s);
+                      Function<String, Kind> sw = switch (n) {
+                          case 1 -> (String s) -> Kind.valueOf(s);
+                          default -> (String s) -> Kind.VALUE;
+                      };
+                      mapStrings((String s) -> Kind.valueOf(s));
+                      this.<String, Kind>register(Kind.class, (String s) -> Kind.valueOf(s));
+                      new Registry<String, Kind>(Kind.class, (String s) -> Kind.valueOf(s));
+                      overloaded(Kind.class, (String s) -> Kind.valueOf(s));
+                      overloadedGeneric(Kind.class, (String s) -> Kind.valueOf(s));
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.function.Function;
+              import java.util.function.Supplier;
+
+              enum Kind { VALUE }
+
+              class Registry<F, T> {
+                  Registry(Class<T> type, Function<F, T> converter) {}
+              }
+
+              class A {
+                  <F, T> void register(Class<T> type, Function<F, T> converter) {}
+
+                  void overloaded(Class<Kind> type, Function<String, Kind> converter) {}
+                  <F, T> void overloaded(String name, Function<F, T> converter) {}
+
+                  <T> void overloadedGeneric(Class<T> type, Function<String, T> converter) {}
+                  <X, F, T> void overloadedGeneric(X key, Function<F, T> converter) {}
+
+                  <R> List<R> mapStrings(Function<String, R> mapper) {
+                      return null;
+                  }
+
+                  void test(int n) {
+                      Function<String, Kind> fn = Kind::valueOf;
+                      Function<String, Kind> varFn = Kind::valueOf;
+                      Supplier<Function<String, ?>> nestedReturnWildcard = () -> Kind::valueOf;
+                      Function<String, Kind> sw = switch (n) {
+                          case 1 -> Kind::valueOf;
+                          default -> (String s) -> Kind.VALUE;
+                      };
+                      mapStrings(Kind::valueOf);
+                      this.<String, Kind>register(Kind.class, Kind::valueOf);
+                      new Registry<String, Kind>(Kind.class, Kind::valueOf);
+                      overloaded(Kind.class, Kind::valueOf);
+                      overloadedGeneric(Kind.class, Kind::valueOf);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("EmptyTryBlock")
     @Test
     void tryInAForLoop() {
@@ -2223,6 +2313,87 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                                   }
                               }
                           };
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1257")
+        @Test
+        void preservesParameterTypeForGenericConverter() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+
+                  enum Kind { VALUE }
+
+                  class Converter {
+                      <F, T> void register(Class<T> type, Function<F, T> converter) {}
+
+                      void configure() {
+                          register(Kind.class, (String s) -> Kind.valueOf(s));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1257")
+        @Test
+        void preservesParameterTypeForGenericInferenceContexts() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+
+                  enum Kind { VALUE }
+
+                  interface ConverterFn<A, B> extends Function<B, A> {}
+
+                  class Registry<F, T> {
+                      Registry(Class<T> type, Function<F, T> converter) {}
+                  }
+
+                  class Converter {
+                      <F, T> void register(Class<T> type, Function<F, T> converter) {}
+                      <F, T> void registerSupplier(Class<T> type, Supplier<Function<F, T>> factory) {}
+                      <F, T> void registerReversed(Class<T> type, ConverterFn<T, F> converter) {}
+                      @SafeVarargs
+                      final <F, T> void registerAll(Class<T> type, Function<F, T>... converters) {}
+                      <F> List<F> make(Function<F, Boolean> predicate) {
+                          return null;
+                      }
+                      void overloaded(Class<Kind> type, Function<String, Kind> converter) {}
+                      <F, T> void overloaded(String name, Function<F, T> converter) {}
+
+                      void configure(boolean flag) {
+                          new Registry<>(Kind.class, (String s) -> Kind.valueOf(s));
+                          register(Kind.class, ((String s) -> Kind.valueOf(s)));
+                          register(Kind.class, flag ? (String s) -> Kind.valueOf(s) : (String s) -> Kind.VALUE);
+                          register(Kind.class, switch (flag ? 1 : 2) {
+                              case 1 -> (String s) -> Kind.valueOf(s);
+                              default -> (String s) -> Kind.VALUE;
+                          });
+                          register(Kind.class, switch (flag ? 1 : 2) {
+                              case 1 -> {
+                                  yield (String s) -> Kind.valueOf(s);
+                              }
+                              default -> (String s) -> Kind.VALUE;
+                          });
+                          registerSupplier(Kind.class, () -> (String s) -> Kind.valueOf(s));
+                          registerReversed(Kind.class, (String s) -> Kind.valueOf(s));
+                          registerAll(Kind.class, (String s) -> Kind.valueOf(s));
+                          overloaded("k", (String s) -> Kind.valueOf(s));
+                          var list = make((String s) -> s != null);
+                          String first = list.get(0);
                       }
                   }
                   """
