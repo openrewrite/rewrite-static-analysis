@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -23,6 +24,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.*;
@@ -186,7 +188,7 @@ final class KnownMockReceiver {
             return false;
         }
         // A local declaration with the same name is evidence against the inherited API.
-        for (org.openrewrite.java.tree.Statement statement : enclosing.getBody().getStatements()) {
+        for (Statement statement : enclosing.getBody().getStatements()) {
             if (statement instanceof J.MethodDeclaration && ((J.MethodDeclaration) statement).getSimpleName().equals(name)) {
                 return false;
             }
@@ -196,7 +198,7 @@ final class KnownMockReceiver {
                TypeUtils.isAssignableTo("spock.mock.MockingApi", enclosing.getExtends().getType());
     }
 
-    private String qualifiedType(@org.jspecify.annotations.Nullable JavaType type) {
+    private String qualifiedType(@Nullable JavaType type) {
         JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
         if (fq == null) {
             return "";

@@ -17,7 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.SourceFile;
+import org.openrewrite.groovy.GroovyParser;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,26 +136,26 @@ class IsEmptyCallOnMockReceiversTest implements RewriteTest {
     }
 
     private void assertLegacyModel(String before, String expected) {
-        var ctx = new org.openrewrite.InMemoryExecutionContext(t -> { throw new AssertionError(t); });
-        var parsed = org.openrewrite.groovy.GroovyParser.builder().build().parse(ctx, before).findFirst().orElseThrow();
+        var ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
+        var parsed = GroovyParser.builder().build().parse(ctx, before).findFirst().orElseThrow();
         // The actual original Spock models have typed size() calls, but null factory
         // method types and a shallow, unqualified MockUtil receiver type.
-        var legacy = new org.openrewrite.java.JavaIsoVisitor<Integer>() {
+        var legacy = new JavaIsoVisitor<Integer>() {
             @Override
-            public org.openrewrite.java.tree.J.MethodInvocation visitMethodInvocation(org.openrewrite.java.tree.J.MethodInvocation m, Integer p) {
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, Integer p) {
                 var method = super.visitMethodInvocation(m, p);
                 if ("Mock".equals(method.getSimpleName()) || "createDetachedMock".equals(method.getSimpleName())) {
                     method = method.withMethodType(null);
-                    if (method.getSelect() instanceof org.openrewrite.java.tree.J.Identifier) {
-                        method = method.withSelect(((org.openrewrite.java.tree.J.Identifier) method.getSelect())
-                          .withType(org.openrewrite.java.tree.JavaType.ShallowClass.build("MockUtil")));
+                    if (method.getSelect() instanceof J.Identifier) {
+                        method = method.withSelect(((J.Identifier) method.getSelect())
+                          .withType(JavaType.ShallowClass.build("MockUtil")));
                     }
                 }
                 return method;
             }
         }.visitNonNull(parsed, 0);
-        var after = (org.openrewrite.SourceFile) new IsEmptyCallOnCollections().getVisitor().visitNonNull(legacy, ctx);
-        after = (org.openrewrite.SourceFile) new IsEmptyCallOnMaps().getVisitor().visitNonNull(after, ctx);
+        var after = (SourceFile) new IsEmptyCallOnCollections().getVisitor().visitNonNull(legacy, ctx);
+        after = (SourceFile) new IsEmptyCallOnMaps().getVisitor().visitNonNull(after, ctx);
         assertThat(after.printAll()).isEqualTo(expected);
     }
 
