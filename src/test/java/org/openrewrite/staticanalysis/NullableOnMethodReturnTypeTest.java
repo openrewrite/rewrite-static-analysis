@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -88,6 +89,39 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
 
               public class Foo {
                   public @Nullable B.C bar() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Annotation is placed before the qualified name, producing `@Nullable Map.Entry` which javac rejects")
+    @Test
+    void moveNullableToNestedTypeSimpleName() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Map;
+
+              class Test<K, V> {
+                  @Nullable
+                  public Map.Entry<K, V> entry() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Map;
+
+              class Test<K, V> {
+                  public Map.@Nullable Entry<K, V> entry() {
                       return null;
                   }
               }
