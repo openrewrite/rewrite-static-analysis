@@ -20,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.JavaType;
@@ -93,7 +94,7 @@ class CovariantEqualsJavaScriptTest implements RewriteTest {
         var source = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
           Path.of(path), null, "UTF-8", false, null, List.of(),
           List.of(JRightPadded.build(clazz)), Space.EMPTY);
-        assertThat(new org.openrewrite.java.MethodMatcher("* equals(..)").matches(equals.getMethodType())).isTrue();
+        assertThat(new MethodMatcher("* equals(..)").matches(equals.getMethodType())).isTrue();
         assertThat(new CovariantEquals().getVisitor().visit(source, ctx)).isSameAs(source);
         JS.CompilationUnit marked = SearchResult.found(source);
         assertThat(new CovariantEquals().getVisitor().visit(marked, ctx)).isSameAs(marked);

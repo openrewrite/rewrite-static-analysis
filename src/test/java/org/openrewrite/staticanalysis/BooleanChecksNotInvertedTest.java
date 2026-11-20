@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import groovy.lang.GroovyShell;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -24,6 +25,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.SourceFile;
+import org.openrewrite.groovy.GroovyParser;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.J;
@@ -321,7 +324,7 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
           groovy(
             "assert !!('very long foo' == 'very long bar')" + message,
             spec -> spec.afterRecipe(cu -> {
-                var shell = new groovy.lang.GroovyShell();
+                var shell = new GroovyShell();
                 assertThatThrownBy(() -> shell.evaluate(cu.printAll()))
                   .isInstanceOf(AssertionError.class);
             })
@@ -356,14 +359,14 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
     void emittedGroovyAssertionStillFails(String message) {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
         String before = "def foo = 'very long foo'; def bar = 'very long bar'; assert !!(foo == bar)" + message;
-        org.openrewrite.SourceFile parsed = org.openrewrite.groovy.GroovyParser.builder().build()
+        SourceFile parsed = GroovyParser.builder().build()
           .parse(ctx, before).findFirst().orElseThrow();
-        var after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
+        var after = (SourceFile) new BooleanChecksNotInverted()
           .getVisitor().visit(parsed, ctx);
         assertThat(after).isNotNull();
-        assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(before))
+        assertThatThrownBy(() -> new GroovyShell().evaluate(before))
           .isInstanceOf(AssertionError.class);
-        assertThatThrownBy(() -> new groovy.lang.GroovyShell().evaluate(after.printAll()))
+        assertThatThrownBy(() -> new GroovyShell().evaluate(after.printAll()))
           .as("Emitted assertion: %s", after.printAll()).isInstanceOf(AssertionError.class);
     }
 
@@ -402,13 +405,13 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
     })
     void preserveGroovyEvaluationAndNullSemantics(String before) {
         ExecutionContext ctx = new InMemoryExecutionContext(t -> { throw new AssertionError(t); });
-        org.openrewrite.SourceFile parsed = org.openrewrite.groovy.GroovyParser.builder().build()
+        SourceFile parsed = GroovyParser.builder().build()
           .parse(ctx, before).findFirst().orElseThrow();
-        var after = (org.openrewrite.SourceFile) new BooleanChecksNotInverted()
+        var after = (SourceFile) new BooleanChecksNotInverted()
           .getVisitor().visit(parsed, ctx);
         assertThat(after).isNotNull();
-        Object expected = new groovy.lang.GroovyShell().evaluate(before);
-        Object actual = new groovy.lang.GroovyShell().evaluate(after.printAll());
+        Object expected = new GroovyShell().evaluate(before);
+        Object actual = new GroovyShell().evaluate(after.printAll());
         assertThat(actual).as("Emitted code: %s", after.printAll()).isEqualTo(expected);
         assertThat(actual.getClass()).isEqualTo(expected.getClass());
     }
