@@ -68,7 +68,7 @@ public class FinalizeLocalVariables extends Recipe {
                 }
 
                 if (mv.getVariables().stream().allMatch(v -> Scope.bindingOf(getCursor(), v).filter(Scope.Binding::isEffectivelyFinal).isPresent())) {
-                    mv = autoFormat(
+                    mv = maybeAutoFormat(mv,
                             mv.withModifiers(
                                     ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()))
                             ), ctx);
