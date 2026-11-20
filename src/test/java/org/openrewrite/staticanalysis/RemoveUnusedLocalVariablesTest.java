@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
@@ -31,19 +32,19 @@ import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
-  "ConstantConditions",
-  "StatementWithEmptyBody",
-  "EmptyTryBlock",
-  "UnusedAssignment",
-  "ResultOfMethodCallIgnored",
-  "BooleanMethodNameMustStartWithQuestion",
-  "PointlessBooleanExpression",
-  "UseOfObsoleteCollectionType",
-  "UnnecessaryLocalVariable",
-  "EmptyFinallyBlock",
-  "ClassInitializerMayBeStatic",
-  "FunctionName",
-  "ParameterCanBeLocal"
+        "ConstantConditions",
+        "StatementWithEmptyBody",
+        "EmptyTryBlock",
+        "UnusedAssignment",
+        "ResultOfMethodCallIgnored",
+        "BooleanMethodNameMustStartWithQuestion",
+        "PointlessBooleanExpression",
+        "UseOfObsoleteCollectionType",
+        "UnnecessaryLocalVariable",
+        "EmptyFinallyBlock",
+        "ClassInitializerMayBeStatic",
+        "FunctionName",
+        "ParameterCanBeLocal"
 })
 class RemoveUnusedLocalVariablesTest implements RewriteTest {
 
@@ -1534,5 +1535,103 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Test
+    void removeUnusedLocalNamedLikeAUsedOneInAnotherBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                      int x = 1;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUnusedLocalNamedLikeAnEarlierPatternVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          System.out.println(s);
+                      }
+                      String s = "x";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          System.out.println(s);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUnusedLocalNamedLikeAnInheritedFieldANestedClassReads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  protected int x;
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  Object m() {
+                      int x = 1;
+                      return new Base() {
+                          int get() {
+                              return x;
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              class Test {
+                  Object m() {
+                      return new Base() {
+                          int get() {
+                              return x;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
     }
 }

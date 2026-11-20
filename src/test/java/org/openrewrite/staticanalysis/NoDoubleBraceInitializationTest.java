@@ -616,4 +616,59 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepInitializerWhoseLocalALaterDeclarationRepeats() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  void m() {
+                      List<String> l = new ArrayList<String>() {{
+                          String s = "a";
+                          add(s);
+                      }};
+                      String s = "b";
+                      System.out.println(s);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepInitializerWhoseLocalShadowsAVariableInScope() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  void m(String s) {
+                      List<String> l = new ArrayList<String>() {{
+                          String s = "a";
+                          add(s);
+                      }};
+                      System.out.println(l);
+                  }
+
+                  void n() {
+                      List<String> l = new ArrayList<String>() {{
+                          String l = "a";
+                          add(l);
+                      }};
+                      System.out.println(l);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

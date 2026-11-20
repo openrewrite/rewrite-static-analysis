@@ -374,13 +374,27 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
 
         @Issue("https://github.com/openrewrite/rewrite/issues/2294")
         @Test
-        void nameConflict() {
+        void renameBesideAnUnrelatedLocalOfTheNewName() {
             rewriteRun(
               //language=java
               java(
                 """
                   class A {
                       private final String _var = "";
+                      private void a() {
+                          if (true) {
+                              Thread t = new Thread() {
+                                  public void run() {
+                                      String var = "a";
+                                  }
+                              };
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      private final String var = "";
                       private void a() {
                           if (true) {
                               Thread t = new Thread() {
@@ -509,7 +523,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         }
 
         @Test
-        void doNotChangeWhenSameMethodParam() {
+        void renameBesideAParameterOfTheOldName() {
             rewriteRun(
               //language=java
               java(
@@ -518,6 +532,14 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                       private int _variable;
                       public void getInstance(int _variable) {
                           this._variable = _variable;
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      private int variable;
+                      public void getInstance(int _variable) {
+                          this.variable = _variable;
                       }
                   }
                   """
@@ -623,5 +645,35 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/186")
+    @Test
+    void renameFieldAssignedFromAParameterOfTheNewName() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private int foo_nr = 1;
+
+                  public Test setFoo_nr(int fooNr) {
+                      this.foo_nr = fooNr;
+                      return this;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  private int fooNr = 1;
+
+                  public Test setFoo_nr(int fooNr) {
+                      this.fooNr = fooNr;
+                      return this;
+                  }
+              }
+              """
+          )
+        );
     }
 }

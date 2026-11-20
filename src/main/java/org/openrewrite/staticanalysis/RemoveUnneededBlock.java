@@ -17,11 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
@@ -115,6 +117,14 @@ public class RemoveUnneededBlock extends Recipe {
                         nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
                     return rp;
                 }
+                // A pattern variable or local class the block declares would clash with a later one of its name.
+                // After a block that returns, what follows is unreachable and is removed along with its declarations.
+                if (i < padded.size() - 1 && nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
+                    Cursor stmtCursor = new Cursor(getCursor(), stmt);
+                    if (!Scope.at(Scope.cursorTo(stmtCursor, nested)).canMoveBefore(stmtCursor)) {
+                        return rp;
+                    }
+                }
 
                 return ListUtils.map(nested.getPadding().getStatements(), (j, innerRp) -> {
                     Statement inlinedStmt = innerRp.getElement();
@@ -122,7 +132,12 @@ public class RemoveUnneededBlock extends Recipe {
                         inlinedStmt = inlinedStmt.withPrefix(inlinedStmt.getPrefix()
                                 .withComments(ListUtils.concatAll(nested.getComments(), inlinedStmt.getComments())));
                     }
-                    return innerRp.withElement(autoFormat(inlinedStmt, ctx, getCursor()));
+                    Statement formatted = autoFormat(inlinedStmt, ctx, getCursor());
+                    if (j == 0 && sharesLine(stmt, nested, innerRp.getElement())) {
+                        // The statement takes the place of what opened on its line, so the line keeps its indentation
+                        formatted = formatted.withPrefix(stmt.getPrefix());
+                    }
+                    return innerRp.withElement(formatted);
                 });
             }));
 
@@ -134,6 +149,18 @@ public class RemoveUnneededBlock extends Recipe {
                         .withComments(ListUtils.concatAll(((J.Block) lastStatement).getEnd().getComments(), flattened.getEnd().getComments())));
             }
             return flattened;
+        }
+
+        /**
+         * Whether the first statement of a block follows the opening brace on the line where the removed block,
+         * or the {@code try} whose body it is, starts.
+         */
+        private static boolean sharesLine(Statement removed, J.Block nested, Statement first) {
+            return removed.getComments().isEmpty() && nested.getComments().isEmpty() &&
+                   first.getComments().isEmpty() &&
+                   removed.getPrefix().getWhitespace().contains("\n") &&
+                   (removed == nested || !nested.getPrefix().getWhitespace().contains("\n")) &&
+                   !first.getPrefix().getWhitespace().contains("\n");
         }
     }
 }

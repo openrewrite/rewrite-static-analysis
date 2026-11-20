@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 

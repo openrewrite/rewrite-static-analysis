@@ -79,7 +79,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                         if (at.getAnnotations().isEmpty() && !(getCursor().getParentTreeCursor().getValue() instanceof J.MethodDeclaration)) {
                             at = at.withTypeExpression(te.withPrefix(te.getPrefix().withWhitespace("")));
                         }
-                        at = autoFormat(at, at.getTypeExpression(), ctx, getCursor().getParentOrThrow());
+                        at = maybeAutoFormat(annotatedType, at, at.getTypeExpression(), ctx, getCursor().getParentOrThrow());
                     }
                 }
                 return at;
@@ -105,7 +105,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                         if (mv.getLeadingAnnotations().isEmpty()) {
                             mv = mv.withTypeExpression(te.withPrefix(te.getPrefix().withWhitespace("")));
                         }
-                        mv = autoFormat(mv, mv.getTypeExpression(), ctx, getCursor().getParentOrThrow());
+                        mv = maybeAutoFormat(multiVariable, mv, mv.getTypeExpression(), ctx, getCursor().getParentOrThrow());
                     }
                 }
                 return mv;
@@ -131,7 +131,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                         if (md.getLeadingAnnotations().isEmpty()) {
                             md = md.withReturnTypeExpression(te.withPrefix(te.getPrefix().withWhitespace("")));
                         }
-                        md = autoFormat(md, md.getReturnTypeExpression(), ctx, getCursor().getParentOrThrow());
+                        md = maybeAutoFormat(method, md, md.getReturnTypeExpression(), ctx, getCursor().getParentOrThrow());
                     }
                 }
                 return md;

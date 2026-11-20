@@ -25,8 +25,10 @@ import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.service.ScopeService;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.FallThroughStyle;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
@@ -39,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.requireNonNull;
+
 import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 
 @NoArgsConstructor
@@ -48,7 +51,11 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
      * Ignores any fall-through commented with a text matching the regex pattern.
      * This is currently non-user-configurable, though held within {@link FallThroughStyle}.
      */
-    private static final Pattern RELIEF_PATTERN = Pattern.compile("falls?[ -]?thr(u|ough)");
+    private static final Pattern RELIEF_PATTERN = Pattern.compile("\\b(?:falls?|drops?)[ -]?thr(?:u|ough)\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
+            comment instanceof TextComment &&
+                    RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
 
     private FallThroughStyle style;
 
@@ -70,8 +77,14 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = requireNonNull(getCursor().firstEnclosing(J.Switch.class));
+            // A comment just inside the switch's opening brace belongs to the first case's prefix.
+            // It documents fall-through for this switch, without relieving any nested switches.
+            List<Statement> cases = switch_.getCases().getStatements();
+            if (!cases.isEmpty() && cases.get(0).getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)) {
+                return c;
+            }
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c, Scope.service(getCursor())).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -127,21 +140,19 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     private static class FindLastLineBreaksOrFallsThroughComments {
 
-        private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
-            return new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).reduce(enclosingSwitch, new HashSet<>());
+        private static Set<J> find(J.Switch enclosingSwitch, J.Case scope, ScopeService scopes) {
+            return new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope, scopes).reduce(enclosingSwitch, new HashSet<>());
         }
 
         @RequiredArgsConstructor
         private static class FindLastLineBreaksOrFallsThroughCommentsVisitor extends JavaIsoVisitor<Set<J>> {
-            private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
-                    comment instanceof TextComment &&
-                            RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
             private final J.Case scope;
+            private final ScopeService scopes;
 
-            private static boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
+            private boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
-                        .map(s -> breaks(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                        .map(s -> !scopes.completesNormally(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
                                 guardsWithEarlyExit(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/460
                                 s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
                                 s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
@@ -155,7 +166,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
              * {@code try} and {@code switch} are deliberately not, because they can complete normally even
              * when every {@code if} they contain completes abruptly.
              */
-            private static boolean guardsWithEarlyExit(Statement s) {
+            private boolean guardsWithEarlyExit(Statement s) {
                 if (s instanceof J.Block) {
                     List<Statement> statements = ((J.Block) s).getStatements();
                     return !statements.isEmpty() && guardsWithEarlyExit(statements.get(statements.size() - 1));
@@ -165,53 +176,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 }
                 if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() == null && breaks(iff.getThenPart());
+                    return iff.getElsePart() == null && !scopes.completesNormally(iff.getThenPart());
                 }
                 return false;
-            }
-
-            private static boolean breaks(Statement s) {
-                if (s instanceof J.Block) {
-                    List<Statement> statements = ((J.Block) s).getStatements();
-                    return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
-                }
-                if (s instanceof J.If) {
-                    J.If iff = (J.If) s;
-                    return iff.getElsePart() != null && breaks(iff.getThenPart());
-                }
-                if (s instanceof J.Label) {
-                    return breaks(((J.Label) s).getStatement());
-                }
-                if (s instanceof J.Try) {
-                    J.Try try_ = (J.Try) s;
-                    if (try_.getFinally() != null && breaks(try_.getFinally())) {
-                        return true;
-                    }
-                    if (!breaks(try_.getBody())) {
-                        return false;
-                    }
-                    for (J.Try.Catch c : try_.getCatches()) {
-                        if (!breaks(c.getBody())) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                if (s instanceof J.Switch) {
-                    // Arrow-style switches used as statements don't prevent fall-through
-                    J.Switch sw = (J.Switch) s;
-                    List<Statement> cases = sw.getCases().getStatements();
-                    for (Statement cs : cases) {
-                        if (cs instanceof J.Case && ((J.Case) cs).getType() == J.Case.Type.Rule) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                return s instanceof J.Return ||
-                        s instanceof J.Break ||
-                        s instanceof J.Continue ||
-                        s instanceof J.Throw;
             }
 
             @Override

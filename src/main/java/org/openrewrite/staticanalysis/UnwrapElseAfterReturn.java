@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
@@ -24,13 +25,12 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
-import org.openrewrite.java.tree.Comment;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.trait.Scope;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
@@ -57,19 +57,22 @@ public class UnwrapElseAfterReturn extends Recipe {
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-                        if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
+                        if (ifStatement.getElsePart() != null && leavesByReturnOrThrow(ifStatement.getThenPart())) {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.If) {
                                 J.If innermost = findInnermostIfWithElse((J.If) elsePart);
                                 if (innermost != null &&
                                         innermost.getElsePart() != null &&
-                                        endsWithReturnOrThrow(innermost.getThenPart()) &&
+                                        leavesByReturnOrThrow(innermost.getThenPart()) &&
                                         !(innermost.getElsePart().getBody() instanceof J.If)) {
                                     J.If modifiedChain = removeInnermostElse(ifStatement);
                                     Statement innermostElseBody = innermost.getElsePart().getBody();
+                                    if (!elseCanFollow(ifStatement, innermost.getElsePart())) {
+                                        return statement;
+                                    }
                                     return flatten(ifStatement, innermost, innermostElseBody, b.getEnd(), blockEnd, modifiedChain);
                                 }
-                            } else {
+                            } else if (elseCanFollow(ifStatement, ifStatement.getElsePart())) {
                                 J.If newIf = ifStatement.withElsePart(null);
                                 return flatten(ifStatement, ifStatement, elsePart, b.getEnd(), blockEnd, newIf);
                             }
@@ -80,6 +83,15 @@ public class UnwrapElseAfterReturn extends Recipe {
 
                 Space end = blockEnd.get();
                 return end == null ? alteredBlock : alteredBlock.withEnd(end);
+            }
+
+            private boolean elseCanFollow(J.If ifStatement, J.If.Else elsePart) {
+                Cursor ifCursor = new Cursor(getCursor(), ifStatement);
+                Statement elseBody = elsePart.getBody();
+                // A pattern variable escaping an else body without braces comes into scope once a block holds the body.
+                J.Block elseBlock = elseBody instanceof J.Block ? (J.Block) elseBody :
+                        J.Block.createEmptyBlock().withStatements(singletonList(elseBody));
+                return Scope.at(new Cursor(Scope.cursorTo(ifCursor, elsePart), elseBlock)).canMoveAfter(ifCursor);
             }
 
             private List<Statement> flatten(J.If blockIf, J.If tailIf, Statement tailElse, Space end,
@@ -141,18 +153,32 @@ public class UnwrapElseAfterReturn extends Recipe {
                 return ifStatement.withElsePart(null);
             }
 
-            private boolean endsWithReturnOrThrow(Statement statement) {
-                if (statement instanceof J.Return || statement instanceof J.Throw) {
-                    return true;
+            /**
+             * Whether the then part cannot complete normally and leaves only by return or throw, which the recipe
+             * covers. A break counts as leaving unless a loop or switch inside the then part encloses it, and a
+             * continue unless a loop does.
+             */
+            private boolean leavesByReturnOrThrow(Statement thenPart) {
+                if (Scope.service(getCursor()).completesNormally(thenPart)) {
+                    return false;
                 }
-                if (statement instanceof J.Block) {
-                    J.Block block = (J.Block) statement;
-                    if (!block.getStatements().isEmpty()) {
-                        Statement lastStatement = block.getStatements().get(block.getStatements().size() - 1);
-                        return lastStatement instanceof J.Return || lastStatement instanceof J.Throw;
+                return !new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Break visitBreak(J.Break breakStatement, AtomicBoolean leaves) {
+                        if (getCursor().firstEnclosing(Loop.class) == null && getCursor().firstEnclosing(J.Switch.class) == null) {
+                            leaves.set(true);
+                        }
+                        return breakStatement;
                     }
-                }
-                return false;
+
+                    @Override
+                    public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean leaves) {
+                        if (getCursor().firstEnclosing(Loop.class) == null) {
+                            leaves.set(true);
+                        }
+                        return continueStatement;
+                    }
+                }.reduce(thenPart, new AtomicBoolean()).get();
             }
         };
         return Repeat.repeatUntilStable(javaVisitor);

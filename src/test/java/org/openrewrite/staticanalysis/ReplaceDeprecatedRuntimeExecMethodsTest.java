@@ -47,9 +47,9 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                         String[] envp = { "E1=1", "E2=2"};
                         File dir = new File("/tmp");
 
-                        Process process1 = runtime.exec("ls -a -l");
-                        Process process2 = runtime.exec("ls -a -l", envp);
-                        Process process3 = runtime.exec("ls -a -l", envp, dir);
+                        Process process1 = runtime.exec("  ls  -a\\t-l\\n\\r\\f ");
+                        Process process2 = runtime.exec("ls\\t-a  -l", envp);
+                        Process process3 = runtime.exec("ls\\f-a\\r-l\\n", envp, dir);
                     }
                 }
                 """,
@@ -74,7 +74,36 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void stringVariableAsInput() {
+    void escapesLiteralTokensAndLeavesEmptyCommandUnchanged() {
+        rewriteRun(
+          version(
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("cmd \\"quoted\\" path\\\\name alpha\\013beta");
+                        runtime.exec("");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"cmd", "\\"quoted\\"", "path\\\\name", "alpha\\u000Bbeta"});
+                        runtime.exec("");
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void preservesDynamicCommandsAcrossAllOverloads() {
         rewriteRun(
           version(
             //language=java
@@ -86,28 +115,12 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                 class B {
                     void method() throws IOException {
                         Runtime runtime = Runtime.getRuntime();
-                        String command = "ls -al";
+                        String command = "  ls  -a\\t-l\\n\\r\\f ";
                         String[] envp = { "E1=1", "E2=2"};
                         File dir = new File("/tmp");
                         Process process1 = runtime.exec(command);
                         Process process2 = runtime.exec(command, envp);
                         Process process3 = runtime.exec(command, envp, dir);
-                    }
-                }
-                """,
-              """
-                import java.io.File;
-                import java.io.IOException;
-
-                class B {
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        String command = "ls -al";
-                        String[] envp = { "E1=1", "E2=2"};
-                        File dir = new File("/tmp");
-                        Process process1 = runtime.exec(command.split(" "));
-                        Process process2 = runtime.exec(command.split(" "), envp);
-                        Process process3 = runtime.exec(command.split(" "), envp, dir);
                     }
                 }
                 """
@@ -116,7 +129,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void methodInvocationAsInput() {
+    void preservesMethodInvocationAsInput() {
         rewriteRun(
           version(
             //language=java
@@ -131,19 +144,6 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                     void method() throws IOException {
                         Runtime runtime = Runtime.getRuntime();
                         Process process = runtime.exec(command());
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-
-                class B {
-                    String command() {
-                        return "ls -al";
-                    }
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        Process process = runtime.exec(command().split(" "));
                     }
                 }
                 """
@@ -182,7 +182,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void concatenatedObjectsAsInput() {
+    void preservesConcatenationsWithDynamicParts() {
         rewriteRun(
           version(
             //language=java
@@ -195,17 +195,6 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                     void method() throws IOException {
                         Runtime runtime = Runtime.getRuntime();
                         Process process = runtime.exec("ls" + " " + options);
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-
-                class B {
-                    String options = "-a -l";
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        Process process = runtime.exec(("ls" + " " + options).split(" "));
                     }
                 }
                 """
@@ -356,7 +345,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                     void method(Runtime runtime, String command) throws IOException {
                         runtime.exec(new String[]{"ls", "-a"});
                         runtime.exec(new String[]{"ls", "-l"});
-                        runtime.exec(command.split(" "));
+                        runtime.exec(command);
                     }
                 }
                 """

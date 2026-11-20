@@ -16,11 +16,14 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.version;
 
 @SuppressWarnings("ConstantConditions")
 class UnwrapElseAfterReturnTest implements RewriteTest {
@@ -28,6 +31,36 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnwrapElseAfterReturn());
+    }
+
+    @DocumentExample
+    @Test
+    void simpleIfElseWithReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      } else {
+                          return 2;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      return 2;
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -60,36 +93,6 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                           x=2;
                       }
                       return x;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void simpleIfElseWithReturn() {
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  int foo(boolean condition) {
-                      if (condition) {
-                          return 1;
-                      } else {
-                          return 2;
-                      }
-                  }
-              }
-              """,
-            """
-              class Test {
-                  int foo(boolean condition) {
-                      if (condition) {
-                          return 1;
-                      }
-                      return 2;
                   }
               }
               """
@@ -796,6 +799,645 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       }
                       return 2;
                       // next line after 2
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepElseWhoseLocalALaterDeclarationRepeats() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void plain(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          int value = 1;
+                          System.out.println(value);
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+
+                  void chain(boolean first, boolean second) {
+                      if (first) {
+                          return;
+                      } else if (second) {
+                          return;
+                      } else {
+                          int value = 1;
+                          System.out.println(value);
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+
+                  void afterThrow(boolean stop) {
+                      if (stop) {
+                          throw new IllegalStateException();
+                      } else {
+                          String value = "1";
+                          System.out.println(value);
+                      }
+                      long value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepElseWhoseLocalWouldCaptureALaterFieldRead() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int value;
+                  int sameType(boolean stop) {
+                      if (stop) {
+                          return -1;
+                      } else {
+                          int value = 1;
+                          System.out.println(value);
+                      }
+                      return value;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUnwrapWhenEscapedPatternVariableCollidesWithLaterDeclaration() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                class Test {
+                    void plain(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        } else {
+                            if (!(o instanceof String s)) {
+                                return;
+                            }
+                            System.out.println(s);
+                        }
+                        String s = "later";
+                        System.out.println(s);
+                    }
+
+                    void chain(Object o, boolean first, boolean second) {
+                        if (first) {
+                            return;
+                        } else if (second) {
+                            return;
+                        } else {
+                            if (!(o instanceof String s)) {
+                                return;
+                            }
+                            System.out.println(s);
+                        }
+                        String s = "later";
+                        System.out.println(s);
+                    }
+
+                    void singleStatementElse(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        } else
+                            while (!(o instanceof String s))
+                                o = o.toString();
+                        String s = "later";
+                        System.out.println(s);
+                    }
+                }
+                """
+            ), 17
+          )
+        );
+    }
+
+    @Test
+    void doNotUnwrapWhenElseDeclarationCollidesWithNestedScope() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.io.StringReader;
+              import java.util.List;
+
+              class Test {
+                  void catchVariable(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          int value = 1;
+                          System.out.println(value);
+                      }
+                      try {
+                          System.out.println("try");
+                      } catch (RuntimeException value) {
+                          System.out.println(value);
+                      }
+                  }
+
+                  void resourceVariable(boolean stop) throws IOException {
+                      if (stop) {
+                          return;
+                      } else {
+                          int reader = 1;
+                          System.out.println(reader);
+                      }
+                      try (StringReader reader = new StringReader("")) {
+                          System.out.println(reader.read());
+                      }
+                  }
+
+                  void lambdaParameter(boolean stop, List<String> values) {
+                      if (stop) {
+                          return;
+                      } else {
+                          int element = 1;
+                          System.out.println(element);
+                      }
+                      values.forEach(element -> System.out.println(element));
+                  }
+
+                  void loopVariable(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          int index = 1;
+                          System.out.println(index);
+                      }
+                      for (int index = 0; index < 2; index++) {
+                          System.out.println(index);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUnwrapWhenElseLocalClassCollidesWithLaterLocalClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void foo(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          class Helper {
+                          }
+                          System.out.println(new Helper());
+                      }
+                      class Helper {
+                      }
+                      System.out.println(new Helper());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUnwrapWhenElseDeclarationCollidesWithLaterPatternVariable() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                class Test {
+                    void foo(boolean stop, Object o) {
+                        if (stop) {
+                            return;
+                        } else {
+                            String text = "1";
+                            System.out.println(text);
+                        }
+                        if (o instanceof String text) {
+                            System.out.println(text);
+                        }
+                    }
+                }
+                """
+            ), 17
+          )
+        );
+    }
+
+    @Test
+    void unwrapWhenEscapedPatternVariableDoesNotCollide() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                class Test {
+                    void foo(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        } else {
+                            if (!(o instanceof String s)) {
+                                return;
+                            }
+                            System.out.println(s);
+                        }
+                        System.out.println("done");
+                    }
+                }
+                """,
+              """
+                class Test {
+                    void foo(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        }
+                        if (!(o instanceof String s)) {
+                            return;
+                        }
+                        System.out.println(s);
+                        System.out.println("done");
+                    }
+                }
+                """
+            ), 17
+          )
+        );
+    }
+
+    @EnabledForJreRange(min = JRE.JAVA_21)
+    @Test
+    void unwrapOnlyWhenDeconstructionPatternBindingsDoNotCollide() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                class Test {
+                    record Point(int x, int y) {}
+
+                    void collides(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        } else {
+                            if (!(o instanceof Point(int x, int y))) {
+                                return;
+                            }
+                            System.out.println(x + y);
+                        }
+                        int x = 5;
+                        System.out.println(x);
+                    }
+
+                    void doesNotCollide(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        } else {
+                            if (!(o instanceof Point(int x, int y))) {
+                                return;
+                            }
+                            System.out.println(x + y);
+                        }
+                        Point p = new Point(1, 2);
+                        System.out.println(p);
+                    }
+                }
+                """,
+              """
+                class Test {
+                    record Point(int x, int y) {}
+
+                    void collides(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        } else {
+                            if (!(o instanceof Point(int x, int y))) {
+                                return;
+                            }
+                            System.out.println(x + y);
+                        }
+                        int x = 5;
+                        System.out.println(x);
+                    }
+
+                    void doesNotCollide(Object o, boolean stop) {
+                        if (stop) {
+                            return;
+                        }
+                        if (!(o instanceof Point(int x, int y))) {
+                            return;
+                        }
+                        System.out.println(x + y);
+                        Point p = new Point(1, 2);
+                        System.out.println(p);
+                    }
+                }
+                """
+            ), 21
+          )
+        );
+    }
+
+    @Test
+    void unwrapWhenLaterUsesAreNotCapturedByHoistedNames() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int value;
+
+                  int value() {
+                      return 42;
+                  }
+
+                  void qualifiedFieldUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          String value = "1";
+                          System.out.println(value);
+                      }
+                      System.out.println(this.value);
+                  }
+
+                  void methodNameUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          String value = "1";
+                          System.out.println(value);
+                      }
+                      System.out.println(value());
+                  }
+
+                  void labelUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          String value = "1";
+                          System.out.println(value);
+                      }
+                      value:
+                      for (int i = 0; i < 2; i++) {
+                          if (i == 1) {
+                              break value;
+                          }
+                          continue value;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int value;
+
+                  int value() {
+                      return 42;
+                  }
+
+                  void qualifiedFieldUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      }
+                      String value = "1";
+                      System.out.println(value);
+                      System.out.println(this.value);
+                  }
+
+                  void methodNameUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      }
+                      String value = "1";
+                      System.out.println(value);
+                      System.out.println(value());
+                  }
+
+                  void labelUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      }
+                      String value = "1";
+                      System.out.println(value);
+                      value:
+                      for (int i = 0; i < 2; i++) {
+                          if (i == 1) {
+                              break value;
+                          }
+                          continue value;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unwrapWhenCollidingDeclarationRemainsNestedInTheElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void foo(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          for (int value = 0; value < 2; value++) {
+                              System.out.println(value);
+                          }
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void foo(boolean stop) {
+                      if (stop) {
+                          return;
+                      }
+                      for (int value = 0; value < 2; value++) {
+                          System.out.println(value);
+                      }
+                      int value = 2;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unwrapElseAfterTryWhoseBodyAndCatchReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  Class<?> load(ClassLoader loader) {
+                      if (loader != null) {
+                          try {
+                              return loader.loadClass("Finalizer");
+                          } catch (ClassNotFoundException e) {
+                              return null;
+                          }
+                      } else {
+                          return null;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  Class<?> load(ClassLoader loader) {
+                      if (loader != null) {
+                          try {
+                              return loader.loadClass("Finalizer");
+                          } catch (ClassNotFoundException e) {
+                              return null;
+                          }
+                      }
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepElseAfterBreakOrContinue() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void drain(java.util.Iterator<String> it) {
+                      while (it.hasNext()) {
+                          String line = it.next();
+                          if (line.isEmpty()) {
+                              break;
+                          } else {
+                              System.out.println(line);
+                          }
+                          if (line.startsWith("#")) {
+                              continue;
+                          } else {
+                              System.out.println("text");
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unwrapElseAfterReturnThatFollowsALoopOrSwitchWithABreak() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int first(int[] values) {
+                      if (values.length > 0) {
+                          for (int value : values) {
+                              if (value < 0) {
+                                  break;
+                              }
+                          }
+                          return values[0];
+                      } else {
+                          return -1;
+                      }
+                  }
+
+                  int sign(int value) {
+                      if (value != 0) {
+                          switch (value) {
+                              case 1:
+                                  System.out.println("one");
+                                  break;
+                              default:
+                          }
+                          return Integer.signum(value);
+                      } else {
+                          return 0;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int first(int[] values) {
+                      if (values.length > 0) {
+                          for (int value : values) {
+                              if (value < 0) {
+                                  break;
+                              }
+                          }
+                          return values[0];
+                      }
+                      return -1;
+                  }
+
+                  int sign(int value) {
+                      if (value != 0) {
+                          switch (value) {
+                              case 1:
+                                  System.out.println("one");
+                                  break;
+                              default:
+                          }
+                          return Integer.signum(value);
+                      }
+                      return 0;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepElseAfterDoWhileThatContinues() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int m(boolean b, java.util.Iterator<String> it) {
+                      if (b) {
+                          do {
+                              if (it.next().isEmpty()) {
+                                  continue;
+                              }
+                              return 1;
+                          } while (it.hasNext());
+                      } else {
+                          System.out.println("else");
+                      }
+                      return 0;
                   }
               }
               """

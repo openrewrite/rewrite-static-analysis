@@ -22,12 +22,13 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
 /**
- * What a visitor deleting a statement should return in its place: {@code null} where the statement is an element
- * of a statement list, an empty block where it is the sole body of a brace-less {@code if}, {@code else}, loop,
- * label, arrow {@code case} or void lambda, and otherwise the statement itself, as an enclosing expression may
- * use its value.
+ * Where a statement stands, which decides whether its value is used and what a visitor may put in its place.
+ * Deleting an element of a statement list leaves nothing. Deleting the sole body of a brace-less {@code if},
+ * {@code else}, loop, label or arrow {@code case}, or a void call as a lambda body, leaves an empty block. Anywhere
+ * else the statement stays, as an enclosing expression may use its value.
  */
 final class StatementRemoval {
 
@@ -35,25 +36,56 @@ final class StatementRemoval {
     }
 
     static @Nullable J remove(Cursor cursor, Statement statement) {
-        Cursor parentCursor = cursor.getParentTreeCursor();
-        Object parent = parentCursor.getValue();
-        Object original = cursor.getValue();
-        if (parent instanceof J.Block || parent instanceof SourceFile ||
-                parent instanceof J.Case && ((J.Case) parent).getStatements().contains(original) ||
-                parent instanceof J.ForLoop.Control && (((J.ForLoop.Control) parent).getInit().contains(original) ||
-                        ((J.ForLoop.Control) parent).getUpdate().contains(original))) {
+        if (isListElement(cursor)) {
             return null;
         }
-        if (parent instanceof J.If || parent instanceof J.If.Else || parent instanceof J.WhileLoop ||
-                parent instanceof J.DoWhileLoop || parent instanceof J.ForLoop || parent instanceof J.ForEachLoop ||
-                parent instanceof J.Label ||
-                parent instanceof J.Case && ((J.Case) parent).getBody() == original &&
-                        !(parentCursor.getParentTreeCursor().getParentTreeCursor().getValue() instanceof J.SwitchExpression) ||
-                parent instanceof J.Lambda && statement instanceof J.MethodInvocation &&
-                        ((J.MethodInvocation) statement).getType() == JavaType.Primitive.Void) {
+        if (isSoleBody(cursor) || cursor.getParentTreeCursor().getValue() instanceof J.Lambda &&
+                statement instanceof J.MethodInvocation && ((J.MethodInvocation) statement).getType() == JavaType.Primitive.Void) {
             Space prefix = statement.getPrefix();
             return J.Block.createEmptyBlock().withPrefix(prefix.getComments().isEmpty() ? Space.SINGLE_SPACE : prefix);
         }
         return statement;
+    }
+
+    /**
+     * Whether anything uses the value of the expression at the cursor, or null for the body of a lambda whose
+     * functional interface is unknown. Nothing uses it where the expression stands as a statement.
+     */
+    static @Nullable Boolean isValueUsed(Cursor cursor) {
+        Object parent = cursor.getParentTreeCursor().getValue();
+        if (parent instanceof J.Lambda) {
+            JavaType.FullyQualified functionalInterface = TypeUtils.asFullyQualified(((J.Lambda) parent).getType());
+            JavaType.Method sam = functionalInterface == null ? null : UseLambdaForFunctionalInterface.functionalInterfaceMethod(functionalInterface);
+            return sam == null ? null : sam.getReturnType() != JavaType.Primitive.Void;
+        }
+        return !isListElement(cursor) && !isSoleBody(cursor);
+    }
+
+    /**
+     * Whether only a statement expression, such as a method invocation, may replace the Java expression at the cursor.
+     * That holds unless something is known to use its value. Kotlin, Groovy and Scala accept any expression as a statement.
+     */
+    static boolean needsStatementExpression(Cursor cursor) {
+        SourceFile sourceFile = cursor.firstEnclosing(SourceFile.class);
+        return (sourceFile == null || sourceFile instanceof J.CompilationUnit) && !Boolean.TRUE.equals(isValueUsed(cursor));
+    }
+
+    static boolean isListElement(Cursor cursor) {
+        Object parent = cursor.getParentTreeCursor().getValue();
+        Object original = cursor.getValue();
+        return parent instanceof J.Block || parent instanceof SourceFile ||
+                parent instanceof J.Case && ((J.Case) parent).getStatements().contains(original) ||
+                parent instanceof J.ForLoop.Control && (((J.ForLoop.Control) parent).getInit().contains(original) ||
+                        ((J.ForLoop.Control) parent).getUpdate().contains(original));
+    }
+
+    private static boolean isSoleBody(Cursor cursor) {
+        Cursor parentCursor = cursor.getParentTreeCursor();
+        Object parent = parentCursor.getValue();
+        return parent instanceof J.If || parent instanceof J.If.Else || parent instanceof J.WhileLoop ||
+                parent instanceof J.DoWhileLoop || parent instanceof J.ForLoop || parent instanceof J.ForEachLoop ||
+                parent instanceof J.Label ||
+                parent instanceof J.Case && ((J.Case) parent).getBody() == cursor.getValue() &&
+                        !(parentCursor.getParentTreeCursor().getParentTreeCursor().getValue() instanceof J.SwitchExpression);
     }
 }

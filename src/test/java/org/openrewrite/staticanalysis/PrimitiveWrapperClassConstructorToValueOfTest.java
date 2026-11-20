@@ -287,4 +287,76 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void conservativeModePreservesEscapingReferences() {
+        rewriteRun(
+          spec -> spec.recipe(new PrimitiveWrapperClassConstructorToValueOf(true)),
+          java(
+            """
+              import java.util.Map;
+              import java.util.function.Supplier;
+
+              class EscapingWrappers {
+                  public final Integer first = new Integer(1);
+                  public final Integer second = new Integer(1);
+
+                  Integer fresh() {
+                      return new Integer(1);
+                  }
+
+                  void use(Map<Integer, String> map) {
+                      Integer local = new Integer(1);
+                      map.put(local, "local");
+                      map.put(new Integer(1), "argument");
+                      Object cast = (Object) new Boolean(true);
+                      Integer[] array = {new Integer(1)};
+                      boolean same = new Integer(1) == new Integer(1);
+                      Supplier<Integer> supplier = () -> new Integer(1);
+                      synchronized (new Integer(1)) {
+                          System.out.println(System.identityHashCode(new Integer(1)));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void conservativeModeConvertsImmediatePrimitiveUses() {
+        rewriteRun(
+          spec -> spec.recipe(new PrimitiveWrapperClassConstructorToValueOf(true)),
+          java(
+            """
+              class PrimitiveUses {
+                  int number = new Integer(1);
+                  boolean flag = (new Boolean("true"));
+                  char character = new Character('a');
+                  double decimal = new Double("1.5");
+                  float fraction = new Float(1.5d);
+                  byte small = new Byte("1");
+                  short shorter = new Short("2");
+                  long longer = new Long("3");
+                  Object cast = (int) new Integer(2);
+                  Object accessor = (new Integer(3)).longValue();
+              }
+              """,
+            """
+              class PrimitiveUses {
+                  int number = Integer.valueOf(1);
+                  boolean flag = (Boolean.valueOf("true"));
+                  char character = Character.valueOf('a');
+                  double decimal = Double.valueOf("1.5");
+                  float fraction = Float.valueOf("1.5");
+                  byte small = Byte.valueOf("1");
+                  short shorter = Short.valueOf("2");
+                  long longer = Long.valueOf("3");
+                  Object cast = (int) Integer.valueOf(2);
+                  Object accessor = (Integer.valueOf(3)).longValue();
+              }
+              """
+          )
+        );
+    }
+
 }

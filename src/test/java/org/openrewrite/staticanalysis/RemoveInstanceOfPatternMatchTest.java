@@ -18,9 +18,12 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 import static org.openrewrite.kotlin.Assertions.kotlin;
@@ -219,9 +222,98 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
 
               class Example {
                   public void test(Collection<String> collection) {
-                      if (collection instanceof List<String>) {
+                      if (collection instanceof List<?>) {
                           List<String> list = (List<String>) collection;
                           System.out.println(list.size());
+                      }
+                  }
+              }
+              """),
+            14));
+    }
+
+    @Test
+    void typesDeclaredInEnclosingScope() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              import java.util.Collection;
+              import java.util.List;
+
+              class Example {
+                  static class Inner {
+                  }
+
+                  public <T> void test(Collection<T> collection, Object obj) {
+                      if (collection instanceof List<T> list) {
+                          System.out.println(list.get(0));
+                      }
+                      if (obj instanceof Inner inner) {
+                          System.out.println(inner);
+                      }
+                  }
+              }
+              """,
+              """
+              import java.util.Collection;
+              import java.util.List;
+
+              class Example {
+                  static class Inner {
+                  }
+
+                  public <T> void test(Collection<T> collection, Object obj) {
+                      if (collection instanceof List<?>) {
+                          List<T> list = (List<T>) collection;
+                          System.out.println(list.get(0));
+                      }
+                      if (obj instanceof Inner) {
+                          Inner inner = (Inner) obj;
+                          System.out.println(inner);
+                      }
+                  }
+              }
+              """,
+              spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<Integer>() {
+                  @Override
+                  public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Integer p) {
+                      assertThat(variable.getName().getType()).as(variable.getSimpleName())
+                        .isEqualTo(variable.getVariableType().getType());
+                      return variable;
+                  }
+              }.visit(cu, 0))),
+            14));
+    }
+
+    @Test
+    void commentsInTypeAreNotCopied() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              import java.util.Map;
+
+              class Example {
+                  public void test(Object obj) {
+                      if (obj instanceof Map<?, // values
+                        /* any */ ?> map) {
+                          System.out.println(map);
+                      }
+                  }
+              }
+              """,
+              """
+              import java.util.Map;
+
+              class Example {
+                  public void test(Object obj) {
+                      if (obj instanceof Map<?, // values
+                        /* any */ ?>) {
+                          Map<?, ?> map = (Map<?, ?>) obj;
+                          System.out.println(map);
                       }
                   }
               }
@@ -561,9 +653,8 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
             14));
     }
 
-    @Disabled("Not supported")
     @Test
-    void negationWithoutElse() {
+    void doNotChangePatternUsedAfterIf() {
         rewriteRun(
           version(
             //language=java
@@ -579,20 +670,121 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
                       System.out.println(str.length());
                   }
               }
-              """,
               """
-              package com.example;
+            ),
+            14));
+    }
 
+    @Test
+    void doNotChangePatternInsideIfBranch() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
               class Example {
-                  public void test(Object obj) {
-                      if (!(obj instanceof String)) {
-                          throw new IllegalArgumentException();
+                  void test(Object o, boolean b) {
+                      if (b) {
+                          System.out.println();
+                          while (o instanceof String s) {
+                              System.out.println(s);
+                              o = null;
+                          }
                       }
-                      String str = (String) obj;
-                      System.out.println(str);
                   }
               }
-              """),
+              """
+            ),
+            14));
+    }
+
+    @Test
+    void doNotChangeRecordPattern() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              class Example {
+                  record Point(int x, int y) {}
+
+                  void test(Object o) {
+                      if (o instanceof Point(int x, int y)) {
+                          System.out.println(x + y);
+                      }
+                  }
+              }
+              """
+            ),
+            21));
+    }
+
+    @Test
+    void twoPatternVariablesUsedInElse() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              class Example {
+                  void test(Object o, Object p) {
+                      if (!(o instanceof String s) || !(p instanceof Integer i)) {
+                          return;
+                      } else {
+                          System.out.println(s + i);
+                      }
+                  }
+              }
+              """,
+              """
+              class Example {
+                  void test(Object o, Object p) {
+                      if (!(o instanceof String) || !(p instanceof Integer)) {
+                          return;
+                      } else {
+                          String s = (String) o;
+                          Integer i = (Integer) p;
+                          System.out.println(s + i);
+                      }
+                  }
+              }
+              """
+            ),
+            14));
+    }
+
+    @Test
+    void fieldWithPatternVariableName() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              class Example {
+                  String s;
+
+                  void test(Object o, Example other) {
+                      if (o instanceof String s) {
+                          System.out.println(s);
+                      }
+                      System.out.println(other.s);
+                  }
+              }
+              """,
+              """
+              class Example {
+                  String s;
+
+                  void test(Object o, Example other) {
+                      if (o instanceof String) {
+                          String s = (String) o;
+                          System.out.println(s);
+                      }
+                      System.out.println(other.s);
+                  }
+              }
+              """
+            ),
             14));
     }
 

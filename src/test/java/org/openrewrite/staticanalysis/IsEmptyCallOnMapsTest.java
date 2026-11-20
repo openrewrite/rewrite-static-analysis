@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -35,9 +37,54 @@ import static org.openrewrite.java.Assertions.java;
   "Convert2MethodRef"
 })
 class IsEmptyCallOnMapsTest implements RewriteTest {
+
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new IsEmptyCallOnMaps());
+    }
+
+    @DocumentExample
+    @Test
+    void mapWithNullGuard() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map == null || map.size() == 0;
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map == null || map.isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"size() == 0", "this.size() < 1", "0 == size()"})
+    void retainIsEmptyImplementation(String comparison) {
+        rewriteRun(
+          java(
+            """
+              class Test extends java.util.AbstractMap<String, String> {
+                  public java.util.Set<java.util.Map.Entry<String, String>> entrySet() { return java.util.Collections.emptySet(); }
+                  public int size() { return 0; }
+                  @Override
+                  public boolean isEmpty() { return %s; }
+              }
+              """.formatted(comparison)
+          )
+        );
     }
 
     @Test
@@ -119,34 +166,6 @@ class IsEmptyCallOnMapsTest implements RewriteTest {
                       } else if (map.size() <= 1 || 1 >= map.size()) {
                           // empty body
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void mapWithNullGuard() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Map;
-
-              class Test {
-                  boolean empty(Map<String, String> map) {
-                      return map == null || map.size() == 0;
-                  }
-              }
-              """,
-            """
-              import java.util.Map;
-
-              class Test {
-                  boolean empty(Map<String, String> map) {
-                      return map == null || map.isEmpty();
                   }
               }
               """

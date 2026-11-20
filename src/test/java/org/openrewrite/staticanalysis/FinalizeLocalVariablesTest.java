@@ -546,4 +546,102 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotFinalizeVariableIncrementedThroughParentheses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void f() {
+                      int a = 0;
+                      (a)++;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finalizeLocalWhoseNameANestedClassFieldIsAssignedUnder() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m() {
+                      int x = 1;
+                      Object o = new Object() {
+                          int x;
+                          void set() {
+                              x = 2;
+                          }
+                      };
+                      System.out.println(x);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m() {
+                      final int x = 1;
+                      final Object o = new Object() {
+                          int x;
+
+                          void set() {
+                              x = 2;
+                          }
+                      };
+                      System.out.println(x);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finalizeLocalWhoseNameAnInheritedFieldIsAssignedUnder() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  protected int x;
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  void m() {
+                      int x = 1;
+                      Object o = new Base() {
+                          void set() {
+                              x = 2;
+                          }
+                      };
+                      System.out.println(x);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m() {
+                      final int x = 1;
+                      final Object o = new Base() {
+                          void set() {
+                              x = 2;
+                          }
+                      };
+                      System.out.println(x);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

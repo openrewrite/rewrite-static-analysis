@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 
 public class IsEmptyCallOnMaps extends Recipe {
     private static final MethodMatcher MAP_SIZE = new MethodMatcher("java.util.Map size()", true);
+    private static final MethodMatcher MAP_IS_EMPTY = new MethodMatcher("java.util.Map isEmpty()", true);
 
     @Getter
     final String displayName = "Use `Map#isEmpty()` instead of comparing `size()`";
@@ -51,6 +52,17 @@ public class IsEmptyCallOnMaps extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(MAP_SIZE), new JavaVisitor<ExecutionContext>() {
+            private final KnownMockReceiver mocks = new KnownMockReceiver();
+
+            @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                // The implementation can use size() as its base case. Replacing that call
+                // with isEmpty() would make the implementation call itself indefinitely.
+                if (MAP_IS_EMPTY.matches(method.getMethodType())) {
+                    return method;
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
 
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
@@ -62,7 +74,8 @@ public class IsEmptyCallOnMaps extends Recipe {
                         J maybeSizeCall = zeroRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null &&
+                                !mocks.isMock(maybeSizeCallMethod.getSelect(), getCursor())) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(), binary.getOperator() != J.Binary.Type.Equal)
                                         .withPrefix(binary.getPrefix());
                             }
@@ -77,7 +90,8 @@ public class IsEmptyCallOnMaps extends Recipe {
                         J maybeSizeCall = oneRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if (MAP_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null &&
+                                !mocks.isMock(maybeSizeCallMethod.getSelect(), getCursor())) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(),
                                         binary.getOperator() == J.Binary.Type.GreaterThanOrEqual || binary.getOperator() == J.Binary.Type.LessThanOrEqual)
                                         .withPrefix(binary.getPrefix());

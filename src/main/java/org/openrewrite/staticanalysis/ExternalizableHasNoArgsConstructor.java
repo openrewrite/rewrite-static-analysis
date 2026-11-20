@@ -28,6 +28,8 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -57,7 +59,12 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.io.Externalizable", false),
+        // Constructor detection and generation below require Java-style declarations. Kotlin
+        // constructors may delegate to a primary constructor or use default arguments, which
+        // cannot be safely remediated by inserting an empty Java constructor.
+        return Preconditions.check(Preconditions.and(
+                Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
+                new UsesType<>("java.io.Externalizable", false)),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {

@@ -25,8 +25,11 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.service.ScopeService;
+import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
@@ -41,6 +44,7 @@ import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
@@ -89,54 +93,56 @@ public class InstanceOfPatternMatch extends Recipe {
             @Override
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, ctx);
-                if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty()) {
+                if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty() ||
+                    isUnconditionalPatternNotAllowed(instanceOf)) {
                     return instanceOf;
                 }
 
-                Cursor maybeReplacementRoot = null;
-                J additionalContext = null;
-                boolean flowScopeBreakEncountered = false;
-                for (Iterator<Cursor> it = getCursor().getPathAsCursors(); it.hasNext(); ) {
-                    Cursor next = it.next();
-                    Object value = next.getValue();
-                    if (value instanceof J.Binary) {
-                        J.Binary binary = (J.Binary) value;
-                        if (!flowScopeBreakEncountered && binary.getOperator() == J.Binary.Type.And) {
-                            additionalContext = binary;
-                        } else {
-                            flowScopeBreakEncountered = true;
-                        }
-                    } else if (value instanceof J.Unary && ((J.Unary) value).getOperator() == J.Unary.Type.Not) {
-                        // TODO this could be improved (the pattern variable may be applicable in the else case
-                        // or even in subsequent statements (due to the flow scope semantics)
-                        flowScopeBreakEncountered = true;
-                    } else if (value instanceof Statement) {
-                        maybeReplacementRoot = next;
-                        break;
+                // The nearest statement holds the casts this check can replace and is rewritten as a whole. A negation
+                // is a statement to the tree, as `i++` is, and is passed over.
+                Cursor root = getCursor().getParentTreeCursor();
+                while (!(root.getValue() instanceof Statement) && !(root.getValue() instanceof SourceFile) ||
+                       root.getValue() instanceof J.Unary) {
+                    root = root.getParentTreeCursor();
+                }
+                boolean inIf = root.getValue() instanceof J.If;
+                // A check that holds in the statements after its own is rewritten with the block holding them
+                Cursor block = root.getParentTreeCursor();
+                if (block.getValue() instanceof J.Block) {
+                    List<Statement> statements = block.<J.Block>getValue().getStatements();
+                    int next = statements.indexOf(root.<Statement>getValue()) + 1;
+                    // A later check in that block joins it, so that names are given out in source order
+                    if (block.getMessage("flowTypeScope") != null ||
+                        next > 0 && next < statements.size() &&
+                        Scope.service(getCursor()).isMatchedAt(getCursor(), new Cursor(block, statements.get(next)))) {
+                        root = block;
                     }
                 }
-
-                if (maybeReplacementRoot != null) {
-                    J root = maybeReplacementRoot.getValue();
-                    Set<J> contexts = new HashSet<>();
-                    if (!flowScopeBreakEncountered) {
-                        if (root instanceof J.If) {
-                            contexts.add(((J.If) root).getThenPart());
-                        } else if (root instanceof J.Ternary) {
-                            contexts.add(((J.Ternary) root).getTruePart());
-                        }
-                    }
-                    if (additionalContext != null) {
-                        contexts.add(additionalContext);
-                    }
-
-                    if (!contexts.isEmpty()) {
-                        InstanceOfPatternReplacements replacements = maybeReplacementRoot
-                                .computeMessageIfAbsent("flowTypeScope", k -> new InstanceOfPatternReplacements(root));
-                        replacements.registerInstanceOf(instanceOf, contexts);
-                    }
+                if (root.getValue() instanceof Statement) {
+                    J rootTree = root.getValue();
+                    InstanceOfPatternReplacements replacements = root
+                            .computeMessageIfAbsent("flowTypeScope", k -> new InstanceOfPatternReplacements(rootTree));
+                    replacements.registerInstanceOf(instanceOf, getCursor(), inIf);
                 }
                 return instanceOf;
+            }
+
+            /**
+             * Before Java 21, a type pattern must not be unconditional: when the static type of the
+             * expression is already a subtype of the tested type, javac reports
+             * "expression type is a subtype of pattern type".
+             */
+            private boolean isUnconditionalPatternNotAllowed(J.InstanceOf instanceOf) {
+                JavaType testedType = ((TypedTree) instanceOf.getClazz()).getType();
+                JavaType expressionType = instanceOf.getExpression().getType();
+                if (testedType == null || expressionType == null ||
+                    !TypeUtils.isAssignableTo(testedType, expressionType)) {
+                    return false;
+                }
+                JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
+                return sourceFile == null || sourceFile.getMarkers().findFirst(JavaVersion.class)
+                        .map(v -> v.getMajorVersion() < 21)
+                        .orElse(true);
             }
 
             @Override
@@ -179,12 +185,13 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class InstanceOfPatternReplacements {
         private final J root;
         private final Map<ExpressionAndType, J.InstanceOf> instanceOfs = new HashMap<>();
-        private final Map<J.InstanceOf, Set<J>> contexts = new HashMap<>();
+        private final Map<J.InstanceOf, Cursor> cursors = new HashMap<>();
+        private final Set<J.InstanceOf> inIfs = new HashSet<>();
         private final Map<J.InstanceOf, Set<Cursor>> contextScopes = new HashMap<>();
         private final Map<J.TypeCast, J.InstanceOf> replacements = new HashMap<>();
         private final Map<J.InstanceOf, List<VariableAndTypeTree>> variablesToDelete = new HashMap<>();
 
-        public void registerInstanceOf(J.InstanceOf instanceOf, Set<J> contexts) {
+        public void registerInstanceOf(J.InstanceOf instanceOf, Cursor cursor, boolean inIf) {
             Expression expression = instanceOf.getExpression();
             JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             if (type == null) {
@@ -197,7 +204,10 @@ public class InstanceOfPatternMatch extends Recipe {
                     .findAny();
             if (!existing.isPresent()) {
                 instanceOfs.put(new ExpressionAndType(expression, type), instanceOf);
-                this.contexts.put(instanceOf, contexts);
+                cursors.put(instanceOf, cursor);
+                if (inIf) {
+                    inIfs.add(instanceOf);
+                }
             }
         }
 
@@ -214,32 +224,27 @@ public class InstanceOfPatternMatch extends Recipe {
             if (match.isPresent()) {
                 Cursor parent = cursor.getParentTreeCursor();
                 J.InstanceOf instanceOf = instanceOfs.get(match.get());
-                Set<J> validContexts = contexts.get(instanceOf);
-                for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
-                    Object next = it.next();
-                    if (validContexts.contains(next)) {
-                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
-                                cursor.firstEnclosing(J.Try.Resource.class) == null) {
-                            if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                    shouldDeleteVariableDeclaration(parent, instanceOf)) {
-                                variablesToDelete
-                                        .computeIfAbsent(instanceOf, i -> new ArrayList<>())
-                                        .add(new VariableAndTypeTree(parent.getValue(),
-                                                requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
-                            } else {
-                                replacements.put(typeCast, instanceOf);
-                            }
-                            contextScopes.computeIfAbsent(instanceOf, k -> new HashSet<>()).add(cursor);
+                // A pattern variable is in scope exactly where the check is known to have been true
+                ScopeService scopes = Scope.service(cursor);
+                if (scopes.isMatchedAt(cursors.get(instanceOf), cursor)) {
+                    if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
+                            cursor.firstEnclosing(J.Try.Resource.class) == null) {
+                        if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
+                                shouldDeleteVariableDeclaration(parent, instanceOf)) {
+                            variablesToDelete
+                                    .computeIfAbsent(instanceOf, i -> new ArrayList<>())
+                                    .add(new VariableAndTypeTree(parent.getValue(),
+                                            requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
                         } else {
-                            replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
-                            variablesToDelete.remove(instanceOf);
-                            contextScopes.remove(instanceOf);
-                            contexts.remove(instanceOf);
-                            instanceOfs.entrySet().removeIf(e -> e.getValue() == instanceOf);
+                            replacements.put(typeCast, instanceOf);
                         }
-                        break;
-                    } else if (root == next) {
-                        break;
+                        contextScopes.computeIfAbsent(instanceOf, k -> new HashSet<>()).add(cursor);
+                    } else {
+                        replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
+                        variablesToDelete.remove(instanceOf);
+                        contextScopes.remove(instanceOf);
+                        cursors.remove(instanceOf);
+                        instanceOfs.entrySet().removeIf(e -> e.getValue() == instanceOf);
                     }
                 }
             }
@@ -373,20 +378,16 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
-            VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
-            if (root instanceof J.If) {
-                VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
-                if (variableData != null) {
-                    // under the assumption that the code compiled previously we don't need to check for duplicates
-                    return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
-                }
-                strategy = VariableNameStrategy.normal(contextScopes.get(instanceOf));
-            } else {
-                strategy = VariableNameStrategy.short_();
+            VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
+            if (variableData != null) {
+                // The pattern variable stands in for the deleted declaration, whose references keep its name. Under
+                // the assumption that the code compiled previously we don't need to check for duplicates.
+                return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
             }
-            String baseName = strategy.variableName(type);
-            if (root instanceof J.If) {
+            String name;
+            if (inIfs.contains(instanceOf)) {
+                String baseName = VariableNameStrategy.normal(contextScopes.get(instanceOf)).variableName(type);
                 J.If enclosingIf = cursor.firstEnclosing(J.If.class);
                 String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
 
@@ -397,9 +398,20 @@ public class InstanceOfPatternMatch extends Recipe {
                 }
 
                 String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
-                return nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
+                name = nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
+            } else {
+                name = VariableNameUtils.generateVariableName(VariableNameStrategy.short_().variableName(type), cursor, INCREMENT_NUMBER);
             }
-            return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
+            if (root instanceof J.Block) {
+                // The pattern variable stays in scope to the end of the block, so it also keeps clear of what the
+                // statements after the check declare or read
+                Cursor block = cursor;
+                while (!(block.getValue() instanceof J.Block && root.getId().equals(block.<J.Block>getValue().getId()))) {
+                    block = block.getParentOrThrow();
+                }
+                name = Scope.at(block).freeName(name, usedNames::contains);
+            }
+            return name;
         }
 
         private @Nullable VariableAndTypeTree getPrimaryVariableToDelete(J.InstanceOf instanceOf) {

@@ -26,7 +26,10 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -58,6 +61,15 @@ public class SimplifyBooleanReturn extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python and JavaScript truthiness and switch semantics differ from Java.
+                if (PythonFileChecker.isPython(tree) || JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
+            @Override
             public J visitIf(J.If iff, ExecutionContext ctx) {
                 J.If i = visitAndCast(iff, ctx, super::visitIf);
 
@@ -82,6 +94,10 @@ public class SimplifyBooleanReturn extends Recipe {
                         }
 
                         Expression ifCondition = i.getIfCondition().getTree().withPrefix(return_.getExpression().getPrefix());
+                        // The if condition unboxes Boolean, but a return to Boolean/Object need not.
+                        if (ifCondition.getType() != JavaType.Primitive.Boolean) {
+                            return i;
+                        }
 
                         if (J.Literal.isLiteralValue(return_.getExpression(), true)) {
                             if (singleFollowingStatement.map(e -> J.Literal.isLiteralValue(e, false)).orElse(false) && i.getElsePart() == null) {
@@ -96,6 +112,12 @@ public class SimplifyBooleanReturn extends Recipe {
                                 return maybeAutoFormat(return_, return_.withPrefix(i.getPrefix()).withExpression(ifCondition), ctx, parent);
                             }
                         } else if (J.Literal.isLiteralValue(return_.getExpression(), false)) {
+                            // Removing a negation of Boolean would also remove its unboxing.
+                            if (ifCondition instanceof J.Unary &&
+                                ((J.Unary) ifCondition).getOperator() == J.Unary.Type.Not &&
+                                ((J.Unary) ifCondition).getExpression().getType() != JavaType.Primitive.Boolean) {
+                                return i;
+                            }
                             boolean returnThenPart = false;
 
                             if (singleFollowingStatement.map(e -> J.Literal.isLiteralValue(e, true)).orElse(false) && i.getElsePart() == null) {

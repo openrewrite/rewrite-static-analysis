@@ -25,6 +25,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -49,6 +50,15 @@ public class NoRedundantJumpStatements extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+
+            @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // Python truthiness, structural patterns and statement rules differ from Java.
+                if (PythonFileChecker.isPython(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
 
             @Override
             public J.If visitIf(J.If iff, ExecutionContext ctx) {

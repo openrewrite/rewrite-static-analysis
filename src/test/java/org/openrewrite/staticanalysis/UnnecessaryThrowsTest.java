@@ -502,7 +502,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void preventTransformationIfAnyThrownExceptionHasNullOrUnknownType() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input refers to `ExceptionWithUnknownType`, which is not on the classpath, so it has no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodInvocations(false)),
           //language=java
           java(
             """
@@ -764,7 +765,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void retainThrowsWhenAnInvocationDoesNotResolve() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input refers to `Unresolved`, which is not on the classpath, so it has no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
           //language=java
           java(
             """
@@ -781,7 +783,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void retainThrowsWhenCalleeThrowsUnresolvedType() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input refers to `Unresolved`, which is not on the classpath, so it has no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
           //language=java
           java(
             """
@@ -800,7 +803,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void retainThrowsWhenCalleeSignatureDoesNotResolve() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          // The input refers to `Unresolved`, which is not on the classpath, so it has no type.
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
           //language=java
           java(
             """

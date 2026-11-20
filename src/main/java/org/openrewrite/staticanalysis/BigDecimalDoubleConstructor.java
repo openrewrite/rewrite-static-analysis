@@ -31,7 +31,8 @@ import java.math.BigDecimal;
                       "This is because `0.1` cannot be represented exactly as a double " +
                       "(or, for that matter, as a binary fraction of any finite length). " +
                       "`BigDecimal.valueOf` avoids this by converting through a string " +
-                      "representation, preserving the value you actually intended.",
+                      "representation. This intentionally changes the numerical value or scale and is appropriate only " +
+                      "when decimal round-trip semantics are desired, not when the exact binary value is required.",
         tags = {"RSPEC-S2111"}
 )
 public class BigDecimalDoubleConstructor {

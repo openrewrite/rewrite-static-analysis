@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -25,6 +26,32 @@ class RemoveRedundantTypeCastConditionalControlsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new RemoveRedundantTypeCast());
+    }
+
+    @DocumentExample
+    @Test
+    void removeSameTypeCastsFromConditionalBranches() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Number choose(boolean flag, Integer value, Integer fallback) {
+                      Number selected = flag ? (Integer) value : (Integer) fallback;
+                      return selected;
+                  }
+              }
+              """,
+            """
+              class A {
+                  Number choose(boolean flag, Integer value, Integer fallback) {
+                      Number selected = flag ? value : fallback;
+                      return selected;
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -70,31 +97,6 @@ class RemoveRedundantTypeCastConditionalControlsTest implements RewriteTest {
               class A {
                   Number choose(boolean outer, boolean inner, Integer value, Double fallback) {
                       Number selected = (outer ? (inner ? (Number) value : fallback) : fallback);
-                      return selected;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeSameTypeCastsFromConditionalBranches() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  Number choose(boolean flag, Integer value, Integer fallback) {
-                      Number selected = flag ? (Integer) value : (Integer) fallback;
-                      return selected;
-                  }
-              }
-              """,
-            """
-              class A {
-                  Number choose(boolean flag, Integer value, Integer fallback) {
-                      Number selected = flag ? value : fallback;
                       return selected;
                   }
               }

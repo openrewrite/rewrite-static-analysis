@@ -313,9 +313,8 @@ public class AnnotateRequiredParameters extends Recipe {
             if (REQUIRE_NON_NULL.matches(m) &&
                     m.getArguments().get(0) instanceof J.Identifier &&
                     containsIdentifierByName(requiredIdentifiers, (J.Identifier) m.getArguments().get(0))) {
-                Cursor parent = getCursor().getParentTreeCursor();
-                if (parent.getValue() instanceof J.Block) {
-                    return null;
+                if (StatementRemoval.needsStatementExpression(getCursor())) {
+                    return StatementRemoval.remove(getCursor(), m);
                 }
                 return m.getArguments().get(0).withPrefix(m.getPrefix());
             }

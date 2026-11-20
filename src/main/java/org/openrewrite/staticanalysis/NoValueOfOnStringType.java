@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 
 public class NoValueOfOnStringType extends Recipe {
@@ -61,7 +62,7 @@ public class NoValueOfOnStringType extends Recipe {
                 }
 
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
+                if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1 && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Expression argument = mi.getArguments().get(0);
                     if ((TypeUtils.isString(argument.getType()) && isNeverNull(argument)) || removeValueOfForStringConcatenation(argument)) {
                         return maybeParenthesize(argument.withPrefix(mi.getPrefix()), updateCursor(mi));

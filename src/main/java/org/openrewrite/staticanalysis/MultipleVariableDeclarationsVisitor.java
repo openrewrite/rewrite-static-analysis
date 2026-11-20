@@ -26,6 +26,7 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+
 import static org.openrewrite.Tree.randomId;
 
 public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -58,7 +59,6 @@ public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<Executio
                         mv.getModifiers(),
                         typeExpression,
                         mv.getVarargs(),
-                        emptyList(),
                         singletonList(JRightPadded.build(nv))
                 );
                 if (i == 0) {

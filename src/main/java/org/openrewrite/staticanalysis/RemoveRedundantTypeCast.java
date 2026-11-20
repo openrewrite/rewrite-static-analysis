@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
 public class RemoveRedundantTypeCast extends Recipe {
     private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
@@ -343,5 +342,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return varargsElement && type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
         });
+    }
+
+    private static boolean hasMethodOverloading(JavaType.Method methodType) {
+        int overloads = 0;
+        for (JavaType.Method method : methodType.getDeclaringType().getMethods()) {
+            if (method.getName().equals(methodType.getName()) &&
+                method.getParameterNames().size() == methodType.getParameterNames().size() &&
+                ++overloads > 1) {
+                return true;
+            }
+        }
+        return false;
     }
 }

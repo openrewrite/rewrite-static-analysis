@@ -412,4 +412,21 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      String.valueOf("x");
+                  }
+              }
+              """
+          )
+        );
+    }
 }

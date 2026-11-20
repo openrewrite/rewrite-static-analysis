@@ -32,6 +32,35 @@ class AnnotateRequiredParametersTest implements RewriteTest {
         spec.recipe(new AnnotateRequiredParameters(null));
     }
 
+    @DocumentExample
+    @Test
+    void annotateParameterWithNullCheckThrowingException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public void process(String value) {
+                      if (value == null) {
+                          throw new IllegalArgumentException();
+                      }
+                      System.out.println(value);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String value) {
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void simplifyOnlyTheReplacedNullChecks() {
         rewriteRun(
@@ -71,35 +100,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
                           throw new IllegalArgumentException();
                       }
                       boolean flag = !!b;
-                      System.out.println(value);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void annotateParameterWithNullCheckThrowingException() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public void process(String value) {
-                      if (value == null) {
-                          throw new IllegalArgumentException();
-                      }
-                      System.out.println(value);
-                  }
-              }
-              """,
-            """
-              import org.jspecify.annotations.NonNull;
-
-              class Test {
-                  public void process(@NonNull String value) {
                       System.out.println(value);
                   }
               }
@@ -512,6 +512,34 @@ class AnnotateRequiredParametersTest implements RewriteTest {
                           throw new IllegalArgumentException("my concrete business exception");
                       }
                       System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void requireNonNullAsSoleBodyOfIfIsRemoved() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Objects;
+
+              class Test {
+                  public void process(String value, boolean b) {
+                      Objects.requireNonNull(value);
+                      if (b) Objects.requireNonNull(value);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String value, boolean b) {
+                      if (b) {}
                   }
               }
               """

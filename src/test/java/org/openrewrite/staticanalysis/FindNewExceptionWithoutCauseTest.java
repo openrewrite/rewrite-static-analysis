@@ -322,7 +322,9 @@ class FindNewExceptionWithoutCauseTest implements RewriteTest {
     void fallsBackToSyntacticTypeNamesWhenTypesAreUnresolved() {
         rewriteRun(
           spec -> spec
-            .typeValidationOptions(TypeValidation.none())
+            // The input references `org.acme.BoomException` and `org.acme.WrappedException`, which are not on the classpath,
+            // so the constructor call and the qualified type names have no type.
+            .typeValidationOptions(TypeValidation.all().constructorInvocations(false).identifiers(false))
             .dataTable(ExceptionsWithoutCause.Row.class, rows -> {
                 ExceptionsWithoutCause.Row row = rows.getFirst();
                 assertThat(row.getCaughtType()).isEqualTo("org.acme.BoomException");
@@ -545,11 +547,10 @@ class FindNewExceptionWithoutCauseTest implements RewriteTest {
     @Test
     void positionsAreRecordedPerSourceFile() {
         rewriteRun(
-          spec -> spec.dataTable(ExceptionsWithoutCause.Row.class, rows -> {
+          spec -> spec.dataTable(ExceptionsWithoutCause.Row.class, rows ->
               assertThat(rows)
                       .hasSize(2)
-                      .allSatisfy(row -> assertThat(row.getLineNumber()).isPositive());
-          }),
+                      .allSatisfy(row -> assertThat(row.getLineNumber()).isPositive())),
           //language=java
           java(
             """

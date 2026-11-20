@@ -29,6 +29,42 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
         spec.recipe(new RemoveCallsToSystemGc());
     }
 
+    @DocumentExample
+    @Test
+    void noGc() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public String gc() {
+                     return "here gc stands for good call";
+                  }
+
+                  public static void main(String[] args) {
+                      gc();
+                      System.gc();
+                      if (1 > 0) {
+                          System.gc();
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public String gc() {
+                     return "here gc stands for good call";
+                  }
+
+                  public static void main(String[] args) {
+                      gc();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void cleanUpOnlyWhatTheRemovalEmptied() {
         rewriteRun(
@@ -68,42 +104,6 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
                   void m(boolean low, java.util.Iterator<String> it) {
                       if (it.hasNext()) {
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void noGc() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  public String gc() {
-                     return "here gc stands for good call";
-                  }
-
-                  public static void main(String[] args) {
-                      gc();
-                      System.gc();
-                      if (1 > 0) {
-                          System.gc();
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  public String gc() {
-                     return "here gc stands for good call";
-                  }
-
-                  public static void main(String[] args) {
-                      gc();
                   }
               }
               """

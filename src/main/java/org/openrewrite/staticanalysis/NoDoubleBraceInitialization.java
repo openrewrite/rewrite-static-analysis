@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.marker.SearchResult;
@@ -127,8 +128,14 @@ public class NoDoubleBraceInitialization extends Recipe {
                             parentBlockCursor.computeMessageIfAbsent("INIT_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         }
                     } else if (parentBlockCursor.getParent().getValue() instanceof J.MethodDeclaration) {
-                        initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
                         Cursor varDeclsCursor = getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance);
+                        // The statements are qualified before the check, since an unqualified call of the anonymous
+                        // class's own method names a member of the class they leave
+                        initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
+                        Cursor initCursor = new Cursor(new Cursor(getCursor(), nc.getBody()), secondBlock.withStatements(initStatements));
+                        if (!Scope.at(initCursor).canMoveAfter(varDeclsCursor)) {
+                            return nc;
+                        }
                         parentBlockCursor.computeMessageIfAbsent("METHOD_DECL_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         nc = nc.withBody(null);
                     }

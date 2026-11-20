@@ -59,4 +59,118 @@ class CommonStaticAnalysisTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void preserveUncommentedSwitchFallThrough() {
+        rewriteRun(
+          java(
+            """
+              class NumberParser {
+                  int parseInt(char[] digits, int offset, int length) {
+                      int value = 0;
+                      switch (length) {
+                          case 3:
+                              value += (digits[offset++] - '0') * 100;
+                          case 2:
+                              value += (digits[offset++] - '0') * 10;
+                          case 1:
+                              value += digits[offset] - '0';
+                      }
+                      return value;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveFinalizerCleanup() {
+        rewriteRun(
+          java(
+            """
+              class FinalizableCounter {
+                  static int count;
+
+                  FinalizableCounter() {
+                      count++;
+                  }
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      count--;
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveFreshWrapperIdentity() {
+        rewriteRun(
+          java(
+            """
+              import java.util.IdentityHashMap;
+              import java.util.Map;
+
+              class IdentityFixtures {
+                  public static final Integer FIRST = new Integer(1);
+                  public static final Integer SECOND = new Integer(1);
+
+                  public Map<Integer, String> fixtures() {
+                      Map<Integer, String> values = new IdentityHashMap<>();
+                      values.put(FIRST, "first");
+                      values.put(SECOND, "second");
+                      return values;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void convertImmediatelyUnboxedWrapper() {
+        rewriteRun(
+          java(
+            """
+              class PrimitiveFixture {
+                  public int number = new Integer(1);
+              }
+              """,
+            """
+              class PrimitiveFixture {
+                  public int number = Integer.valueOf(1);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveExactDoubleConstructorForNumericalOracle() {
+        rewriteRun(
+          java(
+            """
+              import java.math.BigDecimal;
+
+              class ToDecimalChecker {
+                  public BigDecimal exact(double v) {
+                      return new BigDecimal(v);
+                  }
+
+                  public BigDecimal tenth() {
+                      return new BigDecimal(0.1);
+                  }
+
+                  public BigDecimal integralDouble() {
+                      return new BigDecimal(1.0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

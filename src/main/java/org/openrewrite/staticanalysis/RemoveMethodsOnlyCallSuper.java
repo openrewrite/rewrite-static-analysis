@@ -87,10 +87,8 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                for (Comment comment : md.getPrefix().getComments()) {
-                    if (comment instanceof Javadoc) {
-                        return md;
-                    }
+                if (hasComments(md)) {
+                    return md;
                 }
 
                 // a `final` override stops subclasses from overriding the method further
@@ -144,6 +142,18 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     @Override
                     public J.Block visitBlock(J.Block block, AtomicBoolean found) {
                         return block;
+                    }
+                }.reduce(method, new AtomicBoolean()).get();
+            }
+
+            private boolean hasComments(J.MethodDeclaration method) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public Space visitSpace(Space space, Space.Location location, AtomicBoolean found) {
+                        if (!space.getComments().isEmpty()) {
+                            found.set(true);
+                        }
+                        return space;
                     }
                 }.reduce(method, new AtomicBoolean()).get();
             }

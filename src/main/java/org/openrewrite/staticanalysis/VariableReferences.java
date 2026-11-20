@@ -20,9 +20,7 @@ import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -133,5 +131,14 @@ public class VariableReferences {
         };
 
         return visitor.reduce(j, new ArrayList<>());
+    }
+
+    /**
+     * The identifier written by a statement that {@link #findLhsReferences(J, J.Identifier)} found.
+     */
+    static J.Identifier assignedIdentifier(Statement write) {
+        return (J.Identifier) (write instanceof J.Assignment ? ((J.Assignment) write).getVariable() :
+                write instanceof J.AssignmentOperation ? ((J.AssignmentOperation) write).getVariable() :
+                        ((J.Unary) write).getExpression());
     }
 }

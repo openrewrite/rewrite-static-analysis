@@ -272,4 +272,51 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotFinalizeParameterIncrementedThroughParentheses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void f(int a) {
+                      (a)++;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void assignmentInAnotherMethodDoesNotCount() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void f(int a) {
+                  }
+
+                  void g() {
+                      int a = 0;
+                      a++;
+                  }
+              }
+              """,
+            """
+              class A {
+                  void f(final int a) {
+                  }
+
+                  void g() {
+                      int a = 0;
+                      a++;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

@@ -758,6 +758,143 @@ class InlineVariableTest implements RewriteTest {
     }
 
     @Test
+    void inlineWhenInitializerIsSubtypeOfDeclaredType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  List<String> list() {
+                      List<String> l = new ArrayList<>();
+                      return l;
+                  }
+
+                  Object string() {
+                      Object o = "value";
+                      return o;
+                  }
+
+                  RuntimeException exception() {
+                      RuntimeException e = new IllegalStateException();
+                      throw e;
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  List<String> list() {
+                      return new ArrayList<>();
+                  }
+
+                  Object string() {
+                      return "value";
+                  }
+
+                  RuntimeException exception() {
+                      throw new IllegalStateException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineWhenDeclaredTypeDiffersFromInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object primitiveWidening() {
+                      long v = 1;
+                      return v;
+                  }
+
+                  Object assignmentPrimitiveWidening(long v) {
+                      v = 1;
+                      return v;
+                  }
+
+                  Object unboxing(Integer x) {
+                      int v = x;
+                      return v;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineLambdaOrMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object lambda() {
+                      Runnable r = () -> {};
+                      return r;
+                  }
+
+                  Object methodReference() {
+                      Runnable r = this::lambda;
+                      return r;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1116")
+    @Test
+    void doNotInlineAssignmentReadInFinallyOrCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int compute() {
+                      return 42;
+                  }
+
+                  void log(int v) {
+                  }
+
+                  int readInFinally(int res) {
+                      try {
+                          res = compute();
+                          return res;
+                      } finally {
+                          log(res);
+                      }
+                  }
+
+                  RuntimeException readInCatch(RuntimeException ex) {
+                      try {
+                          ex = new RuntimeException();
+                          throw ex;
+                      } catch (RuntimeException e) {
+                          return ex;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void scalaInlineReturnedLocal() {
         rewriteRun(
           //language=scala
@@ -777,6 +914,67 @@ class InlineVariableTest implements RewriteTest {
                   compute()
                 }
                 def compute(): Int = 1
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anotherLocalOfTheNameIsNotAUse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int nested() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                      int x;
+                      x = 1;
+                      return x;
+                  }
+
+                  int inFinally() {
+                      try {
+                          int y;
+                          y = compute();
+                          return y;
+                      } finally {
+                          int y = 2;
+                          System.out.println(y);
+                      }
+                  }
+
+                  int compute() {
+                      return 1;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int nested() {
+                      {
+                          int x = 0;
+                          System.out.println(x);
+                      }
+                      return 1;
+                  }
+
+                  int inFinally() {
+                      try {
+                          return compute();
+                      } finally {
+                          int y = 2;
+                          System.out.println(y);
+                      }
+                  }
+
+                  int compute() {
+                      return 1;
+                  }
               }
               """
           )

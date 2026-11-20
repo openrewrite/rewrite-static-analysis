@@ -75,7 +75,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 if (statement instanceof J.Block && simplifiedIds.contains(statement.getId())) {
                     J.Block simplifiedBlock = (J.Block) statement;
                     bl = isEmpty(simplifiedBlock) ?
-                            bl.withStatements(ListUtils.map(bl.getStatements(), s -> s.getId().equals(statement.getId()) ? null : s)) :
+                            bl.withStatements(ListUtils.filter(bl.getStatements(), s -> !s.getId().equals(statement.getId()))) :
                             (J.Block) new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor(simplifiedBlock)
                                     .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
                 }

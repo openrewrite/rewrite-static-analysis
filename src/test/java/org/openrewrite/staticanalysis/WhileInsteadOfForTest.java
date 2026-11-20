@@ -16,14 +16,33 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.marker.Semicolon;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.javascript.tree.JS;
+import org.openrewrite.marker.Markers;
+import org.openrewrite.marker.SearchResult;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.nio.file.Path;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 
 class WhileInsteadOfForTest implements RewriteTest {
     @Override
@@ -58,6 +77,33 @@ class WhileInsteadOfForTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"example.js", "example.ts", "example.java"})
+    void retainJavaScriptLoopAndNativeSemicolon(String path) {
+        // Construct the shared loop nodes without requiring an external JavaScript RPC install.
+        var ctx = new InMemoryExecutionContext();
+        var javaSource = (J.CompilationUnit) JavaParser.fromJavaVersion().build()
+          .parse(ctx, "class Example { int f(int i) { for(;i<1;)i++;return i; } }")
+          .findFirst().orElseThrow();
+        var method = (J.MethodDeclaration) javaSource.getClasses().getFirst().getBody().getStatements().getFirst();
+        var loop = (J.ForLoop) method.getBody().getStatements().getFirst();
+        loop = loop.withPrefix(Space.EMPTY);
+        loop = loop.getPadding().withBody(loop.getPadding().getBody()
+          .withMarkers(Markers.EMPTY.add(new Semicolon(randomId()))));
+        var source = new JS.CompilationUnit(randomId(), Space.EMPTY, Markers.EMPTY,
+          Path.of(path), null, "UTF-8", false, null, List.of(),
+          List.of(JRightPadded.build((Statement) loop)), Space.EMPTY);
+        assertThat(source.printAll()).isEqualTo("for(;i<1;)i++;");
+        assertThat(new WhileInsteadOfFor().getVisitor().visit(source, ctx)).isSameAs(source);
+        JS.CompilationUnit marked = SearchResult.found(source);
+        assertThat(new WhileInsteadOfFor().getVisitor().visit(marked, ctx)).isSameAs(marked);
+    }
+
+    @Test
+    void retainMinifiedJavaScriptLoopBeforeReturn() {
+        rewriteRun(javascript("function f(){var i=0;for(;i<1;)i++;return i}"));
     }
 
     @Test

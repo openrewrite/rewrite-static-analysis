@@ -26,6 +26,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.go.GoFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
@@ -35,9 +36,12 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
+
 import static org.openrewrite.Preconditions.and;
 import static org.openrewrite.Preconditions.not;
 
@@ -162,9 +166,19 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     return variable;
                 }
 
-                List<J> readReferences = VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName());
+                // SemanticallyEqual matches an attributed variable's references by owner, name and type, which only another
+                // variable of this name declared in the region can share. Scope tells those apart. It resolves every name
+                // in the scope, so it is asked only then.
+                Set<UUID> own = declaresNameAgain(parentScope.getValue(), variable) ?
+                        Scope.bindingOf(getCursor(), variable)
+                                .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
+                                .orElse(null) :
+                        null;
+                List<J> readReferences = ListUtils.filter(VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName()),
+                        reference -> own == null || own.contains(reference.getId()));
                 if (readReferences.isEmpty()) {
-                    List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
+                    List<Statement> assignmentReferences = ListUtils.filter(VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName()),
+                            reference -> own == null || own.contains(VariableReferences.assignedIdentifier(reference).getId()));
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment && mightSideEffect(((J.Assignment) ref).getAssignment()) ||
                             ref instanceof J.AssignmentOperation && mightSideEffect(((J.AssignmentOperation) ref).getAssignment())) {
@@ -181,6 +195,27 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }
 
                 return super.visitVariable(variable, ctx);
+            }
+
+            private boolean declaresNameAgain(J region, J.VariableDeclarations.NamedVariable variable) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable v, AtomicBoolean found) {
+                        if (!v.isScope(variable) && v.getSimpleName().equals(variable.getSimpleName())) {
+                            found.set(true);
+                        }
+                        return super.visitVariable(v, found);
+                    }
+
+                    @Override
+                    public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, AtomicBoolean found) {
+                        if (instanceOf.getPattern() instanceof J.Identifier &&
+                            ((J.Identifier) instanceOf.getPattern()).getSimpleName().equals(variable.getSimpleName())) {
+                            found.set(true);
+                        }
+                        return super.visitInstanceOf(instanceOf, found);
+                    }
+                }.reduce(region, new AtomicBoolean()).get();
             }
 
             @Override

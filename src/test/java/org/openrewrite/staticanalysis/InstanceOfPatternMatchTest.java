@@ -18,13 +18,19 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.service.ScopeService;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.java.Assertions.javaVersion;
-import static org.openrewrite.java.Assertions.version;
+import java.lang.reflect.Proxy;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.java.Assertions.*;
 
 @SuppressWarnings({"RedundantCast", "DataFlowIssue", "ConstantValue", "ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable", "SizeReplaceableByIsEmpty", "rawtypes", "ResultOfMethodCallIgnored", "ArraysAsListWithZeroOrOneArgument", "DuplicateCondition"})
 class InstanceOfPatternMatchTest implements RewriteTest {
@@ -1062,6 +1068,113 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void negatedInstanceOfThatLeavesMatchesInLaterStatements() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          String s = (String) o;
+                          System.out.println(s.length() + ((String) o).length());
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String s)) {
+                              return;
+                          }
+                          System.out.println(s.length() + s.length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepCastAfterTheCheckedVariableIsAssigned() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o, Object other) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          o = other;
+                          System.out.println(((String) o).length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepCastAfterNegatedCheckWhoseDoWhileCanFinish() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o, boolean c) {
+                          if (!(o instanceof String)) {
+                              do {
+                                  if (c) {
+                                      continue;
+                                  }
+                                  return;
+                              } while (c);
+                          }
+                          System.out.println(((String) o).length());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void patternVariableAfterANegatedCheckAvoidsALaterLocal() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String)) {
+                              return;
+                          }
+                          System.out.println(((String) o).length());
+                          String string = "x";
+                          System.out.println(string);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String string1)) {
+                              return;
+                          }
+                          System.out.println(string1.length());
+                          String string = "x";
+                          System.out.println(string);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void negatedInstanceOfMatchedInElse() {
             rewriteRun(
               //language=java
@@ -1073,6 +1186,17 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                               System.out.println(((String) o).length());
                           } else {
                               System.out.println(((String) o).length());
+                          }
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          if (!(o instanceof String string)) {
+                              System.out.println(((String) o).length());
+                          } else {
+                              System.out.println(string.length());
                           }
                       }
                   }
@@ -1695,6 +1819,36 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     class Various {
         @Test
+        void patternVariableInAWhileConditionTakesTheNameOfTheDeletedLocal() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void test(Object o) {
+                          while (o instanceof String) {
+                              String str = (String) o;
+                              System.out.println(str);
+                              o = str.isEmpty() ? null : str.substring(1);
+                          }
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      void test(Object o) {
+                          while (o instanceof String str) {
+                              System.out.println(str);
+                              o = str.isEmpty() ? null : str.substring(1);
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void unaryWithoutSideEffects() {
             rewriteRun(
               //language=java
@@ -2221,4 +2375,111 @@ void doesNotReplaceCastAfterReassignment() {
       )
     );
  }
+
+    @Test
+    void keepUnconditionalInstanceOfBeforeJava21() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Named {
+                  void setName(String name);
+              }
+              abstract class Machine implements Named {
+              }
+              class Factory {
+                  void configure(Machine machine) {
+                      if (machine instanceof Named) {
+                          ((Named) machine).setName("machine");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unconditionalInstanceOfOnJava21() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                interface Named {
+                    void setName(String name);
+                }
+                abstract class Machine implements Named {
+                }
+                class Factory {
+                    void configure(Machine machine) {
+                        if (machine instanceof Named) {
+                            ((Named) machine).setName("machine");
+                        }
+                    }
+                }
+                """,
+              """
+                interface Named {
+                    void setName(String name);
+                }
+                abstract class Machine implements Named {
+                }
+                class Factory {
+                    void configure(Machine machine) {
+                        if (machine instanceof Named named) {
+                            named.setName("machine");
+                        }
+                    }
+                }
+                """
+            ), 21
+          )
+        );
+    }
+
+    @Test
+    void sourceFileThatRefusesTheScopeServiceIsReadByJavaRules() {
+        J.CompilationUnit parsed = JavaParser.fromJavaVersion().build()
+          .parse(
+            //language=java
+            """
+              class A {
+                  int test(Object o) {
+                      if (!(o instanceof String)) {
+                          return 0;
+                      }
+                      String s = (String) o;
+                      return s.length();
+                  }
+              }
+              """)
+          .map(J.CompilationUnit.class::cast)
+          .findFirst()
+          .orElseThrow();
+        J.CompilationUnit cu = parsed.withMarkers(parsed.getMarkers().add(javaVersion(17)));
+        // A host process built on an older rewrite release loads a source file class that does not know the service
+        JavaSourceFile refusing = (JavaSourceFile) Proxy.newProxyInstance(getClass().getClassLoader(),
+          new Class<?>[]{JavaSourceFile.class}, (proxy, method, args) -> {
+              if ("service".equals(method.getName()) && args[0] == ScopeService.class) {
+                  throw new UnsupportedOperationException("Service " + args[0] + " not supported");
+              }
+              return method.invoke(cu, args);
+          });
+
+        JavaSourceFile after = (JavaSourceFile) new InstanceOfPatternMatch().getVisitor().visitNonNull(refusing, new InMemoryExecutionContext());
+
+        assertThat(after.printAll()).isEqualTo(
+          //language=java
+          """
+            class A {
+                int test(Object o) {
+                    if (!(o instanceof String s)) {
+                        return 0;
+                    }
+                    return s.length();
+                }
+            }
+            """);
+    }
 }

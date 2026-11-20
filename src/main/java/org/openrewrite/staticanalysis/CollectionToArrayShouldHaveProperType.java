@@ -19,19 +19,20 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
 
 public class CollectionToArrayShouldHaveProperType extends Recipe {
     private static final MethodMatcher TO_ARRAY = new MethodMatcher("java.util.Collection toArray()", true);
@@ -78,13 +79,29 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
                             if (fqType != null) {
                                 String className = fqType.getClassName();
                                 String fqn = fqType.getFullyQualifiedName();
-                                JavaTemplate template = JavaTemplate.builder("#{any()}.toArray(new #{}[0])")
+                                JavaTemplate template = JavaTemplate.builder("#{any(java.util.Collection)}.toArray(new #{}[0])")
                                         .imports(fqn)
                                         .build();
 
-                                Expression result = template.apply(getCursor(), visitedTypeCast.getCoordinates().replace(),
-                                        requireNonNull(methodInvocation.getSelect()),
+                                Expression select = methodInvocation.getSelect();
+                                boolean hasSelect = select != null;
+                                if (!hasSelect) {
+                                    JavaType declaringType = methodInvocation.getMethodType() != null ?
+                                            methodInvocation.getMethodType().getDeclaringType() : null;
+                                    select = JavaElementFactory.newThis(declaringType);
+                                }
+
+                                J.MethodInvocation result = template.apply(getCursor(), visitedTypeCast.getCoordinates().replace(),
+                                        select,
                                         className);
+
+                                if (!hasSelect) {
+                                    result = result.withSelect(null);
+                                }
+
+                                // The template parser cannot see the user's own element type, so give the new array the type of the cast
+                                result = result.withArguments(ListUtils.map(result.getArguments(), arg ->
+                                        arg instanceof J.NewArray ? withArrayType((J.NewArray) arg, arrayType, componentType) : arg));
 
                                 maybeAddImport(fqn);
 
@@ -95,6 +112,14 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
                 }
 
                 return visitedTypeCast;
+            }
+
+            private J.NewArray withArrayType(J.NewArray newArray, JavaType.Array arrayType, JavaType componentType) {
+                TypeTree typeExpression = newArray.getTypeExpression();
+                if (typeExpression instanceof J.Identifier) {
+                    typeExpression = ((J.Identifier) typeExpression).withType(componentType);
+                }
+                return newArray.withTypeExpression(typeExpression).withType(arrayType);
             }
         };
     }

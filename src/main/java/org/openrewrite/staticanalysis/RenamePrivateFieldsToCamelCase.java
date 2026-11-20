@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -32,6 +33,7 @@ import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.emptyList;
+
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
 @EqualsAndHashCode(callSuper = false)
@@ -64,12 +66,13 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return hasNameSet.stream().noneMatch(key ->
-                        key.equals(toName) ||
-                        key.equals(variable.getSimpleName()) ||
-                        key.endsWith(" " + toName) ||
-                        key.endsWith(" " + variable.getSimpleName())
-                );
+                // A name another field took earlier in this pass is not in the tree the cursor holds
+                if (hasNameSet.contains(computeKey(toName, variable))) {
+                    return false;
+                }
+                return Scope.bindingOf(getCursor(), variable)
+                        .filter(binding -> binding.canRenameTo(toName))
+                        .isPresent();
             }
 
             @Override

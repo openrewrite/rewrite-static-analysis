@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis.python;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.python.tree.Py;
 
@@ -26,11 +25,24 @@ import org.openrewrite.python.tree.Py;
  * Add a search marker if visiting a Python file
  */
 public class PythonFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_PYTHON_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.python.tree.Py");
+    private static final boolean IS_PYTHON_AVAILABLE = isLanguageAvailable();
+
+    private static boolean isLanguageAvailable() {
+        try {
+            Class.forName("org.openrewrite.python.tree.Py", false, PythonFileChecker.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    public static boolean isPython(@Nullable Tree tree) {
+        return IS_PYTHON_AVAILABLE && tree instanceof Py.CompilationUnit;
+    }
 
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (IS_PYTHON_AVAILABLE && tree instanceof Py.CompilationUnit) {
+        if (isPython(tree)) {
             return SearchResult.found(tree);
         }
         return tree;

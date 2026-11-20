@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -84,9 +85,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/162")
     @Test
-    void noChangeIfLambdaBlockWithAmbiguousMethod() {
+    void simplifyLambdaNestedInArgumentOfAmbiguousMethod() {
         //language=java
         rewriteRun(
           java(
@@ -101,12 +101,166 @@ class LambdaBlockToExpressionTest implements RewriteTest {
           ),
           java(
             """
+              import java.util.Optional;
               class Test {
-                  void doTest() {
-                      A a = new A();
+                  void doTest(A a) {
                       a.aMethod(value -> {
-                        return value.toString();
+                          return Optional.of(value).map(v -> {
+                              return v.toString();
+                          }).get();
                       });
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(value -> {
+                          return Optional.of(value).map(v -> v.toString()).get();
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaPassedToOverloadsTakingTheSameInterface() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(Consumer<String> consumer, String... strings) {}
+                  void aMethod(Consumer<String> consumer, Integer... integers) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s -> {
+                          System.out.println(s);
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s ->
+                          System.out.println(s));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaWhereOverloadTakesNoInterface() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(String before, Consumer<String> consumer) {}
+                  void aMethod(String before, String after) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod("before", s -> {
+                          System.out.println(s);
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod("before", s ->
+                          System.out.println(s));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaWhereOverloadTakesInterfaceOfOtherArity() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Consumer;
+              class A {
+                  void aMethod(Iterable<String>... iterables) {}
+                  void aMethod(Consumer<String> consumer, Iterable<String>... iterables) {}
+              }
+              """
+          ),
+          java(
+            """
+              import java.util.List;
+              class Test {
+                  void doTest(A a, List<String> list) {
+                      a.aMethod(s -> {
+                          System.out.println(s);
+                      }, list);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              class Test {
+                  void doTest(A a, List<String> list) {
+                      a.aMethod(s ->
+                          System.out.println(s), list);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLambdaWhereOverloadsBothReturnValue() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Function;
+              import java.util.function.UnaryOperator;
+              class A {
+                  void aMethod(Function<String, String> function) {}
+                  void aMethod(UnaryOperator<String> operator) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s -> {
+                          return s.trim();
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest(A a) {
+                      a.aMethod(s -> s.trim());
                   }
               }
               """
@@ -183,18 +337,169 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("CodeBlock2Expr")
-    @Test
-    void doNotChangeLambdaWithEmptyReturn() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  Runnable r = () -> { return; };
-              }
-              """
-          )
-        );
+    @Nested
+    class NoChange {
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/162")
+        @Test
+        void noChangeIfLambdaBlockWithAmbiguousMethod() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Consumer;
+                  class A {
+                      void aMethod(Consumer<Integer> consumer) {}
+                      void aMethod(Function<Integer,String> function) {}
+                  }
+                  """
+              ),
+              java(
+                """
+                  class Test {
+                      void doTest() {
+                          A a = new A();
+                          a.aMethod(value -> {
+                            return value.toString();
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeIfLambdaBlockWithOverloadInheritedFromSupertype() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  import java.util.function.Consumer;
+                  import java.util.function.Function;
+                  class A {
+                      void aMethod(Consumer<Integer> consumer) {}
+                  }
+                  class B extends A {
+                      void aMethod(Function<Integer, String> function) {}
+                  }
+                  """
+              ),
+              java(
+                """
+                  class Test {
+                      void doTest(B b) {
+                          b.aMethod(value -> {
+                              return value.toString();
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeIfLambdaBlockWithVarargsOverload() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  import java.util.concurrent.Callable;
+                  class A {
+                      void aMethod(Callable<String> callable) {}
+                      void aMethod(Runnable runnable, String... strings) {}
+                  }
+                  """
+              ),
+              java(
+                """
+                  class Test {
+                      String value() {
+                          return "";
+                      }
+                      void doTest(A a) {
+                          a.aMethod(() -> {
+                              value();
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeIfLambdaBlockPassedToAmbiguousConstructor() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  import java.util.function.Consumer;
+                  import java.util.function.Function;
+                  class A {
+                      A(Consumer<Integer> consumer) {}
+                      A(Function<Integer, String> function) {}
+                  }
+                  """
+              ),
+              java(
+                """
+                  class Test {
+                      Object doTest(boolean b) {
+                          return new A(b ? value -> {
+                              return value.toString();
+                          } : null) {};
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeIfLambdaBlockYieldedToAmbiguousMethod() {
+            //language=java
+            rewriteRun(
+              java(
+                """
+                  import java.util.function.Consumer;
+                  import java.util.function.Function;
+                  class A {
+                      void aMethod(Consumer<Integer> consumer) {}
+                      void aMethod(Function<Integer, String> function) {}
+                  }
+                  """
+              ),
+              java(
+                """
+                  class Test {
+                      void doTest(A a, int k) {
+                          a.aMethod(switch (k) {
+                              default -> value -> {
+                                  value.toString();
+                              };
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @SuppressWarnings("CodeBlock2Expr")
+        @Test
+        void doNotChangeLambdaWithEmptyReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      Runnable r = () -> { return; };
+                  }
+                  """
+              )
+            );
+        }
     }
 }

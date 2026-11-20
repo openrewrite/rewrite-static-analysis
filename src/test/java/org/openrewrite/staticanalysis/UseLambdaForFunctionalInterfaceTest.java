@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
@@ -30,7 +31,9 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
@@ -41,6 +44,33 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseLambdaForFunctionalInterface());
+    }
+
+    @DocumentExample
+    @Test
+    void useLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer n) {
+                          return n + 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> n + 1;
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -72,33 +102,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Integer lengthOf(Map<String, Integer> lengths, String key) {
                       return lengths.computeIfAbsent(key, s -> s.length());
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void useLambda() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
-                      @Override
-                      public Integer apply(Integer n) {
-                          return n + 1;
-                      }
-                  };
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = n -> n + 1;
               }
               """
           )
@@ -217,7 +220,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void gson() {
         rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("gson")),
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpathFromResources(new InMemoryExecutionContext(), "gson-2")),
           //language=java
           java(
             """
@@ -571,9 +574,332 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Function<Integer, Integer> f = new Function<Integer, Integer>() {
                       @Override
                       public Integer apply(Integer n) {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenUsingAMemberOfTheAnonymousClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Predicate;
+              import java.util.function.Supplier;
+
+              interface Check {
+                  int LIMIT = 3;
+                  boolean ok(int i);
+              }
+              class Test {
+                  int n;
+                  void run() {
+                  }
+                  Supplier<Integer> inheritedFromObject = new Supplier<Integer>() {
+                      @Override
+                      public Integer get() {
+                          return hashCode();
+                      }
+                  };
+                  Supplier<Class<?>> itsOwnClass = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return getClass();
+                      }
+                  };
+                  Runnable itsOwnMethod = new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              run();
+                          }
+                      }
+                  };
+                  Predicate<String> defaultMethod = new Predicate<String>() {
+                      @Override
+                      public boolean test(String s) {
+                          return s.isEmpty() || negate() == null;
+                      }
+                  };
+                  Check constant = new Check() {
+                      @Override
+                      public boolean ok(int i) {
+                          return i < LIMIT;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenSuper() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> s = new Supplier<String>() {
+                      @Override
+                      public String get() {
+                          return super.toString();
+                      }
+                  };
+                  Supplier<Class<?>> c = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return super.getClass();
+                      }
+                  };
+                  Supplier<Supplier<Class<?>>> r = new Supplier<Supplier<Class<?>>>() {
+                      @Override
+                      public Supplier<Class<?>> get() {
+                          return super::getClass;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenImplicitGetClassIsNested() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> supplier(boolean b) {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              Supplier<Class<?>> nested = () -> getClass();
+                              return b ? String.valueOf(nested.get()) : "";
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenEnclosingExpressionOfQualifiedNewCallsGetClass() {
+        // The qualified `new`'s enclosing expression is evaluated in the outer anonymous class's scope
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  class Inner {
+                  }
+
+                  Test tag(Class<?> c) {
+                      return this;
+                  }
+
+                  Supplier<Object> supplier() {
+                      return new Supplier<Object>() {
+                          @Override
+                          public Object get() {
+                              return tag(getClass()).new Inner() {
+                              };
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenGetClassCannotBeAttributed() {
+        // Without a method type the receiver cannot be proven, so the site is left alone
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> s = new Supplier<String>() {
+                      @Override
+                      public String get() {
+                          return getClass(unknown);
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenGetClassIsCalledOnAnotherObject() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  Function<Object, Class<?>> f = new Function<Object, Class<?>>() {
+                      @Override
+                      public Class<?> apply(Object o) {
+                          return o.getClass();
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  Function<Object, Class<?>> f = o -> o.getClass();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenOnlyANestedAnonymousClassCallsGetClass() {
+        // The nested anonymous class keeps its own `this` either way
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return new Supplier<Supplier<Class<?>>>() {
+                          @Override
+                          public Supplier<Class<?>> get() {
+                              return new Supplier<Class<?>>() {
+                                  @Override
+                                  public Class<?> get() {
+                                      return getClass();
+                                  }
+                              };
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return () -> new Supplier<Class<?>>() {
+                          @Override
+                          public Class<?> get() {
+                              return getClass();
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenCallingAMethodOfTheEnclosingClass() {
+        // A call resolving to the enclosing class keeps its receiver in a lambda
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  String name() {
+                      return "x";
+                  }
+
+                  Supplier<String> supplier() {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              return name();
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  String name() {
+                      return "x";
+                  }
+
+                  Supplier<String> supplier() {
+                      return () -> name();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenAFieldInitializerReadsItsOwnField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  Runnable r = new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              r.run();
+                          }
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenAFieldInitializerReadsItsOwnFieldFromAnArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  Thread t = new Thread(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (n++ < 3) {
+                              t.run();
+                          }
+                      }
+                  });
               }
               """
           )
@@ -605,10 +931,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1915")
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
-    void dontUseLambdaWhenShadowsClassField() {
+    void useLambdaWhenALocalShadowsAField() {
         rewriteRun(
           //language=java
           java(
@@ -623,6 +948,18 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                               int n = 0;
                               return n;
                           }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+              class Test {
+                  int n = 1;
+                  void test() {
+                      Supplier<Integer> f = () -> {
+                          int n = 0;
+                          return n;
                       };
                   }
               }
@@ -1268,7 +1605,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Function<Integer, Integer> f = new Function<Integer, Integer>() {
                       @Override
                       public Integer apply(Integer n) {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
@@ -1296,6 +1633,31 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       @Override
                       public Integer get() {
                           return ++calls;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsUseOfAMemberOfTheAnonymousClass() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason()).isEqualTo("uses a member of the anonymous class");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              class Test {
+                  Supplier<Class<?>> s = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return getClass();
                       }
                   };
               }
@@ -1356,7 +1718,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Supplier<Integer> untouched = new Supplier<Integer>() {
                       @Override
                       public Integer get() {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
@@ -1370,7 +1732,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Supplier<Integer> untouched = new Supplier<Integer>() {
                       @Override
                       public Integer get() {
-                          return this.n;
+                          return this.hashCode();
                       }
                   };
               }
@@ -1757,6 +2119,144 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void lambdaParametersKeepOnlyTheirNames() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Joiner {
+                  String join(String first, int[] counts, String... rest);
+              }
+              class Test {
+                  Joiner j = new Joiner() {
+                      @Override
+                      public String join(@Deprecated final String first,
+                                         int counts[],
+                                         String... rest) {
+                          return first + counts.length + rest.length;
+                      }
+                  };
+              }
+              """,
+            """
+              interface Joiner {
+                  String join(String first, int[] counts, String... rest);
+              }
+              class Test {
+                  Joiner j = (first, counts, rest) -> first + counts.length + rest.length;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void variablesInTheLambdaAreAttributedAsInAFreshParse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  // Declared first, so javac names this anonymous class Test$1 both before and after the ones below are converted
+                  Object o = new Object() {
+                      Function<String, Integer> inner = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String a) {
+                              return a.length();
+                          }
+                      };
+                  };
+                  static Function<String, Integer> s = new Function<String, Integer>() {
+                      @Override
+                      public Integer apply(String b) {
+                          int n = b.length();
+                          return n;
+                      }
+                  };
+                  Function<String, Integer> f = new Function<String, Integer>() {
+                      @Override
+                      public Integer apply(String c) {
+                          return c.length();
+                      }
+                  };
+                  {
+                      Function<String, Integer> g = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String d) {
+                              return d.length();
+                          }
+                      };
+                  }
+                  interface Constants {
+                      Function<String, Integer> K = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String e) {
+                              return e.length();
+                          }
+                      };
+                  }
+                  void m() {
+                      Function<String, Function<String, Integer>> h = new Function<String, Function<String, Integer>>() {
+                          @Override
+                          public Function<String, Integer> apply(String x) {
+                              return y -> x.length() + y.length();
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  // Declared first, so javac names this anonymous class Test$1 both before and after the ones below are converted
+                  Object o = new Object() {
+                      Function<String, Integer> inner = a -> a.length();
+                  };
+                  static Function<String, Integer> s = b -> {
+                      int n = b.length();
+                      return n;
+                  };
+                  Function<String, Integer> f = c -> c.length();
+                  {
+                      Function<String, Integer> g = d -> d.length();
+                  }
+                  interface Constants {
+                      Function<String, Integer> K = e -> e.length();
+                  }
+                  void m() {
+                      Function<String, Function<String, Integer>> h = x -> y -> x.length() + y.length();
+                  }
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(lambdaVariables(cu)).isEqualTo(lambdaVariables(
+              (J.CompilationUnit) JavaParser.fromJavaVersion().build().parse(cu.printAll()).findFirst().orElseThrow())))
+          )
+        );
+    }
+
+    private static List<String> lambdaVariables(J.CompilationUnit cu) {
+        return new JavaIsoVisitor<List<String>>() {
+            @Override
+            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, List<String> variables) {
+                if (getCursor().firstEnclosing(J.Lambda.class) != null) {
+                    variables.add("declared " + variable.getVariableType());
+                }
+                return super.visitVariable(variable, variables);
+            }
+
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier identifier, List<String> variables) {
+                if (identifier.getFieldType() != null && identifier.getFieldType().getOwner() instanceof JavaType.Method &&
+                    getCursor().firstEnclosing(J.Lambda.class) != null) {
+                    variables.add(identifier.getSimpleName() + ": " + identifier.getType() + " " + identifier.getFieldType());
+                }
+                return super.visitIdentifier(identifier, variables);
+            }
+        }.reduce(cu, new ArrayList<>());
+    }
+
     @Nested
     class JavaScript {
         @Test
@@ -1805,5 +2305,29 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                 return super.visitClassDeclaration(classDecl, p);
             }
         }.visitNonNull(cu, 0);
+    }
+
+    @Test
+    void keepAnonymousClassWhoseLocalHasAPatternVariablesName() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(Object o) {
+                      if (o instanceof String s) {
+                          Runnable r = new Runnable() {
+                              @Override
+                              public void run() {
+                                  String s = "x";
+                                  System.out.println(s);
+                              }
+                          };
+                      }
+                  }
+              }
+              """
+          )
+        );
     }
 }

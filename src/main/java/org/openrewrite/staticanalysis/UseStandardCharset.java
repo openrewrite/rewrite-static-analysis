@@ -60,7 +60,7 @@ public class UseStandardCharset extends Recipe {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (CHARSET_FOR_NAME.matches(m)) {
+                if (CHARSET_FOR_NAME.matches(m) && !StatementRemoval.needsStatementExpression(getCursor())) {
                     Expression charsetName = m.getArguments().get(0);
                     if (!(charsetName instanceof J.Literal)) {
                         return m;

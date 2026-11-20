@@ -24,6 +24,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Space;
@@ -77,7 +78,8 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
                     if (lastStatement instanceof J.Unary && !hasContinueTargeting(body)) {
                         J.Unary unary = (J.Unary) lastStatement;
-                        if (unary.getExpression() instanceof J.Identifier) {
+                        if (unary.getExpression() instanceof J.Identifier &&
+                            !isModifiedElsewhere(body, unary, ((J.Identifier) unary.getExpression()).getSimpleName())) {
                             String unaryTarget = ((J.Identifier) unary.getExpression()).getSimpleName();
                             for (J.VariableDeclarations.NamedVariable initVar : initVars.getVariables()) {
                                 if (initVar.getSimpleName().equals(unaryTarget)) {
@@ -118,6 +120,40 @@ public class ForLoopIncrementInUpdate extends Recipe {
                             found.set(true);
                         }
                         return continueStatement;
+                    }
+                }.reduce(body, new AtomicBoolean()).get();
+            }
+
+            /// Moving one of several updates of the same variable to the loop's update clause splits them up,
+            /// leaving the loop harder to read than before.
+            private boolean isModifiedElsewhere(Statement body, J.Unary trailingIncrement, String variable) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Unary visitUnary(J.Unary unary, AtomicBoolean found) {
+                        if (unary != trailingIncrement && unary.getOperator().isModifying() && isVariable(unary.getExpression())) {
+                            found.set(true);
+                        }
+                        return super.visitUnary(unary, found);
+                    }
+
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean found) {
+                        if (isVariable(assignment.getVariable())) {
+                            found.set(true);
+                        }
+                        return super.visitAssignment(assignment, found);
+                    }
+
+                    @Override
+                    public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, AtomicBoolean found) {
+                        if (isVariable(assignOp.getVariable())) {
+                            found.set(true);
+                        }
+                        return super.visitAssignmentOperation(assignOp, found);
+                    }
+
+                    private boolean isVariable(Expression expression) {
+                        return expression instanceof J.Identifier && ((J.Identifier) expression).getSimpleName().equals(variable);
                     }
                 }.reduce(body, new AtomicBoolean()).get();
             }

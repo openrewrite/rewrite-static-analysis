@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -33,6 +33,7 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.tree.TypeUtils.findDeclaredMethod;
 
@@ -60,11 +61,14 @@ public class UseDiamondOperator extends Recipe {
     }
 
     private static class UseDiamondOperatorVisitor extends JavaIsoVisitor<ExecutionContext> {
-        private boolean java9;
-
         @Override
         public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-            java9 = new UsesJavaVersion<Integer>(9).visit(cu, 0) != cu;
+            JavaVersion version = cu.getMarkers().findFirst(JavaVersion.class).orElse(null);
+            int sourceVersion = version == null ? -1 : version.getMajorVersion();
+            int releaseVersion = version == null ? -1 : version.getMajorReleaseVersion();
+            if ((sourceVersion > 0 && sourceVersion < 7) || (releaseVersion > 0 && releaseVersion < 7)) {
+                return cu;
+            }
             return super.visitCompilationUnit(cu, ctx);
         }
 
@@ -142,7 +146,7 @@ public class UseDiamondOperator extends Recipe {
                         }
 
                         J.NewClass nc = (J.NewClass) arg;
-                        if ((java9 || nc.getBody() == null) && !methodType.getParameterTypes().isEmpty()) {
+                        if (nc.getBody() == null && !methodType.getParameterTypes().isEmpty()) {
                             JavaType.Parameterized paramType = TypeUtils.asParameterized(getMethodParamType(methodType, i));
                             if (paramType != null && nc.getClazz() instanceof J.ParameterizedType && !hasAmbiguousConstructors(nc)) {
                                 return maybeRemoveParams(paramType.getTypeParameters(), nc);
@@ -192,7 +196,7 @@ public class UseDiamondOperator extends Recipe {
         public J.Return visitReturn(J.Return _return, ExecutionContext ctx) {
             J.Return return_ = super.visitReturn(_return, ctx);
             J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
-            if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
+            if (nc != null && nc.getBody() == null && nc.getClazz() instanceof J.ParameterizedType) {
                 if (hasAmbiguousConstructors(nc)) {
                     return return_;
                 }
@@ -223,12 +227,17 @@ public class UseDiamondOperator extends Recipe {
 
 
         private J.NewClass maybeRemoveParams(@Nullable List<JavaType> paramTypes, J.NewClass newClass) {
-            if (paramTypes != null && (java9 || newClass.getBody() == null) && newClass.getClazz() instanceof J.ParameterizedType) {
+            // Anonymous diamond requires Java 9. Models can report the build JDK as both source and target
+            // even when the compiler uses --release 8, so those markers cannot establish that it is safe.
+            // Retain explicit arguments for anonymous classes on every conversion path.
+            if (paramTypes != null && newClass.getBody() == null && newClass.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                 if (newClassType.getTypeParameters() != null) {
                     if (paramTypes.size() != newClassType.getTypeParameters().size() ||
                             hasAnnotations(newClassType) ||
-                            breaksNestedTypeInference(newClass)) {
+                            breaksNestedTypeInference(newClass) ||
+                            hasGenericArrayVarargsArgument(newClass) ||
+                            isAnonymousClassWithWildcardTarget(paramTypes, newClass)) {
                         return newClass;
                     }
                     for (int i = 0; i < paramTypes.size(); i++) {
@@ -243,6 +252,47 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
             return newClass;
+        }
+
+        private static boolean hasGenericArrayVarargsArgument(J.NewClass newClass) {
+            JavaType.Method constructor = newClass.getConstructorType();
+            if (constructor == null || !constructor.hasFlags(Flag.Varargs) ||
+                    newClass.getArguments().size() != constructor.getParameterTypes().size()) {
+                return false;
+            }
+            Expression last = newClass.getArguments().get(newClass.getArguments().size() - 1);
+            if (!(last instanceof J.MethodInvocation)) {
+                return false;
+            }
+            JavaType.Method factory = ((J.MethodInvocation) last).getMethodType();
+            if (factory == null || !(factory.getReturnType() instanceof JavaType.Array)) {
+                return false;
+            }
+            // Diamond and a generic array factory can infer the varargs component jointly,
+            // rather than passing the array as the single fixed-arity constructor argument.
+            Optional<JavaType.Method> declared = findDeclaredMethod(
+                    factory.getDeclaringType(), factory.getName(), factory.getParameterTypes());
+            return !declared.isPresent() || mentionsTypeVariable(declared.get().getReturnType(), null, 0);
+        }
+
+        /**
+         * With a wildcard target such as {@code Consumer<?>}, an anonymous {@code new Consumer<>() {...}} has its
+         * type argument inferred from the wildcard's bound ({@code Object} here), so the methods it declares for the
+         * explicit type argument no longer override anything and the class stops compiling.
+         *
+         * @see <a href="https://github.com/openrewrite/rewrite-static-analysis/issues/1116">C10 of #1116</a>
+         */
+        private static boolean isAnonymousClassWithWildcardTarget(List<JavaType> targetTypes, J.NewClass newClass) {
+            if (newClass.getBody() == null) {
+                return false;
+            }
+            for (JavaType targetType : targetTypes) {
+                if (targetType instanceof JavaType.GenericTypeVariable &&
+                        "?".equals(((JavaType.GenericTypeVariable) targetType).getName())) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**
@@ -295,6 +345,9 @@ public class UseDiamondOperator extends Recipe {
         private static boolean mentionsTypeVariable(JavaType type, @Nullable String name, int depth) {
             if (depth > 4) {
                 return false;
+            }
+            if (type instanceof JavaType.Array) {
+                return mentionsTypeVariable(((JavaType.Array) type).getElemType(), name, depth + 1);
             }
             if (type instanceof JavaType.GenericTypeVariable) {
                 return name == null || name.equals(((JavaType.GenericTypeVariable) type).getName());

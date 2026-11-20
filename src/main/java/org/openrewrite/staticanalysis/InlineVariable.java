@@ -17,20 +17,26 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 public class InlineVariable extends Recipe {
 
@@ -54,6 +60,15 @@ public class InlineVariable extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
+            public J preVisit(J tree, ExecutionContext ctx) {
+                // JS initializer closures may capture the variable being inlined.
+                if (JavascriptFileChecker.isJavaScript(tree)) {
+                    stopAfterPreVisit();
+                }
+                return tree;
+            }
+
+            @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block bl = super.visitBlock(block, ctx);
                 List<Statement> statements = bl.getStatements();
@@ -67,7 +82,8 @@ public class InlineVariable extends Recipe {
                             if (varDec.getVariables().size() == 1) {
                                 J.VariableDeclarations.NamedVariable identDefinition = varDec.getVariables().get(0);
                                 if (varDec.getLeadingAnnotations().isEmpty() &&
-                                        SemanticallyEqual.areEqual(identDefinition.getName(), identReturned)) {
+                                        SemanticallyEqual.areEqual(identDefinition.getName(), identReturned) &&
+                                        canInline(identDefinition.getType(), identDefinition.getInitializer())) {
                                     return inlineExpression(identDefinition.getInitializer(), bl, statements, varDec.getPrefix(), varDec.getComments());
                                 }
                             }
@@ -78,7 +94,9 @@ public class InlineVariable extends Recipe {
                                 // Only inline local variable assignments, not fields
                                 if (assignedVar.getFieldType() != null &&
                                         assignedVar.getFieldType().getOwner() instanceof JavaType.Method &&
-                                        SemanticallyEqual.areEqual(assignedVar, identReturned)) {
+                                        SemanticallyEqual.areEqual(assignedVar, identReturned) &&
+                                        canInline(assignedVar.getType(), assignment.getAssignment()) &&
+                                        !isReadInEnclosingCatchOrFinally(assignedVar)) {
                                     return removeDeclarationLeftUnused(
                                             inlineExpression(assignment.getAssignment(), bl, statements, assignment.getPrefix(), assignment.getComments()),
                                             assignedVar);
@@ -88,6 +106,69 @@ public class InlineVariable extends Recipe {
                     }
                 }
                 return bl;
+            }
+
+            private boolean canInline(@Nullable JavaType variableType, @Nullable Expression value) {
+                if (value == null) {
+                    return false;
+                }
+                Expression unwrapped = value.unwrap();
+                if (unwrapped instanceof J.Lambda || unwrapped instanceof J.MemberReference) {
+                    return false;
+                }
+                if (unwrapped instanceof J.Ternary) {
+                    J.Ternary ternary = (J.Ternary) unwrapped;
+                    return canInline(variableType, ternary.getTruePart()) &&
+                            canInline(variableType, ternary.getFalsePart());
+                }
+                JavaType valueType = value.getType();
+                return variableType == null || valueType == null ||
+                        TypeUtils.isOfType(variableType, valueType) ||
+                        isReferenceType(variableType) && isReferenceType(valueType) &&
+                                TypeUtils.isAssignableTo(variableType, valueType);
+            }
+
+            private boolean isReferenceType(JavaType type) {
+                return !(type instanceof JavaType.Primitive) ||
+                        type == JavaType.Primitive.String || type == JavaType.Primitive.Null;
+            }
+
+            /**
+             * The declaration the variable returned or thrown at the end of the visited block resolves to.
+             */
+            private Optional<Scope.Binding> bindingOf(J.Identifier variable) {
+                List<Statement> statements = getCursor().<J.Block>getValue().getStatements();
+                return Scope.at(new Cursor(getCursor(), statements.get(statements.size() - 1))).lookup(variable.getSimpleName());
+            }
+
+            private boolean isReadInEnclosingCatchOrFinally(J.Identifier variable) {
+                Optional<Scope.Binding> binding = bindingOf(variable);
+                Cursor cursor = getCursor();
+                J child = cursor.getValue();
+                while (!cursor.isRoot()) {
+                    J value = cursor.getValue();
+                    if (value instanceof J.MethodDeclaration || value instanceof J.Lambda || value instanceof J.ClassDeclaration) {
+                        break;
+                    }
+                    // A variable declared inside the try is out of scope in its catch and finally blocks
+                    if (value instanceof J.Try && !binding.filter(b -> b.getCursor().isScopeInPath((J.Try) value)).isPresent()) {
+                        J.Try try_ = (J.Try) value;
+                        if (try_.getFinally() != null && child != try_.getFinally() &&
+                                !VariableReferences.findRhsReferences(try_.getFinally(), variable).isEmpty()) {
+                            return true;
+                        }
+                        if (child == try_.getBody()) {
+                            for (J.Try.Catch aCatch : try_.getCatches()) {
+                                if (!VariableReferences.findRhsReferences(aCatch.getBody(), variable).isEmpty()) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    child = value;
+                    cursor = cursor.getParentTreeCursor();
+                }
+                return false;
             }
 
             private J.Block inlineExpression(@Nullable Expression expression, J.Block bl, List<Statement> statements,
@@ -119,8 +200,12 @@ public class InlineVariable extends Recipe {
             }
 
             private J.Block removeDeclarationLeftUnused(J.Block bl, J.Identifier variable) {
-                if (!VariableReferences.findRhsReferences(bl, variable).isEmpty() ||
-                        !VariableReferences.findLhsReferences(bl, variable).isEmpty()) {
+                // Another local of the variable's name and type in a nested block is not a use of it
+                Set<UUID> own = bindingOf(variable)
+                        .map(binding -> binding.references().map(reference -> reference.<J>getValue().getId()).collect(toSet()))
+                        .orElse(null);
+                if (VariableReferences.findRhsReferences(bl, variable).stream().anyMatch(read -> own == null || own.contains(read.getId())) ||
+                        VariableReferences.findLhsReferences(bl, variable).stream().anyMatch(write -> own == null || own.contains(VariableReferences.assignedIdentifier(write).getId()))) {
                     return bl;
                 }
                 return bl.withStatements(ListUtils.map(bl.getStatements(), statement -> {
@@ -131,9 +216,9 @@ public class InlineVariable extends Recipe {
                     if (!varDec.getLeadingAnnotations().isEmpty()) {
                         return statement;
                     }
-                    J.VariableDeclarations remaining = varDec.withVariables(ListUtils.map(varDec.getVariables(), v ->
-                            TypeUtils.isOfType(requireNonNull(variable.getFieldType()), v.getVariableType()) &&
-                                    !SideEffects.mayHaveSideEffects(v.getInitializer()) ? null : v));
+                    J.VariableDeclarations remaining = varDec.withVariables(ListUtils.filter(varDec.getVariables(), v ->
+                            !(TypeUtils.isOfType(requireNonNull(variable.getFieldType()), v.getVariableType()) &&
+                                    !SideEffects.mayHaveSideEffects(v.getInitializer()))));
                     if (remaining.getVariables().isEmpty()) {
                         return varDec.getComments().isEmpty() ? null : statement;
                     }

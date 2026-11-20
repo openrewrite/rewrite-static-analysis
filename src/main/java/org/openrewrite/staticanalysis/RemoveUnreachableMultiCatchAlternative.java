@@ -49,7 +49,8 @@ public class RemoveUnreachableMultiCatchAlternative extends Recipe {
             "renaming an exception so that two `catch` clauses end up overlapping). This recipe drops " +
             "the unreachable alternatives from later multi-catches, collapses a multi-catch to a " +
             "regular `catch` when only one alternative remains, and removes the entire `catch` clause " +
-            "when all of its declared types are already covered.";
+            "when all of its declared types are already covered. It also drops an alternative that another " +
+            "alternative of the same multi-catch already covers, which is a compile error too.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4970");
@@ -71,8 +72,11 @@ public class RemoveUnreachableMultiCatchAlternative extends Recipe {
                     if (typeExpression instanceof J.MultiCatch) {
                         J.MultiCatch multiCatch = (J.MultiCatch) typeExpression;
                         List<NameTree> retained = new ArrayList<>(multiCatch.getAlternatives().size());
-                        for (NameTree alt : multiCatch.getAlternatives()) {
-                            if (alt.getType() == null || isCoveredBy(alt.getType(), covered)) {
+                        List<NameTree> alternatives = multiCatch.getAlternatives();
+                        for (int i = 0; i < alternatives.size(); i++) {
+                            NameTree alt = alternatives.get(i);
+                            if (alt.getType() == null || isCoveredBy(alt.getType(), covered) ||
+                                isCoveredWithin(alternatives, i)) {
                                 maybeRemoveImport(TypeUtils.asFullyQualified(alt.getType()));
                                 continue;
                             }
@@ -115,6 +119,22 @@ public class RemoveUnreachableMultiCatchAlternative extends Recipe {
                     }
                     return aCatch;
                 }));
+            }
+
+            /**
+             * Whether another alternative of the same multi-catch covers this one: an earlier alternative of the
+             * same type, or any alternative of a supertype.
+             */
+            private boolean isCoveredWithin(List<NameTree> alternatives, int index) {
+                JavaType type = alternatives.get(index).getType();
+                for (int j = 0; j < alternatives.size(); j++) {
+                    JavaType other = alternatives.get(j).getType();
+                    if (j != index && other != null && TypeUtils.isAssignableTo(other, type) &&
+                        (j < index || !TypeUtils.isOfType(other, type))) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private boolean isCoveredBy(JavaType type, List<JavaType> covered) {

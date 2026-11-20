@@ -23,7 +23,7 @@ import org.openrewrite.golang.rpc.GoRpcSourceExtractor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
  * Configures the shared Go parsing engine before any {@code go()} test starts it. The engine is an
@@ -66,7 +66,7 @@ public class GoEngineTestListener implements LauncherSessionListener {
                     .redirectErrorStream(true)
                     .start();
             String output = new String(process.getInputStream().readAllBytes());
-            if (process.waitFor(5, TimeUnit.MINUTES) && process.exitValue() == 0 && Files.isExecutable(binary)) {
+            if (process.waitFor(Duration.ofMinutes(5)) && process.exitValue() == 0 && Files.isExecutable(binary)) {
                 return binary;
             }
             System.err.println("Could not build rewrite-go-rpc; go() tests will be skipped.\n" + output);

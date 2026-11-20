@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -25,6 +26,54 @@ class PreferEqualityComparisonOverDifferenceCheckBoxedTest implements RewriteTes
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new PreferEqualityComparisonOverDifferenceCheck());
+    }
+
+    @DocumentExample
+    @Test
+    void convertPrimitiveIntegralEqualityAndInequality() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean equalInts(int a, int b) {
+                      return a - b == 0;
+                  }
+
+                  boolean differentInts(int a, int b) {
+                      return a - b != 0;
+                  }
+
+                  boolean equalLongs(long a, long b) {
+                      return a - b == 0L;
+                  }
+
+                  boolean differentLongs(long a, long b) {
+                      return a - b != 0L;
+                  }
+              }
+              """,
+            """
+              class A {
+                  boolean equalInts(int a, int b) {
+                      return a == b;
+                  }
+
+                  boolean differentInts(int a, int b) {
+                      return a != b;
+                  }
+
+                  boolean equalLongs(long a, long b) {
+                      return a == b;
+                  }
+
+                  boolean differentLongs(long a, long b) {
+                      return a != b;
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -141,53 +190,6 @@ class PreferEqualityComparisonOverDifferenceCheckBoxedTest implements RewriteTes
 
                   boolean different(Long a, Integer b) {
                       return a - b != 0L;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void convertPrimitiveIntegralEqualityAndInequality() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  boolean equalInts(int a, int b) {
-                      return a - b == 0;
-                  }
-
-                  boolean differentInts(int a, int b) {
-                      return a - b != 0;
-                  }
-
-                  boolean equalLongs(long a, long b) {
-                      return a - b == 0L;
-                  }
-
-                  boolean differentLongs(long a, long b) {
-                      return a - b != 0L;
-                  }
-              }
-              """,
-            """
-              class A {
-                  boolean equalInts(int a, int b) {
-                      return a == b;
-                  }
-
-                  boolean differentInts(int a, int b) {
-                      return a != b;
-                  }
-
-                  boolean equalLongs(long a, long b) {
-                      return a == b;
-                  }
-
-                  boolean differentLongs(long a, long b) {
-                      return a != b;
                   }
               }
               """

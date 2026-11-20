@@ -207,28 +207,13 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             }
 
             private boolean isResultIgnored(Cursor cursor) {
-                Object expression = cursor.getValue();
                 Cursor parentCursor = cursor.getParentTreeCursor();
                 Object parent = parentCursor.getValue();
-                if (parent instanceof J.Block) {
-                    return !isExpectedToThrow((J.Block) parent, parentCursor);
-                }
-                if (parent instanceof J.Label || parent instanceof J.If || parent instanceof J.If.Else || parent instanceof Loop) {
-                    return true;
-                }
-                if (parent instanceof J.ForLoop.Control) {
-                    return ((J.ForLoop.Control) parent).getCondition() != expression;
-                }
-                if (parent instanceof J.Case) {
-                    J.Case aCase = (J.Case) parent;
-                    return aCase.getStatements().contains(expression) ||
-                            aCase.getBody() == expression &&
-                                    parentCursor.dropParentUntil(p -> p instanceof J.Switch || p instanceof J.SwitchExpression).getValue() instanceof J.Switch;
-                }
                 if (parent instanceof J.Lambda) {
                     return discardsResult(((J.Lambda) parent).getType());
                 }
-                return false;
+                return Boolean.FALSE.equals(StatementRemoval.isValueUsed(cursor)) &&
+                        !(parent instanceof J.Block && isExpectedToThrow((J.Block) parent, parentCursor));
             }
 
             private boolean isSelfCallInAssertJConstructor(J.MethodInvocation method) {
@@ -255,24 +240,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                 if (type == null || EXPECTED_EXCEPTION_FUNCTIONAL_INTERFACES.stream().anyMatch(fqn -> TypeUtils.isOfClassType(type, fqn))) {
                     return false;
                 }
-                JavaType.Method sam = singleAbstractMethod(type);
+                JavaType.Method sam = UseLambdaForFunctionalInterface.functionalInterfaceMethod(type);
                 return sam != null && sam.getReturnType() == JavaType.Primitive.Void;
-            }
-
-            private JavaType.@Nullable Method singleAbstractMethod(JavaType.FullyQualified type) {
-                for (JavaType.Method method : type.getMethods()) {
-                    if (method.hasFlags(Flag.Abstract) && !method.hasFlags(Flag.Default) && !method.hasFlags(Flag.Static) &&
-                            !asList("equals", "hashCode", "toString").contains(method.getName())) {
-                        return method;
-                    }
-                }
-                for (JavaType.FullyQualified superInterface : type.getInterfaces()) {
-                    JavaType.Method sam = singleAbstractMethod(superInterface);
-                    if (sam != null) {
-                        return sam;
-                    }
-                }
-                return null;
             }
         });
     }

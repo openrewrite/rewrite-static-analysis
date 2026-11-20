@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+
 import static org.openrewrite.Preconditions.or;
 
 public class ExplicitInitialization extends Recipe {

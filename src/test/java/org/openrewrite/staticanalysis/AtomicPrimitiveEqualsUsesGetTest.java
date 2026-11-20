@@ -149,4 +149,23 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
           )
         );
     }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void doNotChangeExpressionStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.atomic.AtomicInteger;
+
+              class A {
+                  void foo(AtomicInteger a, AtomicInteger b) {
+                      a.equals(b);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

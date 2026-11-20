@@ -149,4 +149,20 @@ class EqualsToContentEqualsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotChangeWhenToStringIsInheritedFromObject() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              abstract class MyCs implements CharSequence {
+                  boolean foo(String str) {
+                      return str.equals(this.toString());
+                  }
+              }
+              """
+          )
+        );
+    }
 }
