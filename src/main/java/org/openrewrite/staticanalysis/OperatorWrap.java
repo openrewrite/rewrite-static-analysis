@@ -23,11 +23,10 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.OperatorWrapStyle;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.style.Style;
+
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -91,30 +90,10 @@ public class OperatorWrap extends Recipe {
                     (Boolean.TRUE.equals(operatorWrapStyle.getBor()) && op == J.Binary.Type.BitOr) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getLand()) && op == J.Binary.Type.And) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getLor()) && op == J.Binary.Type.Or)) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (b.getRight().getPrefix().getWhitespace().contains("\n")) {
-                            b = b.getPadding().withOperator(
-                                    b.getPadding().getOperator().withBefore(
-                                            b.getRight().getPrefix()
-                                    )
-                            );
-                            b = b.withRight(
-                                    b.getRight().withPrefix(
-                                            b.getRight().getPrefix().withWhitespace(" ")
-                                    )
-                            );
-                        }
-                    } else if (b.getPadding().getOperator().getBefore().getWhitespace().contains("\n")) {
-                        b = b.withRight(
-                                b.getRight().withPrefix(
-                                        b.getPadding().getOperator().getBefore()
-                                )
-                        );
-                        b = b.getPadding().withOperator(
-                                b.getPadding().getOperator().withBefore(
-                                        b.getRight().getPrefix().withWhitespace(" ")
-                                )
-                        );
+                    Space[] wrapped = wrap(b.getPadding().getOperator().getBefore(), b.getRight().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        b = b.getPadding().withOperator(b.getPadding().getOperator().withBefore(wrapped[0]))
+                                .withRight(b.getRight().withPrefix(wrapped[1]));
                     }
                 }
                 return b;
@@ -123,52 +102,24 @@ public class OperatorWrap extends Recipe {
             @Override
             public J.TypeParameter visitTypeParameter(J.TypeParameter typeParam, ExecutionContext ctx) {
                 J.TypeParameter tp = super.visitTypeParameter(typeParam, ctx);
-                if (Boolean.TRUE.equals(operatorWrapStyle.getTypeExtensionAnd()) && tp.getPadding().getBounds() != null) {
-                    int typeBoundsSize = tp.getPadding().getBounds().getPadding().getElements().size();
-                    tp = tp.getPadding().withBounds(
-                            tp.getPadding().getBounds().getPadding().withElements(
-                                    ListUtils.map(tp.getPadding().getBounds().getPadding().getElements(),
-                                            (index, elemContainer) -> {
-                                                if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                                                    if (index != typeBoundsSize - 1 && typeParam.getPadding().getBounds() != null) {
-                                                        JRightPadded<TypeTree> next = typeParam.getPadding().getBounds().getPadding().getElements().get(index + 1);
-                                                        if (next.getElement().getPrefix().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withAfter(
-                                                                    next.getElement().getPrefix()
-                                                            );
-                                                        }
-                                                    } else {
-                                                        if (elemContainer.getElement().getPrefix().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withElement(
-                                                                    elemContainer.getElement().withPrefix(
-                                                                            elemContainer.getElement().getPrefix().withWhitespace(" ")
-                                                                    )
-                                                            );
-                                                        }
-                                                    }
-                                                } else {
-                                                    if (index != typeBoundsSize - 1) {
-                                                        if (elemContainer.getAfter().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withAfter(
-                                                                    elemContainer.getAfter().withWhitespace(" ")
-                                                            );
-                                                        }
-                                                    } else if (typeBoundsSize > 1 && typeParam.getPadding().getBounds() != null) {
-                                                        JRightPadded<TypeTree> previous = typeParam.getPadding().getBounds().getPadding().getElements().get(index - 1);
-                                                        if (previous.getAfter().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withElement(
-                                                                    elemContainer.getElement().withPrefix(
-                                                                            previous.getAfter()
-                                                                    )
-                                                            );
-                                                        }
-                                                    }
-                                                }
-                                                return elemContainer;
-                                            }
-                                    )
-                            )
-                    );
+                JContainer<TypeTree> bounds = tp.getPadding().getBounds();
+                if (Boolean.TRUE.equals(operatorWrapStyle.getTypeExtensionAnd()) && bounds != null) {
+                    List<JRightPadded<TypeTree>> elements = bounds.getPadding().getElements();
+                    tp = tp.getPadding().withBounds(bounds.getPadding().withElements(ListUtils.map(elements, (index, bound) -> {
+                        if (index > 0) {
+                            Space[] wrapped = wrap(elements.get(index - 1).getAfter(), bound.getElement().getPrefix(), Space.SINGLE_SPACE);
+                            if (wrapped != null) {
+                                bound = bound.withElement(bound.getElement().withPrefix(wrapped[1]));
+                            }
+                        }
+                        if (index < elements.size() - 1) {
+                            Space[] wrapped = wrap(bound.getAfter(), elements.get(index + 1).getElement().getPrefix(), Space.SINGLE_SPACE);
+                            if (wrapped != null) {
+                                bound = bound.withAfter(wrapped[0]);
+                            }
+                        }
+                        return bound;
+                    })));
                 }
                 return tp;
             }
@@ -177,30 +128,10 @@ public class OperatorWrap extends Recipe {
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 J.InstanceOf i = super.visitInstanceOf(instanceOf, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof()) && i.getClazz() != null) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
-                            i = i.getPadding().withExpression(
-                                    i.getPadding().getExpression().withAfter(
-                                            i.getClazz().getPrefix()
-                                    )
-                            );
-                            i = i.withClazz(
-                                    i.getClazz().withPrefix(
-                                            i.getClazz().getPrefix().withWhitespace(" ")
-                                    )
-                            );
-                        }
-                    } else if (i.getPadding().getExpression().getAfter().getWhitespace().contains("\n")) {
-                        i = i.withClazz(
-                                i.getClazz().withPrefix(
-                                        i.getPadding().getExpression().getAfter()
-                                )
-                        );
-                        i = i.getPadding().withExpression(
-                                i.getPadding().getExpression().withAfter(
-                                        i.getPadding().getExpression().getAfter().withWhitespace(" ")
-                                )
-                        );
+                    Space[] wrapped = wrap(i.getPadding().getExpression().getAfter(), i.getClazz().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        i = i.getPadding().withExpression(i.getPadding().getExpression().withAfter(wrapped[0]))
+                                .withClazz(i.getClazz().withPrefix(wrapped[1]));
                     }
                 }
                 return i;
@@ -210,65 +141,19 @@ public class OperatorWrap extends Recipe {
             public J.Ternary visitTernary(J.Ternary ternary, ExecutionContext ctx) {
                 J.Ternary t = super.visitTernary(ternary, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getQuestion())) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (t.getTruePart().getPrefix().getWhitespace().contains("\n")) {
-                            t = t.getPadding().withTruePart(
-                                    t.getPadding().getTruePart().withBefore(
-                                            t.getPadding().getTruePart().getElement().getPrefix()
-                                    )
-                            );
-                            t = t.getPadding().withTruePart(
-                                    t.getPadding().getTruePart().withElement(
-                                            t.getPadding().getTruePart().getElement().withPrefix(
-                                                    t.getPadding().getTruePart().getElement().getPrefix().withWhitespace(" ")
-                                            )
-                                    )
-                            );
-                        }
-                    } else if (t.getPadding().getTruePart().getBefore().getWhitespace().contains("\n")) {
-                        t = t.getPadding().withTruePart(
-                                t.getPadding().getTruePart().withElement(
-                                        t.getPadding().getTruePart().getElement().withPrefix(
-                                                t.getPadding().getTruePart().getBefore()
-                                        )
-                                )
-                        );
-                        t = t.getPadding().withTruePart(
-                                t.getPadding().getTruePart().withBefore(
-                                        t.getPadding().getTruePart().getElement().getPrefix().withWhitespace(" ")
-                                )
-                        );
+                    JLeftPadded<Expression> truePart = t.getPadding().getTruePart();
+                    Space[] wrapped = wrap(truePart.getBefore(), truePart.getElement().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        t = t.getPadding().withTruePart(truePart.withBefore(wrapped[0])
+                                .withElement(truePart.getElement().withPrefix(wrapped[1])));
                     }
                 }
                 if (Boolean.TRUE.equals(operatorWrapStyle.getColon())) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (t.getPadding().getFalsePart().getElement().getPrefix().getWhitespace().contains("\n")) {
-                            t = t.getPadding().withFalsePart(
-                                    t.getPadding().getFalsePart().withBefore(
-                                            t.getPadding().getFalsePart().getElement().getPrefix()
-                                    )
-                            );
-                            t = t.getPadding().withFalsePart(
-                                    t.getPadding().getFalsePart().withElement(
-                                            t.getPadding().getFalsePart().getElement().withPrefix(
-                                                    t.getPadding().getFalsePart().getElement().getPrefix().withWhitespace(" ")
-                                            )
-                                    )
-                            );
-                        }
-                    } else if (t.getPadding().getFalsePart().getBefore().getWhitespace().contains("\n")) {
-                        t = t.getPadding().withFalsePart(
-                                t.getPadding().getFalsePart().withElement(
-                                        t.getPadding().getFalsePart().getElement().withPrefix(
-                                                t.getPadding().getFalsePart().getBefore()
-                                        )
-                                )
-                        );
-                        t = t.getPadding().withFalsePart(
-                                t.getPadding().getFalsePart().withBefore(
-                                        t.getPadding().getFalsePart().getElement().getPrefix().withWhitespace(" ")
-                                )
-                        );
+                    JLeftPadded<Expression> falsePart = t.getPadding().getFalsePart();
+                    Space[] wrapped = wrap(falsePart.getBefore(), falsePart.getElement().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        t = t.getPadding().withFalsePart(falsePart.withBefore(wrapped[0])
+                                .withElement(falsePart.getElement().withPrefix(wrapped[1])));
                     }
                 }
                 return t;
@@ -278,30 +163,10 @@ public class OperatorWrap extends Recipe {
             public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
                 J.MemberReference m = super.visitMemberReference(memberRef, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getMethodRef())) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (m.getPadding().getReference().getBefore().getWhitespace().contains("\n")) {
-                            m = m.getPadding().withContaining(
-                                    m.getPadding().getContaining().withAfter(
-                                            m.getPadding().getReference().getBefore()
-                                    )
-                            );
-                            m = m.getPadding().withReference(
-                                    m.getPadding().getReference().withBefore(
-                                            m.getPadding().getReference().getBefore().withWhitespace("")
-                                    )
-                            );
-                        }
-                    } else if (m.getPadding().getContaining().getAfter().getWhitespace().contains("\n")) {
-                        m = m.getPadding().withReference(
-                                m.getPadding().getReference().withBefore(
-                                        m.getPadding().getContaining().getAfter()
-                                )
-                        );
-                        m = m.getPadding().withContaining(
-                                m.getPadding().getContaining().withAfter(
-                                        m.getPadding().getReference().getBefore().withWhitespace("")
-                                )
-                        );
+                    Space[] wrapped = wrap(m.getPadding().getContaining().getAfter(), m.getPadding().getReference().getBefore(), Space.EMPTY);
+                    if (wrapped != null) {
+                        m = m.getPadding().withContaining(m.getPadding().getContaining().withAfter(wrapped[0]))
+                                .getPadding().withReference(m.getPadding().getReference().withBefore(wrapped[1]));
                     }
                 }
                 return m;
@@ -311,34 +176,11 @@ public class OperatorWrap extends Recipe {
             public J.Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
                 J.Assignment a = super.visitAssignment(assignment, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getAssign())) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (a.getPadding().getAssignment().getElement().getPrefix().getWhitespace().contains("\n")) {
-                            a = a.getPadding().withAssignment(
-                                    a.getPadding().getAssignment().withBefore(
-                                            a.getPadding().getAssignment().getElement().getPrefix()
-                                    )
-                            );
-                            a = a.getPadding().withAssignment(
-                                    a.getPadding().getAssignment().withElement(
-                                            a.getPadding().getAssignment().getElement().withPrefix(
-                                                    a.getPadding().getAssignment().getElement().getPrefix().withWhitespace(" ")
-                                            )
-                                    )
-                            );
-                        }
-                    } else if (a.getPadding().getAssignment().getBefore().getWhitespace().contains("\n")) {
-                        a = a.getPadding().withAssignment(
-                                a.getPadding().getAssignment().withElement(
-                                        a.getPadding().getAssignment().getElement().withPrefix(
-                                                a.getPadding().getAssignment().getBefore()
-                                        )
-                                )
-                        );
-                        a = a.getPadding().withAssignment(
-                                a.getPadding().getAssignment().withBefore(
-                                        a.getPadding().getAssignment().getBefore().withWhitespace(" ")
-                                )
-                        );
+                    JLeftPadded<Expression> value = a.getPadding().getAssignment();
+                    Space[] wrapped = wrap(value.getBefore(), value.getElement().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        a = a.getPadding().withAssignment(value.withBefore(wrapped[0])
+                                .withElement(value.getElement().withPrefix(wrapped[1])));
                     }
                 }
                 return a;
@@ -359,30 +201,10 @@ public class OperatorWrap extends Recipe {
                     (Boolean.TRUE.equals(operatorWrapStyle.getBandAssign()) && op == J.AssignmentOperation.Type.BitAnd) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getBxorAssign()) && op == J.AssignmentOperation.Type.BitXor) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getBorAssign()) && op == J.AssignmentOperation.Type.BitOr)) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (a.getAssignment().getPrefix().getWhitespace().contains("\n")) {
-                            a = a.getPadding().withOperator(
-                                    a.getPadding().getOperator().withBefore(
-                                            a.getAssignment().getPrefix()
-                                    )
-                            );
-                            a = a.withAssignment(
-                                    a.getAssignment().withPrefix(
-                                            a.getAssignment().getPrefix().withWhitespace(" ")
-                                    )
-                            );
-                        }
-                    } else if (a.getPadding().getOperator().getBefore().getWhitespace().contains("\n")) {
-                        a = a.withAssignment(
-                                a.getAssignment().withPrefix(
-                                        a.getPadding().getOperator().getBefore()
-                                )
-                        );
-                        a = a.getPadding().withOperator(
-                                a.getPadding().getOperator().withBefore(
-                                        a.getAssignment().getPrefix().withWhitespace(" ")
-                                )
-                        );
+                    Space[] wrapped = wrap(a.getPadding().getOperator().getBefore(), a.getAssignment().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        a = a.getPadding().withOperator(a.getPadding().getOperator().withBefore(wrapped[0]))
+                                .withAssignment(a.getAssignment().withPrefix(wrapped[1]));
                     }
                 }
                 return a;
@@ -391,44 +213,31 @@ public class OperatorWrap extends Recipe {
             @Override
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, ctx);
-                if (Boolean.TRUE.equals(operatorWrapStyle.getAssign()) && v.getPadding().getInitializer() != null) {
-                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                        if (v.getPadding().getInitializer().getElement().getPrefix().getWhitespace().contains("\n")) {
-                            v = v.getPadding().withInitializer(
-                                    v.getPadding().getInitializer().withBefore(
-                                            v.getPadding().getInitializer().getElement().getPrefix()
-                                    )
-                            );
-                            if (v.getPadding().getInitializer() != null) {
-                                v = v.getPadding().withInitializer(
-                                        v.getPadding().getInitializer().withElement(
-                                                v.getPadding().getInitializer().getElement().withPrefix(
-                                                        v.getPadding().getInitializer().getElement().getPrefix().withWhitespace(" ")
-                                                )
-                                        )
-                                );
-                            }
-                        }
-                    } else if (v.getPadding().getInitializer().getBefore().getWhitespace().contains("\n")) {
-                        v = v.getPadding().withInitializer(
-                                v.getPadding().getInitializer().withElement(
-                                        v.getPadding().getInitializer().getElement().withPrefix(
-                                                v.getPadding().getInitializer().getBefore()
-                                        )
-                                )
-                        );
-                        if (v.getPadding().getInitializer() != null) {
-                            v = v.getPadding().withInitializer(
-                                    v.getPadding().getInitializer().withBefore(
-                                            v.getPadding().getInitializer().getElement().getPrefix().withWhitespace(" ")
-                                    )
-                            );
-                        }
+                JLeftPadded<Expression> initializer = v.getPadding().getInitializer();
+                if (Boolean.TRUE.equals(operatorWrapStyle.getAssign()) && initializer != null) {
+                    Space[] wrapped = wrap(initializer.getBefore(), initializer.getElement().getPrefix(), Space.SINGLE_SPACE);
+                    if (wrapped != null) {
+                        v = v.getPadding().withInitializer(initializer.withBefore(wrapped[0])
+                                .withElement(initializer.getElement().withPrefix(wrapped[1])));
                     }
                 }
                 return v;
             }
 
+            /// Moves the line break around an operator to the side the style asks for.
+            ///
+            /// Comments move along with the line break, so the side left on the operator's line must have none:
+            /// a comment there stays next to the operator and the wrapping is left alone.
+            ///
+            /// @return the new space before and after the operator, or `null` to leave both unchanged
+            private Space @Nullable [] wrap(Space beforeOperator, Space afterOperator, Space sameLine) {
+                if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
+                    return afterOperator.getWhitespace().contains("\n") && beforeOperator.getComments().isEmpty() ?
+                            new Space[]{afterOperator, sameLine} : null;
+                }
+                return beforeOperator.getWhitespace().contains("\n") && afterOperator.getComments().isEmpty() ?
+                        new Space[]{sameLine, beforeOperator} : null;
+            }
         };
     }
 }

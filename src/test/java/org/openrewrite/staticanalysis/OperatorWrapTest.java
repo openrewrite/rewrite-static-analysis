@@ -705,6 +705,196 @@ class OperatorWrapTest implements RewriteTest {
         );
     }
 
+    @Test
+    void binaryOnEndOfLineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String
+                              /* only strings */
+                              && !((String) o).isEmpty();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String &&
+                              /* only strings */
+                              !((String) o).isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ternaryOnEndOfLineKeepsLineComment() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static String method(boolean b) {
+                      return b
+                              ? "yes"
+                              // fallback
+                              : "no";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static String method(boolean b) {
+                      return b ?
+                              "yes" :
+                              // fallback
+                              "no";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void binaryOnNewlineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String &&
+                              // only strings
+                              !((String) o).isEmpty();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String
+                              // only strings
+                              && !((String) o).isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeOperatorOnNewlineNextToComment() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(boolean cheap, boolean expensive) {
+                      return cheap /* evaluated first */ &&
+                              expensive;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeParameterOnNewlineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable &
+                          // comparable too
+                          Comparable<T> &
+                          Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable
+                          // comparable too
+                          & Comparable<T>
+                          & Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeParameterOnEndOfLineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable
+                          // comparable too
+                          & Comparable<T>
+                          & Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable &
+                          // comparable too
+                          Comparable<T> &
+                          Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeOperatorOnEndOfLineNextToComment() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(boolean cheap, boolean expensive) {
+                      return cheap
+                              && /* evaluated last */ expensive;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class Kotlin {
         @Test
