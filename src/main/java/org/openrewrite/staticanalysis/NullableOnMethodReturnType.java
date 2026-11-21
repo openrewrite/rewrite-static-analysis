@@ -69,9 +69,9 @@ public class NullableOnMethodReturnType extends Recipe {
                                 } else {
                                     m2 = m2.withReturnTypeExpression(new J.AnnotatedType(
                                             Tree.randomId(),
-                                            Space.SINGLE_SPACE,
+                                            Space.EMPTY,
                                             Markers.EMPTY,
-                                            singletonList(nullable.getTree().withPrefix(Space.EMPTY)),
+                                            singletonList(nullable.getTree().withPrefix(Space.SINGLE_SPACE)),
                                             m2.getReturnTypeExpression()
                                     ));
                                 }
