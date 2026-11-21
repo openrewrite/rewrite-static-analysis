@@ -26,6 +26,8 @@ import org.openrewrite.java.style.OperatorWrapStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.style.Style;
 
+import java.util.List;
+
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class OperatorWrap extends Recipe {
@@ -100,52 +102,24 @@ public class OperatorWrap extends Recipe {
             @Override
             public J.TypeParameter visitTypeParameter(J.TypeParameter typeParam, ExecutionContext ctx) {
                 J.TypeParameter tp = super.visitTypeParameter(typeParam, ctx);
-                if (Boolean.TRUE.equals(operatorWrapStyle.getTypeExtensionAnd()) && tp.getPadding().getBounds() != null) {
-                    int typeBoundsSize = tp.getPadding().getBounds().getPadding().getElements().size();
-                    tp = tp.getPadding().withBounds(
-                            tp.getPadding().getBounds().getPadding().withElements(
-                                    ListUtils.map(tp.getPadding().getBounds().getPadding().getElements(),
-                                            (index, elemContainer) -> {
-                                                if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
-                                                    if (index != typeBoundsSize - 1 && typeParam.getPadding().getBounds() != null) {
-                                                        JRightPadded<TypeTree> next = typeParam.getPadding().getBounds().getPadding().getElements().get(index + 1);
-                                                        if (next.getElement().getPrefix().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withAfter(
-                                                                    next.getElement().getPrefix()
-                                                            );
-                                                        }
-                                                    } else {
-                                                        if (elemContainer.getElement().getPrefix().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withElement(
-                                                                    elemContainer.getElement().withPrefix(
-                                                                            elemContainer.getElement().getPrefix().withWhitespace(" ")
-                                                                    )
-                                                            );
-                                                        }
-                                                    }
-                                                } else {
-                                                    if (index != typeBoundsSize - 1) {
-                                                        if (elemContainer.getAfter().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withAfter(
-                                                                    elemContainer.getAfter().withWhitespace(" ")
-                                                            );
-                                                        }
-                                                    } else if (typeBoundsSize > 1 && typeParam.getPadding().getBounds() != null) {
-                                                        JRightPadded<TypeTree> previous = typeParam.getPadding().getBounds().getPadding().getElements().get(index - 1);
-                                                        if (previous.getAfter().getWhitespace().contains("\n")) {
-                                                            elemContainer = elemContainer.withElement(
-                                                                    elemContainer.getElement().withPrefix(
-                                                                            previous.getAfter()
-                                                                    )
-                                                            );
-                                                        }
-                                                    }
-                                                }
-                                                return elemContainer;
-                                            }
-                                    )
-                            )
-                    );
+                JContainer<TypeTree> bounds = tp.getPadding().getBounds();
+                if (Boolean.TRUE.equals(operatorWrapStyle.getTypeExtensionAnd()) && bounds != null) {
+                    List<JRightPadded<TypeTree>> elements = bounds.getPadding().getElements();
+                    tp = tp.getPadding().withBounds(bounds.getPadding().withElements(ListUtils.map(elements, (index, bound) -> {
+                        if (index > 0) {
+                            Space[] wrapped = wrap(elements.get(index - 1).getAfter(), bound.getElement().getPrefix(), Space.SINGLE_SPACE);
+                            if (wrapped != null) {
+                                bound = bound.withElement(bound.getElement().withPrefix(wrapped[1]));
+                            }
+                        }
+                        if (index < elements.size() - 1) {
+                            Space[] wrapped = wrap(bound.getAfter(), elements.get(index + 1).getElement().getPrefix(), Space.SINGLE_SPACE);
+                            if (wrapped != null) {
+                                bound = bound.withAfter(wrapped[0]);
+                            }
+                        }
+                        return bound;
+                    })));
                 }
                 return tp;
             }

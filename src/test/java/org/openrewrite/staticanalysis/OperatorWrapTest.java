@@ -792,7 +792,7 @@ class OperatorWrapTest implements RewriteTest {
     }
 
     @Test
-    void doNotMoveOperatorAwayFromAdjacentComment() {
+    void doNotChangeOperatorOnNewlineNextToComment() {
         rewriteRun(
           spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
           //language=java
@@ -802,6 +802,92 @@ class OperatorWrapTest implements RewriteTest {
                   static boolean method(boolean cheap, boolean expensive) {
                       return cheap /* evaluated first */ &&
                               expensive;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeParameterOnNewlineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable &
+                          // comparable too
+                          Comparable<T> &
+                          Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable
+                          // comparable too
+                          & Comparable<T>
+                          & Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeParameterOnEndOfLineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable
+                          // comparable too
+                          & Comparable<T>
+                          & Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              class Test {
+                  static <T extends Serializable &
+                          // comparable too
+                          Comparable<T> &
+                          Cloneable> T method() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeOperatorOnEndOfLineNextToComment() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(boolean cheap, boolean expensive) {
+                      return cheap
+                              && /* evaluated last */ expensive;
                   }
               }
               """
