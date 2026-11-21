@@ -80,4 +80,58 @@ class RemoveRedundantTypeCastConditionalTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepCastsThatMakeConditionalAReferenceConditional() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Object delta(boolean isFloat) {
+                      Object o = isFloat ? (Object) 0.0f : (Object) 0.0d;
+                      return o;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCastsInConditionalPassedAsArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  static class Literal {
+                      Literal(Object value) {}
+                  }
+
+                  Literal delta(boolean isFloat) {
+                      return new Literal(isFloat ? (Object) 0.0f : (Object) 0.0d);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepWideningCastThatSetsTheConditionalType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  double ratio(boolean exact, int count, float approximation) {
+                      return exact ? (double) count : approximation;
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

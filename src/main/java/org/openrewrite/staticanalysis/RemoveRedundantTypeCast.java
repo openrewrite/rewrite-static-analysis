@@ -23,6 +23,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,9 @@ import static java.util.Collections.singleton;
 
 public class RemoveRedundantTypeCast extends Recipe {
     private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
+    private static final Set<String> BOXED_TYPES = new HashSet<>(Arrays.asList(
+            "java.lang.Boolean", "java.lang.Byte", "java.lang.Character", "java.lang.Short",
+            "java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double"));
 
     @Getter
     final String displayName = "Remove redundant casts";
@@ -64,6 +68,18 @@ public class RemoveRedundantTypeCast extends Recipe {
                     parentTreeCursor = parentTreeCursor.getParentTreeCursor();
                 }
                 if (parentTreeCursor.getValue() instanceof J.TypeCast) {
+                    return visited;
+                }
+
+                // A cast on a primitive or boxed operand of a conditional decides whether the conditional is
+                // numeric or a reference (JLS 15.25): without `(Object)` in `b ? (Object) 0.0f : (Object) 0.0d`
+                // the float widens to a double.
+                JavaType castTo = typeCast.getType();
+                JavaType castFrom = typeCast.getExpression().getType();
+                if (parentTreeCursor.getValue() instanceof J.Ternary &&
+                        isConditionalOperand((J.Ternary) parentTreeCursor.getValue(), typeCast) &&
+                        !TypeUtils.isOfType(castTo, castFrom) &&
+                        (isPrimitiveOrBoxed(castTo) || isPrimitiveOrBoxed(castFrom))) {
                     return visited;
                 }
 
@@ -342,6 +358,18 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return varargsElement && type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
         });
+    }
+
+    private static boolean isConditionalOperand(J.Ternary ternary, J.TypeCast typeCast) {
+        return ternary.getTruePart().unwrap() == typeCast || ternary.getFalsePart().unwrap() == typeCast;
+    }
+
+    private static boolean isPrimitiveOrBoxed(@Nullable JavaType type) {
+        if (type instanceof JavaType.Primitive) {
+            return type != JavaType.Primitive.String && type != JavaType.Primitive.Null;
+        }
+        JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
+        return fq != null && BOXED_TYPES.contains(fq.getFullyQualifiedName());
     }
 
     private static boolean hasMethodOverloading(JavaType.Method methodType) {
