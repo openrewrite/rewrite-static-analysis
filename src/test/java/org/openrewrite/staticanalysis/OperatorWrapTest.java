@@ -705,6 +705,110 @@ class OperatorWrapTest implements RewriteTest {
         );
     }
 
+    @Test
+    void binaryOnEndOfLineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String
+                              /* only strings */
+                              && !((String) o).isEmpty();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String &&
+                              /* only strings */
+                              !((String) o).isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ternaryOnEndOfLineKeepsLineComment() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.EOL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static String method(boolean b) {
+                      return b
+                              ? "yes"
+                              // fallback
+                              : "no";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static String method(boolean b) {
+                      return b ?
+                              "yes" :
+                              // fallback
+                              "no";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void binaryOnNewlineKeepsCommentOnOwnLine() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String &&
+                              // only strings
+                              !((String) o).isEmpty();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static boolean method(Object o) {
+                      return o instanceof String
+                              // only strings
+                              && !((String) o).isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotMoveOperatorAwayFromAdjacentComment() {
+        rewriteRun(
+          spec -> spec.recipe(new OperatorWrap(OperatorWrapStyle.WrapOption.NL)),
+          //language=java
+          java(
+            """
+              class Test {
+                  static boolean method(boolean cheap, boolean expensive) {
+                      return cheap /* evaluated first */ &&
+                              expensive;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class Kotlin {
         @Test
