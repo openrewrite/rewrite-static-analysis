@@ -433,7 +433,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               import org.jspecify.annotations.Nullable;
 
               public class Foo {
-                  public  B.@Nullable C bar() {
+                  public B.@Nullable C bar() {
                       return null;
                   }
               }
