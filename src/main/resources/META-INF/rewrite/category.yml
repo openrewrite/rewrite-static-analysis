@@ -19,3 +19,8 @@ type: specs.openrewrite.org/v1beta/category
 name: Static analysis and remediation
 packageName: org.openrewrite.staticanalysis
 description: Remediations for issues identified by SAST tools.
+---
+type: specs.openrewrite.org/v1beta/category
+name: Sonar rules
+packageName: org.openrewrite.staticanalysis.sonar
+description: Recipes that cover SonarQube Java rules, grouped by the default Sonar severity of each rule.
