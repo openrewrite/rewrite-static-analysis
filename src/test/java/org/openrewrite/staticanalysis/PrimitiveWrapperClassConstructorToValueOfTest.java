@@ -203,7 +203,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
                   Double d1 = Double.valueOf(1.0);
                   double d2 = 2.0d;
                   void makeFloats() {
-                      Float f = Float.valueOf("2.0");
+                      Float f = Float.valueOf((float) 2.0d);
                       Float f2 = Float.valueOf(getD().floatValue());
                       Float f3 = Float.valueOf(d1.floatValue());
                       Float f4 = Float.valueOf((float) d2);
@@ -211,6 +211,127 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
                   Double getD() {
                       return Double.valueOf(2.0d);
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doubleLiteralToFloatKeepsBinary64Rounding() {
+        // `new Float(double)` is `(float) value`, rounding through binary64 to 0x3f800000, where
+        // `Float.valueOf(String)` rounds the decimal straight to binary32 and yields 0x3f800001
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  Float value = new Float(1.0000000596046448);
+              }
+              """,
+            """
+              class T {
+                  Float value = Float.valueOf((float) 1.0000000596046448);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doubleLiteralToFloatKeepsSourceForm() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  Float hex = new Float(0x1.0000002p0);
+                  Float suffixed = new Float(1.0000000596046448D);
+                  Float subnormal = new Float(4.9E-324);
+              }
+              """,
+            """
+              class T {
+                  Float hex = Float.valueOf((float) 0x1.0000002p0);
+                  Float suffixed = Float.valueOf((float) 1.0000000596046448D);
+                  Float subnormal = Float.valueOf((float) 4.9E-324);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doubleExpressionToFloatUsesCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  Float negativeZero = new Float(-0.0);
+                  Float overflowing = new Float(Double.MAX_VALUE);
+                  Float parenthesized = new Float((1.0000000596046448));
+              }
+              """,
+            """
+              class T {
+                  Float negativeZero = Float.valueOf((float) -0.0);
+                  Float overflowing = Float.valueOf((float) Double.MAX_VALUE);
+                  Float parenthesized = Float.valueOf((float) (1.0000000596046448));
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void compoundDoubleExpressionToFloatIsParenthesized() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  double d1 = 1.0;
+                  double d2 = 2.0;
+                  void makeFloats() {
+                      Float sum = new Float(d1 + d2);
+                      Float ternary = new Float(d1 > d2 ? d1 : d2);
+                      Float assigned = new Float(d1 = 2.0);
+                      Float compound = new Float(d1 += 2.0);
+                  }
+              }
+              """,
+            """
+              class T {
+                  double d1 = 1.0;
+                  double d2 = 2.0;
+                  void makeFloats() {
+                      Float sum = Float.valueOf((float) (d1 + d2));
+                      Float ternary = Float.valueOf((float) (d1 > d2 ? d1 : d2));
+                      Float assigned = Float.valueOf((float) (d1 = 2.0));
+                      Float compound = Float.valueOf((float) (d1 += 2.0));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void floatLiteralUnchangedByDoubleHandling() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  Float f = new Float(1.1f);
+                  Float hex = new Float(0x1.0000002p0f);
+              }
+              """,
+            """
+              class T {
+                  Float f = Float.valueOf(1.1f);
+                  Float hex = Float.valueOf(0x1.0000002p0f);
               }
               """
           )
