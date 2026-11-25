@@ -1,0 +1,190 @@
+#
+# Copyright 2026 the original author or authors.
+# <p>
+# Licensed under the Moderne Source Available License (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# <p>
+# https://docs.moderne.io/licensing/moderne-source-available-license
+# <p>
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.sonar.SonarRules
+displayName: Sonar rules for static analysis
+description: Fixes or flags code reported by SonarQube Java rules, grouped by the default Sonar severity of each rule.
+preconditions:
+  - org.openrewrite.Singleton
+recipeList:
+  - org.openrewrite.staticanalysis.sonar.Blocker
+  - org.openrewrite.staticanalysis.sonar.Critical
+  - org.openrewrite.staticanalysis.sonar.Major
+  - org.openrewrite.staticanalysis.sonar.Minor
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.sonar.Blocker
+displayName: Sonar blocker rules for static analysis
+description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Blocker.
+preconditions:
+  - org.openrewrite.Singleton
+recipeList:
+  - org.openrewrite.staticanalysis.FallThrough
+  - org.openrewrite.staticanalysis.FindSystemAndRuntimeExitCalls
+  - org.openrewrite.staticanalysis.FindNonCaseLabelsInSwitch
+  - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
+  - org.openrewrite.staticanalysis.MemberNameCaseInsensitiveDuplicates
+  - org.openrewrite.staticanalysis.FindMainWithThrowsClause
+  - org.openrewrite.staticanalysis.HiddenField
+  - org.openrewrite.staticanalysis.RemoveUnnecessaryBitwiseOperation
+  - org.openrewrite.staticanalysis.FindIgnoredCheckReturnValue
+  - org.openrewrite.staticanalysis.FindThreadGroupUsages
+  - org.openrewrite.staticanalysis.FindWaitWithMultipleLocksHeld
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.sonar.Critical
+displayName: Sonar critical rules for static analysis
+description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Critical.
+preconditions:
+  - org.openrewrite.Singleton
+recipeList:
+  - org.openrewrite.staticanalysis.NeedBraces
+  - org.openrewrite.staticanalysis.NoEqualityInForCondition
+  - org.openrewrite.staticanalysis.NoFinalizer
+  - org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
+  - org.openrewrite.staticanalysis.ReplaceDuplicateStringLiterals
+  - org.openrewrite.staticanalysis.RemoveCallsToSystemGc
+  - org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
+  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
+  - org.openrewrite.staticanalysis.UseTryWithResources
+  - org.openrewrite.staticanalysis.IndexOfReplaceableByContains
+  - org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero
+  - org.openrewrite.staticanalysis.StaticAccessViaInstance
+  - org.openrewrite.staticanalysis.DefaultComesLast
+  - org.openrewrite.staticanalysis.UseStringReplace
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.sonar.Major
+displayName: Sonar major rules for static analysis
+description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Major.
+preconditions:
+  - org.openrewrite.Singleton
+recipeList:
+  - org.openrewrite.staticanalysis.RemoveSystemOutPrintln
+  - org.openrewrite.staticanalysis.EmptyBlock
+  - org.openrewrite.staticanalysis.RemoveUnusedLabels
+  - org.openrewrite.staticanalysis.CollapsibleIfStatements
+  - org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
+  - org.openrewrite.staticanalysis.RemoveCallsToObjectFinalize
+  - org.openrewrite.staticanalysis.HiddenField
+  - org.openrewrite.staticanalysis.HideUtilityClassConstructor
+  - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
+  - org.openrewrite.staticanalysis.MissingOverrideAnnotation
+  - org.openrewrite.staticanalysis.NoDoubleBraceInitialization
+  - org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances
+  - org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
+  - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
+  - org.openrewrite.staticanalysis.NewStringBuilderBufferWithCharArgument
+  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
+  - org.openrewrite.staticanalysis.RemoveSelfAssignment
+  - org.openrewrite.staticanalysis.SimplifyRedundantLogicalExpression
+  - org.openrewrite.staticanalysis.RemoveDuplicateConditions
+  - org.openrewrite.staticanalysis.MergeIdenticalBranches
+  - org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
+  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
+  - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
+  - org.openrewrite.staticanalysis.RemoveHashCodeCallsFromArrayInstances
+  - org.openrewrite.staticanalysis.RemoveToStringCallsFromArrayInstances
+  - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
+  - org.openrewrite.staticanalysis.InterruptedExceptionHandling
+  - org.openrewrite.staticanalysis.SillyEqualsCheck
+  - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
+  - org.openrewrite.staticanalysis.StaticAccessViaInstance
+  - org.openrewrite.staticanalysis.ExplicitLambdaArgumentTypes
+  - org.openrewrite.staticanalysis.UseObjectNotifyAll
+  - org.openrewrite.staticanalysis.ControlFlowIndentation
+  - org.openrewrite.staticanalysis.UseMapEntrySetIteration
+  - org.openrewrite.staticanalysis.TernaryOperatorsShouldNotBeNested
+  - org.openrewrite.staticanalysis.FixStringFormatExpressions
+  - org.openrewrite.staticanalysis.UsePortableNewlines
+  - org.openrewrite.staticanalysis.AllBranchesIdentical
+  - org.openrewrite.staticanalysis.IsEmptyCallOnCollections
+  - org.openrewrite.staticanalysis.ReplaceWeekYearWithYear
+  - org.openrewrite.staticanalysis.RemoveUnconditionalValueOverwrite
+  - org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
+  - org.openrewrite.staticanalysis.StringLiteralEquality
+  - org.openrewrite.staticanalysis.AbstractClassPublicConstructor
+  - org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
+  - org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.sonar.Minor
+displayName: Sonar minor rules for static analysis
+description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Minor.
+preconditions:
+  - org.openrewrite.Singleton
+recipeList:
+  - org.openrewrite.staticanalysis.MethodNameCasing
+  - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
+  - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
+  - org.openrewrite.staticanalysis.LowercasePackage
+  - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
+  - org.openrewrite.staticanalysis.RemoveExtraSemicolons
+  - org.openrewrite.staticanalysis.ModifierOrder
+  - org.openrewrite.staticanalysis.SimplifyBooleanExpression
+  - org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan
+  - org.openrewrite.staticanalysis.SimplifyTernaryRecipes
+  - org.openrewrite.staticanalysis.SimplifyBooleanReturn
+  - org.openrewrite.staticanalysis.UnnecessaryThrows
+  - org.openrewrite.staticanalysis.EqualsAvoidsNull
+  - org.openrewrite.staticanalysis.NoValueOfOnStringType
+  - org.openrewrite.staticanalysis.ReplaceStringConcatenationWithStringValueOf
+  - org.openrewrite.staticanalysis.IsEmptyCallOnCollections
+  - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
+  - org.openrewrite.staticanalysis.NoPrimitiveWrappersForToStringOrCompareTo
+  - org.openrewrite.staticanalysis.RemoveMethodsOnlyCallSuper
+  - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
+  - org.openrewrite.staticanalysis.RemoveUnneededBlock
+  - org.openrewrite.staticanalysis.WhileInsteadOfFor
+  - org.openrewrite.staticanalysis.MinimumSwitchCases
+  - org.openrewrite.staticanalysis.UseCollectionInterfaces
+  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
+  - org.openrewrite.staticanalysis.InlineVariable
+  - org.openrewrite.staticanalysis.NoEmptyCollectionWithRawType
+  - org.openrewrite.staticanalysis.LambdaBlockToExpression
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
+  - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
+  - org.openrewrite.staticanalysis.MultipleVariableDeclarations
+  - org.openrewrite.staticanalysis.ReferentialEqualityToObjectEquals
+  - org.openrewrite.staticanalysis.UnwrapRepeatableAnnotations
+  - org.openrewrite.staticanalysis.NoToStringOnStringType
+  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
+  - org.openrewrite.staticanalysis.BooleanChecksNotInverted
+  - org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks
+  - org.openrewrite.staticanalysis.CovariantEquals
+  - org.openrewrite.staticanalysis.OnlyCatchDeclaredExceptions
+  - org.openrewrite.staticanalysis.UseDiamondOperator
+  - org.openrewrite.staticanalysis.StaticMethodNotFinal
+  - org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
+  - org.openrewrite.staticanalysis.NestedEnumsAreNotStatic
+  - org.openrewrite.staticanalysis.FinalClass
+  - org.openrewrite.staticanalysis.CollectionToArrayShouldHaveProperType
+  - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+  - org.openrewrite.staticanalysis.ExplicitInitialization
+  - org.openrewrite.staticanalysis.NoDoubleBraceInitialization
+  - org.openrewrite.staticanalysis.NoRedundantJumpStatements
+  - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
+  - org.openrewrite.staticanalysis.SimplifyArraysAsList
+  - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
+  - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
+  - org.openrewrite.staticanalysis.ExplicitCharsetOnStringGetBytes
+  - org.openrewrite.staticanalysis.UseStandardCharset
+  - org.openrewrite.staticanalysis.AvoidBoxedBooleanExpressions
+  - org.openrewrite.staticanalysis.ReplaceTextBlockWithString
+  - org.openrewrite.staticanalysis.InstanceOfPatternMatch
