@@ -91,6 +91,159 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
+    void qualifyArraysWhenMemberTypeShadowsIt() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  static class Arrays {
+                  }
+
+                  int hash(String[] values) {
+                      return values.hashCode();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static class Arrays {
+                  }
+
+                  int hash(String[] values) {
+                      return java.util.Arrays.hashCode(values);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void qualifyArraysWhenSameFileTopLevelTypeShadowsIt() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int hash(String[] values) {
+                      return values.hashCode();
+                  }
+              }
+
+              class Arrays {
+              }
+              """,
+            """
+              class Test {
+                  int hash(String[] values) {
+                      return java.util.Arrays.hashCode(values);
+                  }
+              }
+
+              class Arrays {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void qualifyArraysWhenAnotherArraysTypeIsImported() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package other;
+
+              public class Arrays {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import other.Arrays;
+
+              class Test {
+                  Arrays arrays;
+
+                  int hash(String[] values) {
+                      return values.hashCode();
+                  }
+              }
+              """,
+            """
+              import other.Arrays;
+
+              class Test {
+                  Arrays arrays;
+
+                  int hash(String[] values) {
+                      return java.util.Arrays.hashCode(values);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotShortenQualifiedNamesTheUserWroteInsideTheArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Base {
+                  public static class Holder {
+                      public static String[] ARR = {"base"};
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package other;
+
+              public class Holder {
+                  public static String[] ARR = {"other"};
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              class Test extends Base {
+                  static class Arrays {
+                  }
+
+                  int hash() {
+                      return other.Holder.ARR.hashCode();
+                  }
+              }
+              """,
+            """
+              package com.example;
+
+              class Test extends Base {
+                  static class Arrays {
+                  }
+
+                  int hash() {
+                      return java.util.Arrays.hashCode(other.Holder.ARR);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void onlyRunOnArrayInstances() {
         //language=java
         rewriteRun(
