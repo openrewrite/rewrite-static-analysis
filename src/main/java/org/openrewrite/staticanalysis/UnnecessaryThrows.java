@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
+import org.openrewrite.ScanningRecipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -32,6 +32,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.nio.file.Path;
 import java.util.*;
 
 import static java.util.Collections.*;
@@ -39,28 +40,29 @@ import static java.util.Objects.requireNonNull;
 
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
-public class UnnecessaryThrows extends Recipe {
+public class UnnecessaryThrows extends ScanningRecipe<UnnecessaryThrows.Accumulator> {
 
     @Getter
     final String displayName = "Unnecessary throws";
 
     @Getter
     final String description = "Remove unnecessary `throws` declarations. This recipe " +
-            "will only remove unused, checked exceptions if:\n" +
+            "will only remove unused, checked exceptions from a method when no other source file in the " +
+            "repository depends on them: no call inside a `try` that catches a related checked exception, no " +
+            "method reference to the method and no override of it. Callers in the same source file that catch " +
+            "the removed exception are cleaned up along with it. A method that another source file depends on " +
+            "only loses an exception that a supertype in the same `throws` clause already covers, as " +
+            "`FileNotFoundException` in `throws IOException, FileNotFoundException`, unless a JavaDoc `@throws` " +
+            "tag names it. Code outside the repository is not seen, so on a published library a caller that " +
+            "catches the exception or a subclass that overrides the method while declaring it no longer compiles.\n\n" +
+            "The `throws` declaration is also retained:\n" +
             "\n" +
-            " - The declaring class or the method declaration is `final`.\n" +
-            " - The method declaration is `static` or `private`.\n" +
-            " - The method overrides a method declaration in a super class " +
-            "and the super class does not throw the exception.\n" +
-            " - The method is `public` and the exception is not " +
-            "documented via a JavaDoc as a `@throws` tag.\n\n" +
-            "The `throws` declaration is retained on overridable methods " +
-            "(package-private and `protected` methods on non-`final` classes), and on `public` " +
-            "methods overridden within the same source file, so that a subclass override which " +
-            "does throw the exception keeps compiling. Overrides in other source files cannot be " +
-            "detected without a scanning recipe and are therefore not accounted for.\n\n" +
-            "A `throws` declaration is also retained when the method body contains a call " +
-            "whose type does not fully resolve, because such a call may throw the exception.\n\n" +
+            " - On methods overridden within the same source file, so that an override which does throw " +
+            "the exception keeps compiling.\n" +
+            " - When an overridden method declares the same exception, or a non-`private`, non-`static`, " +
+            "non-`final` method documents it via a JavaDoc `@throws` tag.\n" +
+            " - When the method body contains a call whose type does not fully resolve, because such a " +
+            "call may throw the exception.\n\n" +
             "When a `throws` declaration is removed, any `@throws` or `@exception` " +
             "JavaDoc tag documenting that exception is removed along with it, so that " +
             "the documentation does not describe an exception the method no longer declares.\n\n" +
@@ -71,8 +73,124 @@ public class UnnecessaryThrows extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1130");
 
+    public static class Accumulator {
+        // Method key -> files with a dependency on the method's `throws`
+        final Map<String, Set<Path>> dependentFiles = new HashMap<>();
+
+        void add(String key, Path file) {
+            dependentFiles.computeIfAbsent(key, k -> new HashSet<>()).add(file);
+        }
+
+        boolean isDependedOnOutside(JavaType.Method method, Path file) {
+            return isDependedOnOutside(methodKey(method), file) ||
+                    isDependedOnOutside(unresolvedKey(method.getName()), file);
+        }
+
+        private boolean isDependedOnOutside(String key, Path file) {
+            Set<Path> files = dependentFiles.get(key);
+            return files != null && files.stream().anyMatch(f -> !f.equals(file));
+        }
+    }
+
+    // Name and arity rather than the full signature: overloads only make the scan more conservative, and
+    // a signature built from a declaration loses parameters typed by a type variable.
+    private static String methodKey(JavaType.Method method) {
+        return methodKey(method.getDeclaringType(), method.getName(), method.getParameterTypes().size());
+    }
+
+    private static String methodKey(JavaType.FullyQualified declaringType, String name, int arity) {
+        return declaringType.getFullyQualifiedName() + "#" + name + "/" + arity;
+    }
+
+    // A call or method reference that does not resolve could be of any method with that name
+    private static String unresolvedKey(String name) {
+        return "?#" + name;
+    }
+
     @Override
-    public TreeVisitor<?, ExecutionContext> getVisitor() {
+    public Accumulator getInitialValue(ExecutionContext ctx) {
+        return new Accumulator();
+    }
+
+    @Override
+    public TreeVisitor<?, ExecutionContext> getScanner(Accumulator acc) {
+        return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                JavaType.Method type = method.getMethodType();
+                if (!TypeUtils.isWellFormedType(type)) {
+                    if (isInTryCatching(null)) {
+                        acc.add(unresolvedKey(method.getSimpleName()), sourcePath());
+                    }
+                } else if (!type.getThrownExceptions().isEmpty() && isInTryCatching(type.getThrownExceptions())) {
+                    acc.add(methodKey(type), sourcePath());
+                }
+                return super.visitMethodInvocation(method, ctx);
+            }
+
+            @Override
+            public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
+                JavaType.Method type = memberRef.getMethodType();
+                if (type == null) {
+                    acc.add(unresolvedKey(memberRef.getReference().getSimpleName()), sourcePath());
+                } else if (!type.getThrownExceptions().isEmpty()) {
+                    acc.add(methodKey(type), sourcePath());
+                }
+                return super.visitMemberReference(memberRef, ctx);
+            }
+
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                JavaType.Method type = method.getMethodType();
+                // Only an override that declares exceptions depends on the overridden method's `throws`
+                if (type != null && !type.getThrownExceptions().isEmpty() && !method.isConstructor() &&
+                        !method.hasModifier(Private) && !method.hasModifier(Static)) {
+                    // Every method of a supertype with this name and arity may be overridden here
+                    addSupertypes(type.getDeclaringType(), type.getName(), type.getParameterTypes().size(), new HashSet<>());
+                }
+                return super.visitMethodDeclaration(method, ctx);
+            }
+
+            private void addSupertypes(JavaType.FullyQualified type, String name, int arity, Set<String> seen) {
+                List<JavaType.FullyQualified> supertypes = new ArrayList<>(type.getInterfaces());
+                if (type.getSupertype() != null) {
+                    supertypes.add(type.getSupertype());
+                }
+                for (JavaType.FullyQualified supertype : supertypes) {
+                    if (seen.add(supertype.getFullyQualifiedName())) {
+                        acc.add(methodKey(supertype, name, arity), sourcePath());
+                        addSupertypes(supertype, name, arity, seen);
+                    }
+                }
+            }
+
+            // Whether an enclosing `try` catches a checked type related to one of the thrown exceptions, or to
+            // any exception when they are unknown. `catch (Exception e)` and `catch (Throwable t)` stay valid.
+            private boolean isInTryCatching(@Nullable List<JavaType> thrown) {
+                for (Cursor c = getCursor().getParentTreeCursor(); c.getValue() instanceof J; c = c.getParentTreeCursor()) {
+                    if (c.getValue() instanceof J.Try) {
+                        for (J.Try.Catch aCatch : ((J.Try) c.getValue()).getCatches()) {
+                            JavaType caught = aCatch.getParameter().getType();
+                            if (!TypeUtils.isOfClassType(caught, "java.lang.Exception") &&
+                                    !TypeUtils.isOfClassType(caught, "java.lang.Throwable") &&
+                                    (thrown == null || !TypeUtils.isWellFormedType(caught) ||
+                                            thrown.stream().anyMatch(t -> TypeUtils.isAssignableTo(caught, t) || TypeUtils.isAssignableTo(t, caught)))) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            private Path sourcePath() {
+                return getCursor().firstEnclosingOrThrow(JavaSourceFile.class).getSourcePath();
+            }
+        };
+    }
+
+    @Override
+    public TreeVisitor<?, ExecutionContext> getVisitor(Accumulator acc) {
         // Sound only where the compiler enforces catch-or-declare: elsewhere a checked exception can be thrown
         // without any callee declaring it, so an undeclared exception is no evidence that the `throws` is unused.
         return Preconditions.check(new JavaFileChecker<>(), new JavaIsoVisitor<ExecutionContext>() {
@@ -91,6 +209,15 @@ public class UnnecessaryThrows extends Recipe {
                                 return (J) tree;
                             }
                             return super.visit(tree, ctx);
+                        }
+
+                        @Override
+                        public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                            // Lombok's `@Cleanup` closes the variable in a generated `finally`, a call the LST doesn't show
+                            if (multiVariable.getLeadingAnnotations().stream().anyMatch(a -> "Cleanup".equals(a.getSimpleName()))) {
+                                unusedThrows.clear();
+                            }
+                            return super.visitVariableDeclarations(multiVariable, ctx);
                         }
 
                         @Override
@@ -151,8 +278,13 @@ public class UnnecessaryThrows extends Recipe {
 
                     if (!unusedThrows.isEmpty()) {
                         MethodMatcher originalMethodMatcher = new MethodMatcher(m);
+                        JavaType.Method originalMethodType = m.getMethodType();
+                        // `MethodMatcher` misses calls of a method taking a `T`, so also match a unique name and arity
+                        boolean uniqueNameAndArity = originalMethodType.getDeclaringType().getMethods().stream()
+                                .filter(other -> hasSameNameAndArity(other, originalMethodType))
+                                .count() == 1;
 
-                        JavaType.Method replacementMethodType = m.getMethodType().withThrownExceptions(ListUtils.map(m.getMethodType().getThrownExceptions(), t -> {
+                        JavaType.Method replacementMethodType = originalMethodType.withThrownExceptions(ListUtils.map(originalMethodType.getThrownExceptions(), t -> {
                             JavaType.FullyQualified type = TypeUtils.asFullyQualified(t);
                             return type != null && unusedThrows.contains(type) ? null : t;
                         }));
@@ -175,9 +307,14 @@ public class UnnecessaryThrows extends Recipe {
                         doAfterVisit(new JavaIsoVisitor<ExecutionContext>() {
                             @Override
                             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation invocation, ExecutionContext ctx) {
-                                if (originalMethodMatcher.matches(invocation)) {
-                                    invocation =  invocation.withMethodType(replacementMethodType)
-                                            .withName(invocation.getName().withType(replacementMethodType));
+                                JavaType.Method invoked = invocation.getMethodType();
+                                if (originalMethodMatcher.matches(invocation) || (uniqueNameAndArity && invoked != null &&
+                                        hasSameNameAndArity(invoked, originalMethodType) &&
+                                        TypeUtils.isOfClassType(invoked.getDeclaringType(), originalMethodType.getDeclaringType().getFullyQualifiedName()))) {
+                                    // Keep the call's substituted parameter and return types
+                                    JavaType.Method retyped = requireNonNull(invoked).withThrownExceptions(ListUtils.filter(invoked.getThrownExceptions(), t ->
+                                            !(t instanceof JavaType.FullyQualified && unusedThrows.contains(t))));
+                                    invocation = invocation.withMethodType(retyped).withName(invocation.getName().withType(retyped));
                                 }
                                 return super.visitMethodInvocation(invocation, ctx);
                             }
@@ -193,8 +330,7 @@ public class UnnecessaryThrows extends Recipe {
 
             /**
              * Drop the `@throws`/`@exception` tags documenting exceptions that were just removed from
-             * the `throws` clause. Only reachable for methods whose javadoc does not guard removal in
-             * the first place, i.e. `private`, `static` and `final` methods.
+             * the `throws` clause.
              */
             private J.MethodDeclaration removeJavadocThrows(J.MethodDeclaration m, Set<JavaType.FullyQualified> removed, ExecutionContext ctx) {
                 if (m.getComments().stream().noneMatch(Javadoc.DocComment.class::isInstance)) {
@@ -215,16 +351,6 @@ public class UnnecessaryThrows extends Recipe {
                     return emptySet();
                 }
 
-                // Do not change the API of methods that may be overridden by a subclass
-                // (package-private and protected, non-final, on a non-final class)
-                if (!method.hasModifier(Private) && !method.hasModifier(Public) &&
-                        !method.hasModifier(Static) && !method.hasModifier(Final)) {
-                    J.ClassDeclaration cd = getCursor().firstEnclosing(J.ClassDeclaration.class);
-                    if (cd != null && !cd.hasModifier(Final)) {
-                        return emptySet();
-                    }
-                }
-
                 Set<JavaType.FullyQualified> candidates = new TreeSet<>(Comparator.comparing(JavaType.FullyQualified::getFullyQualifiedName));
 
                 if (method.getThrows() != null) {
@@ -242,10 +368,17 @@ public class UnnecessaryThrows extends Recipe {
                     return emptySet();
                 }
 
-                if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
-                        method.isAbstract() || method.hasModifier(Static) ||
-                        method.hasModifier(Private) ||
-                        method.hasModifier(Final)) {
+                // Callers and overrides in other files can't be updated, so methods they depend on only
+                // lose an exception that a supertype declared alongside it already covers.
+                if (acc.isDependedOnOutside(method.getMethodType(), getCursor().firstEnclosingOrThrow(JavaSourceFile.class).getSourcePath())) {
+                    List<NameTree> declared = requireNonNull(method.getThrows());
+                    candidates.removeIf(c -> declared.stream().noneMatch(d ->
+                            !TypeUtils.isOfType(d.getType(), c) && TypeUtils.isAssignableTo(d.getType(), c)));
+                    if (candidates.isEmpty()) {
+                        return emptySet();
+                    }
+                } else if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
+                        method.hasModifier(Static) || method.hasModifier(Private) || method.hasModifier(Final)) {
                     return candidates;
                 }
 
@@ -260,7 +393,6 @@ public class UnnecessaryThrows extends Recipe {
                 }
 
                 // Retain exceptions still declared by an override in the same compilation unit.
-                // Cross-file overrides can't be detected without a scanning recipe (see description).
                 J.CompilationUnit cu = getCursor().firstEnclosing(J.CompilationUnit.class);
                 JavaType.Method methodType = method.getMethodType();
                 if (cu != null && !candidates.isEmpty()) {
@@ -301,6 +433,10 @@ public class UnnecessaryThrows extends Recipe {
                 return candidates;
             }
         });
+    }
+
+    private static boolean hasSameNameAndArity(JavaType.Method a, JavaType.Method b) {
+        return a.getName().equals(b.getName()) && a.getParameterTypes().size() == b.getParameterTypes().size();
     }
 
     private static class RemoveThrowsTagVisitor extends JavadocVisitor<ExecutionContext> {
