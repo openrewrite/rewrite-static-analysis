@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
@@ -28,6 +29,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 
@@ -44,7 +46,7 @@ public class PreferIncrementOperator extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = super.visitBlock(block, ctx);
@@ -113,7 +115,7 @@ public class PreferIncrementOperator extends Recipe {
                     return statement;
                 }));
             }
-        };
+        });
     }
 
     private static Expression extractRemainderFromLeftSpine(J.Binary binary, Expression variable) {

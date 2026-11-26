@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
@@ -32,6 +33,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 import org.openrewrite.style.Style;
 
 import java.util.Set;
@@ -58,7 +60,7 @@ public class ControlFlowIndentation extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Nullable
             TabsAndIndentsStyle tabsAndIndentsStyle;
             @Nullable
@@ -126,6 +128,6 @@ public class ControlFlowIndentation extends Recipe {
                 }
                 return !(body instanceof J.Block);
             }
-        };
+        });
     }
 }

@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -55,7 +56,7 @@ public class FinalizePrivateFields extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         // Groovy doesn't enforce `private`, so other classes may assign these fields
-        return Preconditions.check(Preconditions.not(or(new JavascriptFileChecker<>(), new GroovyFileChecker<>())), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(or(new JavascriptFileChecker<>(), new GroovyFileChecker<>(), new RubyFileChecker<>())), new JavaIsoVisitor<ExecutionContext>() {
             private Set<JavaType.Variable> privateFieldsToBeFinalized = new HashSet<>();
 
             @Nullable

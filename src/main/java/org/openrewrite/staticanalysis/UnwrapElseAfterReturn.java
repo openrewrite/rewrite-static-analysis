@@ -19,6 +19,7 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
 import org.openrewrite.TreeVisitor;
@@ -27,6 +28,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -181,6 +183,6 @@ public class UnwrapElseAfterReturn extends Recipe {
                 }.reduce(thenPart, new AtomicBoolean()).get();
             }
         };
-        return Repeat.repeatUntilStable(javaVisitor);
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), Repeat.repeatUntilStable(javaVisitor));
     }
 }

@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
@@ -43,7 +45,7 @@ public class RemoveSelfAssignment extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), new JavaVisitor<ExecutionContext>() {
 
             @Override
             public @Nullable J visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
@@ -53,6 +55,6 @@ public class RemoveSelfAssignment extends Recipe {
                 }
                 return a;
             }
-        };
+        });
     }
 }

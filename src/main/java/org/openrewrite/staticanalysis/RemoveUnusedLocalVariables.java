@@ -31,6 +31,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.go.GoFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -42,8 +43,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 
-import static org.openrewrite.Preconditions.and;
 import static org.openrewrite.Preconditions.not;
+import static org.openrewrite.Preconditions.or;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -100,8 +101,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
         Set<String> ignoreVariableNames = ignoreVariablesNamed == null ? null : new HashSet<>(asList(ignoreVariablesNamed));
 
-        TreeVisitor<?, ExecutionContext> notJsNorKtNorGo = and(not(new JavascriptFileChecker<>()), not(new KotlinFileChecker<>()), not(new GoFileChecker<>()));
-        return Preconditions.check(notJsNorKtNorGo, new JavaIsoVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> unsupportedLanguage = or(new JavascriptFileChecker<>(), new KotlinFileChecker<>(), new GoFileChecker<>(), new RubyFileChecker<>());
+        return Preconditions.check(not(unsupportedLanguage), new JavaIsoVisitor<ExecutionContext>() {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||

@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -53,7 +54,7 @@ public class RemoveExtraSemicolons extends Recipe {
     @Override
     @SuppressWarnings("ConstantConditions")
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(Preconditions.or(new JavascriptFileChecker<>(), new RubyFileChecker<>())), new JavaIsoVisitor<ExecutionContext>() {
 
             // Typically it is not possible to get semicolons in the whitespace part of comments without parser bugs
             // But since trailing semicolons on import statements is not valid java the LST format doesn't accommodate that
