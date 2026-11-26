@@ -24,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class SonarRulesTest implements RewriteTest {
 
@@ -75,6 +76,21 @@ class SonarRulesTest implements RewriteTest {
               """,
             // keep the trailing newline, which EmptyNewlineAtEndOfFile would otherwise add
             spec -> spec.noTrim()
+          )
+        );
+    }
+
+    @Test
+    void skipsKotlinSources() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun foo() {
+                  var EMPTY_METAS = HashMap<String, Any>()
+                  EMPTY_METAS.isEmpty()
+              }
+              """
           )
         );
     }
