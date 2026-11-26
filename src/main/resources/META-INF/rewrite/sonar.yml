@@ -21,6 +21,8 @@ displayName: Sonar rules for static analysis
 description: Fixes or flags code reported by SonarQube Java rules, grouped by the default Sonar severity of each rule.
 preconditions:
   - org.openrewrite.Singleton
+  - org.openrewrite.FindSourceFiles:
+      filePattern: "**/*.java"
 recipeList:
   - org.openrewrite.staticanalysis.sonar.Blocker
   - org.openrewrite.staticanalysis.sonar.Critical
@@ -33,6 +35,8 @@ displayName: Sonar blocker rules for static analysis
 description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Blocker.
 preconditions:
   - org.openrewrite.Singleton
+  - org.openrewrite.FindSourceFiles:
+      filePattern: "**/*.java"
 recipeList:
   - org.openrewrite.staticanalysis.FallThrough
   - org.openrewrite.staticanalysis.FindSystemAndRuntimeExitCalls
@@ -52,6 +56,8 @@ displayName: Sonar critical rules for static analysis
 description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Critical.
 preconditions:
   - org.openrewrite.Singleton
+  - org.openrewrite.FindSourceFiles:
+      filePattern: "**/*.java"
 recipeList:
   - org.openrewrite.staticanalysis.NeedBraces
   - org.openrewrite.staticanalysis.NoEqualityInForCondition
@@ -74,6 +80,8 @@ displayName: Sonar major rules for static analysis
 description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Major.
 preconditions:
   - org.openrewrite.Singleton
+  - org.openrewrite.FindSourceFiles:
+      filePattern: "**/*.java"
 recipeList:
   - org.openrewrite.staticanalysis.RemoveSystemOutPrintln
   - org.openrewrite.staticanalysis.EmptyBlock
@@ -129,6 +137,8 @@ displayName: Sonar minor rules for static analysis
 description: Fixes or flags code reported by SonarQube Java rules whose default Sonar severity is Minor.
 preconditions:
   - org.openrewrite.Singleton
+  - org.openrewrite.FindSourceFiles:
+      filePattern: "**/*.java"
 recipeList:
   - org.openrewrite.staticanalysis.MethodNameCasing
   - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
