@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -26,6 +27,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.python.tree.Py;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.util.List;
 
@@ -44,6 +46,11 @@ public class SimplifyElseBranch extends Recipe {
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
+                return !RubyFileChecker.isRuby(sourceFile) && super.isAcceptable(sourceFile, ctx);
+            }
+
             @Override
             public J.If.Else visitElse(J.If.Else else_, ExecutionContext ctx) {
                 J.If.Else elseStatement = super.visitElse(else_, ctx);

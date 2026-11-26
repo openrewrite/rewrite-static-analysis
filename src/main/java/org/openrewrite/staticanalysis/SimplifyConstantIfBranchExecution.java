@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -27,6 +28,7 @@ import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -53,7 +55,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new SimplifyConstantIfBranchExecutionVisitor();
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), new SimplifyConstantIfBranchExecutionVisitor());
     }
 
     private static class SimplifyConstantIfBranchExecutionVisitor extends JavaVisitor<ExecutionContext> {

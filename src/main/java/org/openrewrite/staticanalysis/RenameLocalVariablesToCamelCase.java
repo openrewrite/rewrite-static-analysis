@@ -23,6 +23,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -58,7 +59,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new RenameToCamelCase() {
+        return Preconditions.check(Preconditions.not(Preconditions.or(new CSharpFileChecker<>(), new RubyFileChecker<>())), new RenameToCamelCase() {
             @Override
             protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {

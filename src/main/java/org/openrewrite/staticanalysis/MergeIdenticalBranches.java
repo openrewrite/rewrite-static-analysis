@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -25,6 +26,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
@@ -46,7 +48,7 @@ public class MergeIdenticalBranches extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
             public J.If visitIf(J.If if_, ExecutionContext ctx) {
@@ -92,6 +94,6 @@ public class MergeIdenticalBranches extends Recipe {
 
                 return outerIf;
             }
-        };
+        });
     }
 }

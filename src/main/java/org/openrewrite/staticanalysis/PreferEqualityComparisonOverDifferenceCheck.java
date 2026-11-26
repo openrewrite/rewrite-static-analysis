@@ -18,10 +18,12 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
 
@@ -35,6 +37,11 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
+                return !RubyFileChecker.isRuby(sourceFile) && super.isAcceptable(sourceFile, ctx);
+            }
+
 
             @Override
             public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {

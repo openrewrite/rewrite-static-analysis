@@ -29,6 +29,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import java.util.List;
 import java.util.Set;
@@ -54,7 +55,7 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(Preconditions.or(new CSharpFileChecker<>(), new RubyFileChecker<>())), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 String src = literal.getValueSource();

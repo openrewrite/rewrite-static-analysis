@@ -23,6 +23,7 @@ import org.openrewrite.java.trait.Scope;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.ruby.RubyFileChecker;
 
 import static java.util.Collections.emptyList;
 
@@ -36,7 +37,7 @@ public class FinalizeLocalVariables extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new RubyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
@@ -80,6 +81,6 @@ public class FinalizeLocalVariables extends Recipe {
             private Cursor getCursorToParentScope(final Cursor cursor) {
                 return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration || is instanceof SourceFile);
             }
-        };
+        });
     }
 }

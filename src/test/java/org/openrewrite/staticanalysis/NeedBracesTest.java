@@ -34,6 +34,7 @@ import java.util.function.UnaryOperator;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.ruby.Assertions.ruby;
 
 @SuppressWarnings({
   "InfiniteLoopStatement",
@@ -695,5 +696,28 @@ class NeedBracesTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Test
+    void doNotChangeRuby() {
+        rewriteRun(
+          //language=ruby
+          ruby(
+            """
+              def render(template, model)
+                return "" if template.nil?
+                if model.empty?
+                  template
+                else
+                  template + model.to_s
+                end
+                puts model while model.pop
+                for x in model
+                  puts x
+                end
+              end
+              """
+          )
+        );
     }
 }
