@@ -34,7 +34,10 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
-import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.style.Style;
 
 import java.time.Duration;
@@ -46,7 +49,6 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 
 public class NeedBraces extends Recipe {
     @Getter
@@ -67,7 +69,12 @@ public class NeedBraces extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.or(
+                new JavaFileChecker<>(),
+                new KotlinFileChecker<>(),
+                new GroovyFileChecker<>(),
+                new CSharpFileChecker<>()
+        ), new JavaIsoVisitor<ExecutionContext>() {
 
             @SuppressWarnings("NotNullFieldNotInitialized")
             NeedBracesStyle needBracesStyle;
@@ -142,12 +149,7 @@ public class NeedBraces extends Recipe {
             @Override
             public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof SourceFile) {
-                    SourceFile cu = (SourceFile) requireNonNull(tree);
-                    // Python has no braces; Java-only wrapping does not relocate JS semicolon markers.
-                    if (cu.getSourcePath().toString().endsWith(".py") || JavascriptFileChecker.isJavaScript(cu)) {
-                        return (J) tree;
-                    }
-                    needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
+                    needBracesStyle = Style.from(NeedBracesStyle.class, (SourceFile) tree, Checkstyle::needBracesStyle);
                 }
                 return super.visit(tree, ctx);
             }
@@ -306,6 +308,6 @@ public class NeedBraces extends Recipe {
                 }
                 return elem;
             }
-        };
+        });
     }
 }

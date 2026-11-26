@@ -37,6 +37,7 @@ dependencies {
     provided("org.openrewrite:rewrite-scala:${rewriteVersion}")
     provided("org.openrewrite:rewrite-python:${rewriteVersion}")
     provided("org.openrewrite:rewrite-go:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-ruby:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
