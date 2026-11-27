@@ -27,15 +27,40 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.marker.JavaSourceSet;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JContainer;
+import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.MethodCall;
+import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import javax.lang.model.SourceVersion;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.newSetFromMap;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaArgumentTypes.SourceTypes> {
@@ -63,19 +88,35 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                     .computeIfAbsent(container, c -> {
                         Set<String> names = new HashSet<>();
                         for (JavaType.FullyQualified type : sourceSet.getClasspath()) {
-                            String packageName = type.getPackageName();
-                            if (!c.startsWith(packageName)) {
-                                continue;
-                            }
-                            String className = type.getClassName();
-                            int lastDot = className.lastIndexOf('.');
-                            String typeContainer = lastDot < 0 ? packageName : qualify(packageName, className.substring(0, lastDot));
-                            if (typeContainer.equals(c)) {
-                                names.add(className.substring(lastDot + 1));
+                            String memberName = memberName(type.getFullyQualifiedName(), c);
+                            if (memberName != null) {
+                                names.add(memberName);
                             }
                         }
-                        return names;
+                        return names.isEmpty() ? emptySet() : names;
                     });
+        }
+
+        // the simple name of a type directly in the container, comparing '$' as '.'
+        private static @Nullable String memberName(String fullyQualifiedName, String container) {
+            int start = container.isEmpty() ? 0 : container.length() + 1;
+            if (fullyQualifiedName.length() <= start) {
+                return null;
+            }
+            for (int i = 0; i < start; i++) {
+                char ch = fullyQualifiedName.charAt(i);
+                char expected = i < container.length() ? container.charAt(i) : '.';
+                if ((ch == '$' ? '.' : ch) != expected) {
+                    return null;
+                }
+            }
+            for (int i = start; i < fullyQualifiedName.length(); i++) {
+                char ch = fullyQualifiedName.charAt(i);
+                if (ch == '.' || ch == '$') {
+                    return null;
+                }
+            }
+            return fullyQualifiedName.substring(start);
         }
 
         boolean declares(Collection<String> containers, String simpleName, List<JavaSourceSet> sourceSets) {
@@ -122,9 +163,12 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
             @Override
             public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
                 J.Lambda l = super.visitLambda(lambda, ctx);
+                if (l.getParameters().getParameters().size() <= 2 && !(l.getBody() instanceof J.Block)) {
+                    return l;
+                }
                 // only Java: Groovy closures and Kotlin lambdas declare parameter types with another syntax
                 J.CompilationUnit cu = getCursor().firstEnclosing(J.CompilationUnit.class);
-                if (cu == null || l.getParameters().getParameters().size() <= 2 && !(l.getBody() instanceof J.Block)) {
+                if (cu == null) {
                     return l;
                 }
                 if (scope == null || scope.cu != cu) {
@@ -180,41 +224,18 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                     type = capture.getBounds().get(0);
                     // an F-bounded capture, as of EnumSet<?>, shows itself in its bound as Enum<?>, which a declared
                     // "?" cannot be told apart from
-                    if (hasUnboundedWildcard(type, newSetFromMap(new IdentityHashMap<>()))) {
+                    if (hasUnboundedWildcard(type)) {
                         return null;
                     }
+                } else if (hasWildcard(type) && mayCarryCaptureOutsideSuper()) {
+                    // a nested wildcard may be a capture, which a declared wildcard matches only under "? super"
+                    return null;
                 }
                 return builder.build(type, Space.EMPTY);
             }
 
             private boolean isOnlyContravariantInTarget(JavaType.GenericTypeVariable capture) {
-                J.Lambda lambda = getCursor().getValue();
-                Object parent = getCursor().getParentTreeCursor().getValue();
-                if (!(parent instanceof MethodCall)) {
-                    return false;
-                }
-                List<Expression> arguments = ((MethodCall) parent).getArguments();
-                JavaType.Method methodType = ((MethodCall) parent).getMethodType();
-                if (methodType == null || methodType.getParameterTypes().isEmpty()) {
-                    return false;
-                }
-                int index = -1;
-                for (int i = 0; i < arguments.size(); i++) {
-                    if (arguments.get(i).getId().equals(lambda.getId())) {
-                        index = i;
-                        break;
-                    }
-                }
-                if (index < 0) {
-                    return false;
-                }
-                List<JavaType> parameterTypes = methodType.getParameterTypes();
-                JavaType target = parameterTypes.get(Math.min(index, parameterTypes.size() - 1));
-                JavaType.Array varargs = TypeUtils.asArray(target);
-                if (index >= parameterTypes.size() - 1 && methodType.hasFlags(Flag.Varargs) && varargs != null) {
-                    target = varargs.getElemType();
-                }
-                JavaType.Parameterized functionalInterface = TypeUtils.asParameterized(target);
+                JavaType.Parameterized functionalInterface = TypeUtils.asParameterized(targetOfMethodArgument());
                 if (functionalInterface == null) {
                     return false;
                 }
@@ -236,6 +257,62 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                     }
                 }
                 return underSuper;
+            }
+
+            // a capture comes from inferring a method's type arguments; a declared target type has none
+            private boolean mayCarryCaptureOutsideSuper() {
+                Object parent = getCursor().getParentTreeCursor().getValue();
+                if (!(parent instanceof MethodCall)) {
+                    return !(parent instanceof J.VariableDeclarations.NamedVariable || parent instanceof J.Return ||
+                            parent instanceof J.Assignment || parent instanceof J.TypeCast);
+                }
+                JavaType target = targetOfMethodArgument();
+                if (target == null) {
+                    return true;
+                }
+                JavaType.Parameterized functionalInterface = TypeUtils.asParameterized(target);
+                if (functionalInterface == null) {
+                    return false;
+                }
+                for (JavaType typeArgument : functionalInterface.getTypeParameters()) {
+                    JavaType.GenericTypeVariable wildcard = asWildcard(typeArgument);
+                    if (wildcard == null) {
+                        if (hasWildcard(typeArgument)) {
+                            return true;
+                        }
+                    } else if (wildcard.getVariance() == JavaType.GenericTypeVariable.Variance.COVARIANT) {
+                        for (JavaType bound : wildcard.getBounds()) {
+                            if (hasWildcard(bound)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            private @Nullable JavaType targetOfMethodArgument() {
+                J.Lambda lambda = getCursor().getValue();
+                Object parent = getCursor().getParentTreeCursor().getValue();
+                if (!(parent instanceof MethodCall)) {
+                    return null;
+                }
+                List<Expression> arguments = ((MethodCall) parent).getArguments();
+                JavaType.Method methodType = ((MethodCall) parent).getMethodType();
+                if (methodType == null || methodType.getParameterTypes().isEmpty()) {
+                    return null;
+                }
+                int index = arguments.indexOf(lambda);
+                if (index < 0) {
+                    return null;
+                }
+                List<JavaType> parameterTypes = methodType.getParameterTypes();
+                JavaType target = parameterTypes.get(Math.min(index, parameterTypes.size() - 1));
+                JavaType.Array varargs = TypeUtils.asArray(target);
+                if (index >= parameterTypes.size() - 1 && methodType.hasFlags(Flag.Varargs) && varargs != null) {
+                    target = varargs.getElemType();
+                }
+                return target;
             }
 
             private Set<String> typeVariablesInScope() {
@@ -429,7 +506,7 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                 private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
                     List<JRightPadded<Expression>> typeExpressions = new ArrayList<>();
                     for (JavaType type : typeParameters) {
-                        TypeTree typeParameterExpression = build(type, Space.EMPTY);
+                        TypeTree typeParameterExpression = build(type, typeExpressions.isEmpty() ? Space.EMPTY : Space.SINGLE_SPACE);
                         if (!(typeParameterExpression instanceof Expression)) {
                             return null;
                         }
@@ -454,7 +531,7 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                         }
                     }
 
-                    // the owning classes, outermost first, aligned with the segments when the type knows them
+                    // the owning classes, outermost first, aligned with the segments
                     JavaType.FullyQualified[] owners = new JavaType.FullyQualified[segments.length];
                     JavaType.FullyQualified t = raw;
                     for (int i = segments.length - 1; i >= 0 && t != null; i--) {
@@ -464,6 +541,9 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                             return null;
                         }
                         t = t.getOwningClass();
+                    }
+                    if (owners[0] == null) {
+                        return null;
                     }
 
                     if (segments.length > 1) {
@@ -525,7 +605,7 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                         Object o = it.next();
                         if (o instanceof J.ClassDeclaration) {
                             J.ClassDeclaration classDecl = (J.ClassDeclaration) o;
-                            return classDecl.getType() != null && dotted(classDecl.getType()).equals(dotted(owner));
+                            return TypeUtils.isOfClassType(classDecl.getType(), owner.getFullyQualifiedName());
                         }
                         if (o instanceof J.NewClass && ((J.NewClass) o).getBody() != null) {
                             return false;
@@ -561,6 +641,10 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
         });
     }
 
+    private static boolean hasUnboundedWildcard(JavaType type) {
+        return hasUnboundedWildcard(type, newSetFromMap(new IdentityHashMap<>()));
+    }
+
     private static boolean hasUnboundedWildcard(JavaType type, Set<JavaType> seen) {
         JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
         if (parameterized == null || !seen.add(parameterized)) {
@@ -570,6 +654,30 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
             JavaType.GenericTypeVariable wildcard = asWildcard(typeArgument);
             if (wildcard != null && wildcard.getVariance() == JavaType.GenericTypeVariable.Variance.INVARIANT ||
                     hasUnboundedWildcard(typeArgument, seen)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasWildcard(JavaType type) {
+        return hasWildcard(type, newSetFromMap(new IdentityHashMap<>()));
+    }
+
+    private static boolean hasWildcard(JavaType type, Set<JavaType> seen) {
+        if (asWildcard(type) != null) {
+            return true;
+        }
+        JavaType.Array array = TypeUtils.asArray(type);
+        if (array != null) {
+            return hasWildcard(array.getElemType(), seen);
+        }
+        JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+        if (parameterized == null || !seen.add(parameterized)) {
+            return false;
+        }
+        for (JavaType typeArgument : parameterized.getTypeParameters()) {
+            if (hasWildcard(typeArgument, seen)) {
                 return true;
             }
         }
@@ -702,7 +810,7 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
 
         // a member class inherited from a supertype hides an imported class of the same name
         boolean isInheritedMemberType(String simpleName, Set<String> inheritedFrom) {
-            return !inheritedFrom.isEmpty() && sourceTypes.declares(inheritedFrom, simpleName, sourceSets);
+            return sourceTypes.declares(inheritedFrom, simpleName, sourceSets);
         }
 
         private boolean isClaimedElsewhere(String simpleName, String typePackage) {
@@ -727,7 +835,7 @@ public class ExplicitLambdaArgumentTypes extends ScanningRecipe<ExplicitLambdaAr
                         outermost = (J.ClassDeclaration) o;
                     }
                 }
-                return outermost != null && outermost.getType() != null && dotted(outermost.getType()).equals(topLevelOf(type));
+                return outermost != null && TypeUtils.isOfClassType(outermost.getType(), topLevelOf(type));
             }
             // package-private or protected: the same package can always name it
             if (type.getPackageName().equals(packageName)) {
