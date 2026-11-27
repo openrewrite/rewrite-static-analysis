@@ -19,6 +19,7 @@ import lombok.Getter;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -26,6 +27,8 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.python.tree.Py;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.List;
 
@@ -46,7 +49,9 @@ public class MoveConditionsToWhile extends Recipe {
                 J.WhileLoop wl = super.visitWhileLoop(whileLoop, ctx);
 
                 if (!J.Literal.isLiteralValue(wl.getCondition().getTree(), true) ||
-                        !(wl.getBody() instanceof J.Block)) {
+                        !(wl.getBody() instanceof J.Block) ||
+                        PythonFileChecker.isPython(getCursor().firstEnclosing(SourceFile.class)) &&
+                                getCursor().getParentTreeCursor().getValue() instanceof Py.TrailingElseWrapper) {
                     return wl;
                 }
 

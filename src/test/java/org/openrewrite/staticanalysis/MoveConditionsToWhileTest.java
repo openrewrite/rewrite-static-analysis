@@ -21,6 +21,8 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("ConstantConditions")
 class MoveConditionsToWhileTest implements RewriteTest {
@@ -343,6 +345,71 @@ class MoveConditionsToWhileTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveConditionToTypeScriptWhile() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function f(x: boolean) {
+                  while (true) {
+                      if (x) {
+                          break;
+                      }
+                      console.log(x);
+                  }
+              }
+              """,
+            """
+              function f(x: boolean) {
+                  while (!(x)) {
+                      console.log(x);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveConditionToPythonWhile() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def f(x: int):
+                  while True:
+                      if 0 < x < 10:
+                          break
+                      x += 1
+              """,
+            """
+              def f(x: int):
+                  while not (0 < x < 10):
+                      x += 1
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangePythonWhileElse() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def f(x: bool):
+                  while True:
+                      if x:
+                          break
+                      print(x)
+                  else:
+                      print("never")
               """
           )
         );

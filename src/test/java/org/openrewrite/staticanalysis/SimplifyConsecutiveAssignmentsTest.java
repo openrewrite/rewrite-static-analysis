@@ -22,6 +22,8 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("ConstantValue")
 class SimplifyConsecutiveAssignmentsTest implements RewriteTest {
@@ -129,6 +131,64 @@ class SimplifyConsecutiveAssignmentsTest implements RewriteTest {
                       bar += 2;
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void combineTypeScriptAssignments() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function f(y: number) {
+                  let x = 1;
+                  x += y;
+                  return x;
+              }
+              """,
+            """
+              function f(y: number) {
+                  let x = 1 + y;
+                  return x;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeTypeScriptBigintIncrement() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function f() {
+                  let x = 1n;
+                  x++;
+                  return x;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void combinePythonAssignments() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def f(y: int):
+                  x = 1
+                  x += y
+                  return x
+              """,
+            """
+              def f(y: int):
+                  x = 1 + y
+                  return x
               """
           )
         );
