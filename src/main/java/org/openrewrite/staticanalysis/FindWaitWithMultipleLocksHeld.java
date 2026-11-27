@@ -27,11 +27,10 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.marker.SearchResult;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -47,7 +46,7 @@ public class FindWaitWithMultipleLocksHeld extends Recipe {
             "intentionally excluded — sonar-java's S3046 does the same, since timed waits are " +
             "self-releasing and less likely to cause the failure mode.";
 
-    Set<String> tags = new HashSet<>(asList("RSPEC-S3046"));
+    Set<String> tags = singleton("RSPEC-S3046");
 
     private static final MethodMatcher OBJECT_WAIT = new MethodMatcher("java.lang.Object wait()");
 
