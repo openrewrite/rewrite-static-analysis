@@ -15,23 +15,34 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
+import org.openrewrite.java.style.IntelliJ;
+import org.openrewrite.kotlin.KotlinParser;
 import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
+import org.openrewrite.test.TypeValidation;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.mavenProject;
+import static org.openrewrite.java.Assertions.srcMainJava;
+import static org.openrewrite.java.Assertions.srcTestJava;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.test.RewriteTest.toRecipe;
 
 class HideUtilityClassConstructorTest implements RewriteTest {
 
@@ -622,6 +633,45 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     }
 
     @Test
+    void readStyleOfEachSourceFileWhenReusingTheVisitor() {
+        HideUtilityClassConstructorVisitor<ExecutionContext> visitor = new HideUtilityClassConstructorVisitor<>();
+        rewriteRun(
+          spec -> spec.recipe(toRecipe(() -> visitor)),
+          //language=java
+          java(
+            """
+              class ChangeMe {
+                  public static void utility() {
+                  }
+              }
+              """,
+            """
+              class ChangeMe {
+                  public static void utility() {
+                  }
+
+                  private ChangeMe() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              @Deprecated
+              class DoNotChangeMe {
+                  public static void utility() {
+                  }
+              }
+              """,
+            spec -> spec.markers(new NamedStyles(randomId(), "test", "test", "test", Set.of(), List.of(
+              new HideUtilityClassConstructorStyle(List.of("@java.lang.Deprecated"))
+            )))
+          )
+        );
+    }
+
+    @Test
     void suppressedUtilityClassWithDifferentArgument() {
         rewriteRun(
           hideUtilityClassConstructor("@java.lang.SuppressWarnings(\"checkstyle:HideUtilityClassConstructor\")"),
@@ -698,5 +748,1199 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               """
           ), 17)
         );
+    }
+
+    @Test
+    void hideConstructorUsedOnlyWithinItsTopLevelClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public static String foo() { return "foo"; }
+                  static Object instance() {
+                      return new A.Util();
+                  }
+                  static class Util {
+                      public static String bar() { return "bar"; }
+                  }
+                  static class Sub extends A {
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public static String foo() { return "foo"; }
+                  static Object instance() {
+                      return new A.Util();
+                  }
+                  static class Util {
+                      public static String bar() { return "bar"; }
+
+                      private Util() {
+                      }
+                  }
+                  static class Sub extends A {
+                  }
+
+                  private A() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void indentAddedConstructorLikeTheFileNotLikeAttachedStyle() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().styles(
+            List.of(
+              new NamedStyles(
+                randomId(), "repository", "repository", "repository", Set.of(), List.of(
+                IntelliJ.tabsAndIndents().withIndentSize(2).withContinuationIndent(4)
+              )
+              )
+            )
+          )),
+          //language=java
+          java(
+            """
+              public class Constants {
+
+                  public static final String NONE = "NONE";
+
+                  public static String none() {
+                      return NONE;
+                  }
+              }
+              """,
+            """
+              public class Constants {
+
+                  public static final String NONE = "NONE";
+
+                  public static String none() {
+                      return NONE;
+                  }
+
+                  private Constants() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void indentAddedConstructorWithTabs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+              \tpublic static void utility() {
+              \t}
+              }
+              """,
+            """
+              public class A {
+              \tpublic static void utility() {
+              \t}
+
+              \tprivate A() {
+              \t}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void indentAddedConstructorOfNestedClassWithTabs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+              \tpublic void instance() {
+              \t}
+
+              \tstatic class Util {
+              \t\tstatic void utility() {
+              \t\t}
+              \t}
+              }
+              """,
+            """
+              public class A {
+              \tpublic void instance() {
+              \t}
+
+              \tstatic class Util {
+              \t\tstatic void utility() {
+              \t\t}
+
+              \t\tprivate Util() {
+              \t\t}
+              \t}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void indentAddedConstructorWithTwoSpaces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                static void utility() {
+                }
+              }
+              """,
+            """
+              public class A {
+                static void utility() {
+                }
+
+                private A() {
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hideExplicitConstructorUsedOnlyWithinItsTopLevelClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public A() {
+                  }
+                  public static void utility() {
+                  }
+                  static class Nested {
+                      Object a = new A();
+                  }
+              }
+              """,
+            """
+              public class A {
+                  private A() {
+                  }
+                  public static void utility() {
+                  }
+                  static class Nested {
+                      Object a = new A();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hideConstructorOfClassWhoseClassLiteralIsOnlyNamedElsewhere() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+              }
+              """,
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+
+                  private A() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+              import java.util.logging.Logger;
+              class B {
+                  Logger logger = Logger.getLogger(A.class.getName());
+                  String name = A.class.getSimpleName();
+                  Object location = A.class.getProtectionDomain().getCodeSource();
+                  Object method() throws Exception {
+                      return A.class.getMethod("utility");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hideConstructorOfClassWhoseClassLiteralIsUsedWithoutConstructingIt() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+              }
+              """,
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+
+                  private A() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+              import java.io.InputStream;
+              class B {
+                  InputStream in = A.class.getResourceAsStream("x");
+                  boolean is(Object o) {
+                      return A.class.isInstance(o);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hideConstructorOfClassWhoseClassLiteralIsALoggerNameOrLock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.logging.Logger;
+              public class A {
+                  private static final Logger LOGGER = Logger.getLogger(A.class.getName());
+                  public static void utility() {
+                      synchronized (A.class) {
+                          LOGGER.info("x");
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.logging.Logger;
+              public class A {
+                  private static final Logger LOGGER = Logger.getLogger(A.class.getName());
+                  public static void utility() {
+                      synchronized (A.class) {
+                          LOGGER.info("x");
+                      }
+                  }
+
+                  private A() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hideConstructorOfClassWhoseClassLiteralNamesALogger() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+              class LoggerFactory {
+                  int level;
+                  static Object getLogger(Class<?> c) {
+                      return null;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+              }
+              """,
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+
+                  private A() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+              class B {
+                  Object log = LoggerFactory.getLogger(A.class);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepConstructorReachedReflectivelyWithinItsTopLevelClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Outer {
+                  public static void f() {
+                  }
+                  static Object make() throws Exception {
+                      Class<?> c = Util.class;
+                      return c.getConstructor().newInstance();
+                  }
+                  public static class Util {
+                      public static void g() {
+                      }
+                  }
+              }
+              """,
+            """
+              public class Outer {
+                  public static void f() {
+                  }
+                  static Object make() throws Exception {
+                      Class<?> c = Util.class;
+                      return c.getConstructor().newInstance();
+                  }
+                  public static class Util {
+                      public static void g() {
+                      }
+                  }
+
+                  private Outer() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepConstructorsUsedQualifiedOrGenericWithoutTypeAttribution() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              package com.example;
+              public class Outer {
+                  public static void f() {
+                  }
+                  public static class Util {
+                      public static void g() {
+                      }
+                  }
+              }
+              """,
+            """
+              package com.example;
+              public class Outer {
+                  public static void f() {
+                  }
+                  public static class Util {
+                      public static void g() {
+                      }
+                  }
+
+                  private Outer() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+              public class A {
+                  public static void utility() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.other;
+              class B extends A<String> {
+                  Object u = new Outer.Util();
+              }
+              """
+          )
+        );
+    }
+
+    @Nested
+    class NoChange {
+        @Test
+        void doNotChangeExtendedClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class Base {
+                      public static Object[] combine(Object[] a, Object[] b) {
+                          return a;
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class Sub extends Base {
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassInstantiatedElsewhere() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class EntryFactory {
+                      public static String create() {
+                          return "";
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class EntryFactoryTest {
+                      void test() {
+                          new EntryFactory();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeExplicitConstructorUsedElsewhere() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public A() {
+                      }
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  import java.util.function.Supplier;
+                  class B {
+                      Supplier<Object> supplier = A::new;
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeAnonymouslySubclassedClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class B {
+                      Object a = new A() {};
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeConstructorCalledThroughSuper() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      A(String s) {
+                      }
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class B extends A {
+                      B() {
+                          super("b");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassExtendedInKotlin() {
+            rewriteRun(
+              // the Kotlin parser does not see the Java sources, so `A` is unresolved there
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package com.example
+                  class B : A()
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassInstantiatedInGroovy() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=groovy
+              groovy(
+                """
+                  package com.example
+                  class G {
+                      def a() { new A() }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassInstantiatedWithoutTypeAttribution() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.other;
+                  class B {
+                      Object a = new A();
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeExplicitPublicConstructorOfExtendedClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public A() {
+                      }
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class B extends A {
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeConstructorUsedByAnotherTopLevelClassOfTheSameFile() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  class B {
+                      Object a = new A();
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassWhoseConstructorLombokGenerates() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+              //language=java
+              java(
+                """
+                  import lombok.AllArgsConstructor;
+
+                  @AllArgsConstructor
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeConstructorUsedReflectively() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                      static Object create() throws Exception {
+                          return A.class.getDeclaredConstructor().newInstance();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeConstructorCalledFromKotlin() {
+            rewriteRun(
+              // the Kotlin parser does not see the Java sources, so `A` is unresolved there
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package com.example
+                  fun create(): Any = A()
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassWhoseClassLiteralIsUsedElsewhere() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class B {
+                      Object create() throws Exception {
+                          Class<?> c = A.class;
+                          return c.getDeclaredConstructor().newInstance();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeConstructorReferencedFromKotlin() {
+            rewriteRun(
+              // the Kotlin parser does not see the Java sources, so `A` is unresolved there
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package com.example
+                  val f = ::A
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassWhoseLiteralIsInAnnotation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public @interface Uses {
+                      Class<?> value();
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  @Uses(A.class)
+                  class B {
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassWhoseLiteralIsUsedInKotlin() {
+            rewriteRun(
+              // the Kotlin parser does not see the Java sources, so `A` is unresolved there
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package com.example
+                  fun create(): Any = A::class.java.getDeclaredConstructor().newInstance()
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeNestedClassUsedQualifiedFromOtherLanguages() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package a;
+                  public class Outer {
+                      public static void f() {
+                      }
+                      public static class Util {
+                          public static void g() {
+                          }
+                      }
+                      public static class Ref {
+                          public static void g() {
+                          }
+                      }
+                      public static class Gr {
+                          public static void g() {
+                          }
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package b
+                  import a.Outer
+                  fun x() = Outer.Util()
+                  val f = Outer::Ref
+                  """
+              ),
+              //language=groovy
+              groovy(
+                """
+                  package b
+                  import a.Outer
+                  def x = new Outer.Gr()
+                  def y = new Outer()
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassNamedInAString() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class B {
+                      Object create() throws Exception {
+                          return Class.forName("com.example.A").getDeclaredConstructor().newInstance();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassLoadedByItsName() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class C {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class B {
+                      Object a() throws Exception {
+                          return Class.forName(A.class.getName()).getDeclaredConstructor().newInstance();
+                      }
+                      Class<?> c(ClassLoader loader) throws Exception {
+                          return loader.loadClass(C.class.getName());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassExtendedByKotlinObject() {
+            rewriteRun(
+              // the Kotlin parser does not see the Java sources, so `A` is unresolved there
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package com.example
+                  val a = object : A() {}
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassWhoseInstancesAreHeldElsewhere() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  import java.util.function.Supplier;
+                  class B {
+                      Supplier<A> injected;
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class C {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class D {
+                      C[] injected;
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class E {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  class F {
+                      E produce() {
+                          return null;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeConstructorUsedFromTypeAttributedKotlin() {
+            rewriteRun(
+              spec -> spec.parser(KotlinParser.builder().dependsOn("package com.example\nopen class A\nopen class C\nopen class D")),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class A {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class C {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package com.example;
+                  public class D {
+                      public static void utility() {
+                      }
+                  }
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package com.example
+                  class B : A()
+                  fun c(): Any = C()
+                  val d = ::D
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassInstantiatedInTestSources() {
+            rewriteRun(
+              srcMainJava(
+                //language=java
+                java(
+                  """
+                    package com.example;
+                    public class A {
+                        public static void utility() {
+                        }
+                    }
+                    """
+                )
+              ),
+              srcTestJava(
+                //language=java
+                java(
+                  """
+                    package com.example;
+                    class ATest {
+                        Object a = new A();
+                    }
+                    """
+                )
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeClassInstantiatedInAnotherModule() {
+            rewriteRun(
+              mavenProject("a",
+                //language=java
+                java(
+                  """
+                    package com.example;
+                    public class A {
+                        public static void utility() {
+                        }
+                    }
+                    """
+                )
+              ),
+              mavenProject("b",
+                //language=java
+                java(
+                  """
+                    package com.other;
+                    import com.example.A;
+                    class B {
+                        Object a = new A();
+                    }
+                    """
+                )
+              )
+            );
+        }
     }
 }

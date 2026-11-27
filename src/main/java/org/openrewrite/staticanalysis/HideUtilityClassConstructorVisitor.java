@@ -20,18 +20,31 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.*;
+import org.openrewrite.java.format.AutoFormatVisitor;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.style.Autodetect;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.style.NamedStyles;
 import org.openrewrite.style.Style;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
 public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
@@ -39,12 +52,29 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     private static final EnumSet<J.ClassDeclaration.Kind.Type> EXCLUDE_CLASS_TYPES =
             EnumSet.of(J.ClassDeclaration.Kind.Type.Interface, J.ClassDeclaration.Kind.Type.Record);
 
+    private static final Set<String> LOMBOK_CONSTRUCTOR_ANNOTATIONS = new HashSet<>(Arrays.asList(
+            "AllArgsConstructor", "Builder", "Data", "NoArgsConstructor", "RequiredArgsConstructor",
+            "SuperBuilder", "UtilityClass", "Value"));
+
+    private final Predicate<Cursor> mayHideConstructors;
+
     private UtilityClassMatcher utilityClassMatcher;
     private HideUtilityClassConstructorStyle style;
 
+    /**
+     * Ignores uses in other source files, which may then no longer compile; {@link HideUtilityClassConstructor} checks them.
+     */
+    public HideUtilityClassConstructorVisitor() {
+        this(classCursor -> true);
+    }
+
+    public HideUtilityClassConstructorVisitor(Predicate<Cursor> mayHideConstructors) {
+        this.mayHideConstructors = mayHideConstructors;
+    }
+
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        if (style == null && tree instanceof SourceFile) {
+        if (tree instanceof SourceFile) {
             style = Style.from(HideUtilityClassConstructorStyle.class, (SourceFile)tree, Checkstyle::hideUtilityClassConstructorStyle);
             utilityClassMatcher = new UtilityClassMatcher(style.getIgnoreIfAnnotatedBy());
         }
@@ -54,7 +84,8 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     @Override
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         J.ClassDeclaration c = super.visitClassDeclaration(classDecl, p);
-        if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(getCursor())) {
+        if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(getCursor()) &&
+                mayHideConstructors.test(getCursor())) {
             c = (J.ClassDeclaration) new UtilityClassWithImplicitDefaultConstructorVisitor().visit(c, p, getCursor().getParentOrThrow());
             c = (J.ClassDeclaration) new UtilityClassWithExposedConstructorInspectionVisitor<>(c).visit(c, p, getCursor().getParentOrThrow());
         }
@@ -70,13 +101,27 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
             if (utilityClassMatcher.hasImplicitDefaultConstructor(classDecl) &&
                     J.ClassDeclaration.Kind.Type.Enum != classDecl.getKind()) {
-                classDecl = JavaTemplate.builder("private #{}() {}")
+                J.ClassDeclaration c = JavaTemplate.builder("private #{}() {}")
                         .contextSensitive()
                         .build()
                         .apply(getCursor(), classDecl.getBody().getCoordinates().lastStatement(), classDecl.getSimpleName());
+                // The styles attached to the source file can describe other files, so indent like this file
+                NamedStyles fileStyle = fileIndentation(getCursor().firstEnclosingOrThrow(JavaSourceFile.class));
+                List<Statement> statements = c.getBody().getStatements();
+                Statement constructor = statements.get(statements.size() - 1);
+                Cursor bodyCursor = new Cursor(new Cursor(getCursor().getParentOrThrow(), c), c.getBody());
+                Statement formatted = (Statement) new AutoFormatVisitor<P>(null, fileStyle).visitNonNull(constructor, p, bodyCursor);
+                classDecl = c.withBody(c.getBody().withStatements(ListUtils.mapLast(statements, last -> formatted)));
             }
             return classDecl;
         }
+    }
+
+    private static NamedStyles fileIndentation(JavaSourceFile sourceFile) {
+        Autodetect.Detector detector = Autodetect.detector();
+        detector.sample(sourceFile);
+        return new NamedStyles(Tree.randomId(), "file", "file", null, emptySet(),
+                singletonList(detector.getTabsAndIndentsStyle()));
     }
 
     /**
@@ -174,7 +219,22 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
             return isUtilityClass(c) &&
                     !hasIgnorableAnnotation(cursor) &&
                     !hasConfigurationAnnotation(c) &&
+                    !hasLombokConstructorAnnotation(c) &&
                     !hasMainMethod(c);
+        }
+
+        // Lombok generates constructors that a declared one would clash with
+        private boolean hasLombokConstructorAnnotation(J.ClassDeclaration c) {
+            for (J.Annotation annotation : c.getLeadingAnnotations()) {
+                if (LOMBOK_CONSTRUCTOR_ANNOTATIONS.contains(annotation.getSimpleName())) {
+                    // An unresolved annotation of one of these names is most likely Lombok's
+                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(annotation.getType());
+                    if (type == null || type instanceof JavaType.Unknown || type.getFullyQualifiedName().startsWith("lombok.")) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private boolean hasConfigurationAnnotation(J.ClassDeclaration c) {
