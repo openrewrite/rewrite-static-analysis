@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
-import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.*;
@@ -70,8 +69,8 @@ public class VariableReferences {
         if (parent.getValue() instanceof J.AssignmentOperation) {
             J.AssignmentOperation assignmentOperation = parent.getValue();
             if (assignmentOperation.getVariable() == tree.getValue()) {
-                Tree grandParent = parent.getParentTreeCursor().getValue();
-                return grandParent instanceof Expression || grandParent instanceof J.Return;
+                Cursor grandParent = parent.getParentTreeCursor();
+                return grandParent.isRoot() || grandParent.getValue() instanceof Expression || grandParent.getValue() instanceof J.Return;
             }
         }
 
