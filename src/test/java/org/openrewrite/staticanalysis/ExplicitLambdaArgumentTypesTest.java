@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -23,7 +24,10 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import static org.openrewrite.groovy.Assertions.groovy;
+import static org.openrewrite.java.Assertions.addTypesToSourceSet;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.sourceSet;
 import static org.openrewrite.javascript.Assertions.typescript;
 
 @SuppressWarnings({
@@ -730,6 +734,1120 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     }
 
     @Test
+    void importsRawTypeOfParameterizedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              public class Lib {
+                  public static void run(Consumer<List<String>> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import lib.Lib;
+
+              class Test {
+                  void method() {
+                      Lib.run(scopes -> {
+                          scopes.clear();
+                      });
+                  }
+              }
+              """,
+            """
+              import lib.Lib;
+
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      Lib.run((List<String> scopes) -> {
+                          scopes.clear();
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedTypeIsQualifiedByItsOuterClassAndOtherReferencesAreLeftAlone() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              import java.util.function.Consumer;
+
+              public class Writer {
+                  public static class Job {
+                  }
+
+                  public static void run(Consumer<Job> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import lib.Writer;
+
+              class Test {
+                  Writer.Job current;
+
+                  void method() {
+                      Writer.run(job -> {
+                          current = job;
+                      });
+                  }
+              }
+              """,
+            """
+              import lib.Writer;
+
+              class Test {
+                  Writer.Job current;
+
+                  void method() {
+                      Writer.run((Writer.Job job) -> {
+                          current = job;
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedTypesWithTheSameSimpleNameDoNotClash() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Application {
+                  public static class Name {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Page {
+                  public static class Name {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package lib;
+
+              import java.util.function.BiConsumer;
+
+              public class Repo {
+                  public static void run(BiConsumer<Application.Name, Page.Name> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import lib.Repo;
+
+              class Test {
+                  void method() {
+                      Repo.run((app, page) -> {
+                          System.out.println(app + " " + page);
+                      });
+                  }
+              }
+              """,
+            """
+              import lib.Application;
+              import lib.Page;
+              import lib.Repo;
+
+              class Test {
+                  void method() {
+                      Repo.run((Application.Name app, Page.Name page) -> {
+                          System.out.println(app + " " + page);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void explicitlyImportedNestedTypeUsesSimpleName() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              import java.util.function.Consumer;
+
+              public class Writer {
+                  public static class Job {
+                  }
+
+                  public static void run(Consumer<Job> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import lib.Writer;
+              import lib.Writer.Job;
+
+              class Test {
+                  Job current;
+
+                  void method() {
+                      Writer.run(job -> {
+                          current = job;
+                      });
+                  }
+              }
+              """,
+            """
+              import lib.Writer;
+              import lib.Writer.Job;
+
+              class Test {
+                  Job current;
+
+                  void method() {
+                      Writer.run((Job job) -> {
+                          current = job;
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotImportTypeShadowingSamePackageType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package other;
+
+              import java.util.function.Consumer;
+
+              public class ParseException extends Exception {
+                  public static void run(Consumer<ParseException> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package app;
+
+              public class ParseException extends Exception {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package app;
+
+              class Test {
+                  ParseException last;
+
+                  void method() {
+                      other.ParseException.run(e -> {
+                          System.out.println(e);
+                      });
+                  }
+              }
+              """,
+            """
+              package app;
+
+              class Test {
+                  ParseException last;
+
+                  void method() {
+                      other.ParseException.run((other.ParseException e) -> {
+                          System.out.println(e);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void rawTypeStaysRaw() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+              import java.util.concurrent.ConcurrentHashMap;
+
+              class Test {
+                  interface Chain<T extends Number> {
+                      void clean();
+                  }
+
+                  private Map<String, Chain> chains = new ConcurrentHashMap<>();
+
+                  void reset(String key) {
+                      chains.compute(key, (k, value) -> {
+                          value.clean();
+                          return value;
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+              import java.util.concurrent.ConcurrentHashMap;
+
+              class Test {
+                  interface Chain<T extends Number> {
+                      void clean();
+                  }
+
+                  private Map<String, Chain> chains = new ConcurrentHashMap<>();
+
+                  void reset(String key) {
+                      chains.compute(key, (String k, Chain value) -> {
+                          value.clean();
+                          return value;
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeArgumentsAreSeparatedBySpace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class Test {
+                  void m(Map<String, Map<Integer, Long>> map) {
+                      map.forEach((k, v) -> {
+                          System.out.println(k + v);
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Test {
+                  void m(Map<String, Map<Integer, Long>> map) {
+                      map.forEach((String k, Map<Integer, Long> v) -> {
+                          System.out.println(k + v);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void memberTypeOfOuterClassIsQualifiedInsideAnonymousClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package base;
+
+              public abstract class Base {
+                  public static class Job {
+                  }
+
+                  public abstract void go();
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import base.Base;
+              import java.util.List;
+
+              class Test {
+                  static class Job {
+                  }
+
+                  void m(List<Job> jobs) {
+                      new Base() {
+                          public void go() {
+                              jobs.forEach(j -> {
+                                  System.out.println(j);
+                              });
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import base.Base;
+              import java.util.List;
+
+              class Test {
+                  static class Job {
+                  }
+
+                  void m(List<Job> jobs) {
+                      new Base() {
+                          public void go() {
+                              jobs.forEach((Test.Job j) -> {
+                                  System.out.println(j);
+                              });
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void protectedMemberTypeFromSubclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package base;
+
+              import java.util.function.Consumer;
+
+              public class Base {
+                  protected static class Job {
+                  }
+
+                  protected void each(Consumer<Job> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import base.Base;
+
+              class Test extends Base {
+                  void m() {
+                      each(j -> {
+                          System.out.println(j);
+                      });
+                  }
+              }
+              """,
+            """
+              import base.Base;
+
+              class Test extends Base {
+                  void m() {
+                      each((Base.Job j) -> {
+                          System.out.println(j);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void memberTypeInheritedFromSupertypeInAnotherFileHidesImport() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Base {
+                  public static class Result {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package lib2;
+
+              public class Result {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package lib2;
+
+              public class Api {
+                  public interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  public static void run(Tri<Result, String, String> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package app;
+
+              import lib2.Api;
+
+              class Test extends lib.Base {
+                  void m() {
+                      Api.run((r, a, b) -> System.out.println(r));
+                  }
+              }
+              """,
+            """
+              package app;
+
+              import lib2.Api;
+
+              class Test extends lib.Base {
+                  void m() {
+                      Api.run((lib2.Result r, String a, String b) -> System.out.println(r));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void samePackageClassInAnotherFileHidesJavaLang() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Api {
+                  public interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  public static void run(Tri<Process, String, String> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package app;
+
+              public class Process {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package app;
+
+              import lib.Api;
+
+              class Test {
+                  void m() {
+                      Api.run((p, a, b) -> System.out.println(p));
+                  }
+              }
+              """,
+            """
+              package app;
+
+              import lib.Api;
+
+              class Test {
+                  void m() {
+                      Api.run((java.lang.Process p, String a, String b) -> System.out.println(p));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ambiguousOnDemandImportsUseFullyQualifiedName() {
+        rewriteRun(
+          spec -> spec.beforeRecipe(addTypesToSourceSet("main")),
+          //language=java
+          java(
+            """
+              import java.awt.*;
+              import java.util.*;
+              import java.util.function.Consumer;
+
+              class Test {
+                  static void run(Consumer<java.util.List<String>> c) {
+                  }
+
+                  void m() {
+                      run(x -> {
+                          System.out.println(x);
+                      });
+                  }
+              }
+              """,
+            """
+              import java.awt.*;
+              import java.util.*;
+              import java.util.function.Consumer;
+
+              class Test {
+                  static void run(Consumer<java.util.List<String>> c) {
+                  }
+
+                  void m() {
+                      run((java.util.List<String> x) -> {
+                          System.out.println(x);
+                      });
+                  }
+              }
+              """,
+            spec -> sourceSet(spec, "main")
+          )
+        );
+    }
+
+    @Test
+    void memberClassImportedOnDemandByStaticImportHidesJavaLang() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Consts {
+                  public static class Process {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Api {
+                  public interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  public static void run(Tri<java.lang.Process, String, String> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import lib.Api;
+
+              import static lib.Consts.*;
+
+              class Test {
+                  void m() {
+                      Api.run((p, a, b) -> System.out.println(p));
+                  }
+              }
+              """,
+            """
+              import lib.Api;
+
+              import static lib.Consts.*;
+
+              class Test {
+                  void m() {
+                      Api.run((java.lang.Process p, String a, String b) -> System.out.println(p));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void methodTypeVariableInStaticMethodOfGenericClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Box<T> {
+                  interface Tri<X, Y, Z> {
+                      void accept(X x, Y y, Z z);
+                  }
+
+                  static <X> void run(Tri<X, X, X> t) {
+                  }
+
+                  static <T> void s() {
+                      Box.<T>run((x, y, z) -> System.out.println(x));
+                  }
+              }
+              """,
+            """
+              class Box<T> {
+                  interface Tri<X, Y, Z> {
+                      void accept(X x, Y y, Z z);
+                  }
+
+                  static <X> void run(Tri<X, X, X> t) {
+                  }
+
+                  static <T> void s() {
+                      Box.<T>run((T x, T y, T z) -> System.out.println(x));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simpleNameResolvedWithoutImportIsNotClaimedByLaterImport() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package a;
+
+              public class Foo {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package b;
+
+              public class Foo {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Api {
+                  public interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  public static void run(Tri<a.Foo, b.Foo, String> c) {
+                  }
+
+                  public static void runB(Tri<b.Foo, String, String> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package a;
+
+              import lib.Api;
+
+              class Test {
+                  void m() {
+                      Api.run((x, y, z) -> {
+                      });
+                      Api.runB((x, y, z) -> {
+                      });
+                  }
+              }
+              """,
+            """
+              package a;
+
+              import lib.Api;
+
+              class Test {
+                  void m() {
+                      Api.run((Foo x, b.Foo y, String z) -> {
+                      });
+                      Api.runB((b.Foo x, String y, String z) -> {
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void memberClassInheritedFromClasspathSupertypeHidesImport() {
+        rewriteRun(
+          spec -> spec.beforeRecipe(addTypesToSourceSet("main")),
+          //language=java
+          java(
+            """
+              package p;
+
+              public class SimpleEntry {
+              }
+              """,
+            spec -> sourceSet(spec, "main")
+          ),
+          //language=java
+          java(
+            """
+              package p;
+
+              import java.util.function.Consumer;
+
+              public class Api {
+                  public static void run(Consumer<SimpleEntry> c) {
+                  }
+              }
+              """,
+            spec -> sourceSet(spec, "main")
+          ),
+          //language=java
+          java(
+            """
+              package q;
+
+              import java.util.AbstractMap;
+              import java.util.Map;
+              import java.util.Set;
+
+              abstract class Test extends AbstractMap<String, String> {
+                  void m() {
+                      p.Api.run(e -> {
+                          System.out.println(e);
+                      });
+                  }
+              }
+              """,
+            """
+              package q;
+
+              import java.util.AbstractMap;
+              import java.util.Map;
+              import java.util.Set;
+
+              abstract class Test extends AbstractMap<String, String> {
+                  void m() {
+                      p.Api.run((p.SimpleEntry e) -> {
+                          System.out.println(e);
+                      });
+                  }
+              }
+              """,
+            spec -> sourceSet(spec, "main")
+          )
+        );
+    }
+
+    @Test
+    void nestedWildcardIsTypedOnlyWhereTargetTakesItUnderSuper() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.stream.Stream;
+
+              class Test {
+                  interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  static <T> void each(List<T> l, Tri<List<T>, String, String> f) {
+                  }
+
+                  void m(List<? extends Number> nums, List<?> any) {
+                      each(nums, (a, b, c) -> {
+                      });
+                      each(any, (a, b, c) -> {
+                      });
+                      Stream.of(nums).forEach(x -> {
+                          System.out.println(x);
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Stream;
+
+              class Test {
+                  interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  static <T> void each(List<T> l, Tri<List<T>, String, String> f) {
+                  }
+
+                  void m(List<? extends Number> nums, List<?> any) {
+                      each(nums, (a, b, c) -> {
+                      });
+                      each(any, (a, b, c) -> {
+                      });
+                      Stream.of(nums).forEach((List<? extends Number> x) -> {
+                          System.out.println(x);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void captureIsTypedOnlyWhereTargetTakesItUnderSuper() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  static <T> void each(List<T> l, Tri<T, String, String> f) {
+                  }
+
+                  static <T> void eachSuper(List<T> l, Tri<? super T, String, String> f) {
+                  }
+
+                  void m(List<? extends Number> nums) {
+                      each(nums, (a, b, c) -> {
+                      });
+                      eachSuper(nums, (a, b, c) -> {
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  static <T> void each(List<T> l, Tri<T, String, String> f) {
+                  }
+
+                  static <T> void eachSuper(List<T> l, Tri<? super T, String, String> f) {
+                  }
+
+                  void m(List<? extends Number> nums) {
+                      each(nums, (a, b, c) -> {
+                      });
+                      eachSuper(nums, (Number a, String b, String c) -> {
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void captureInJdkBiConsumer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class Test {
+                  void m(Map<String, ? extends Number> m) {
+                      m.forEach((k, v) -> {
+                          System.out.println(k + v);
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Test {
+                  void m(Map<String, ? extends Number> m) {
+                      m.forEach((String k, Number v) -> {
+                          System.out.println(k + v);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void explicitlyImportedClassKeepsSimpleNameWhenAnotherIsUsedQualified() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package a;
+
+              public class Item {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package b;
+
+              public class Item {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import a.Item;
+
+              import java.util.List;
+
+              class Test {
+                  b.Item other;
+
+                  void m(List<Item> items) {
+                      items.forEach(i -> {
+                          System.out.println(i);
+                      });
+                  }
+              }
+              """,
+            """
+              import a.Item;
+
+              import java.util.List;
+
+              class Test {
+                  b.Item other;
+
+                  void m(List<Item> items) {
+                      items.forEach((Item i) -> {
+                          System.out.println(i);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void captureUnderSuperInConstructorAndVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  static class Holder<E> {
+                      Holder(List<E> l, Consumer<? super E> c) {
+                      }
+                  }
+
+                  @SafeVarargs
+                  static <E> void all(List<E> l, Consumer<? super E>... cs) {
+                  }
+
+                  void m(List<? extends Number> nums) {
+                      new Holder<>(nums, x -> {
+                          System.out.println(x);
+                      });
+                      all(nums, x -> {
+                          System.out.println(x);
+                      }, y -> {
+                          System.out.println(y);
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  static class Holder<E> {
+                      Holder(List<E> l, Consumer<? super E> c) {
+                      }
+                  }
+
+                  @SafeVarargs
+                  static <E> void all(List<E> l, Consumer<? super E>... cs) {
+                  }
+
+                  void m(List<? extends Number> nums) {
+                      new Holder<>(nums, (Number x) -> {
+                          System.out.println(x);
+                      });
+                      all(nums, (Number x) -> {
+                          System.out.println(x);
+                      }, (Number y) -> {
+                          System.out.println(y);
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotFailOnTypeScriptArrowFunction() {
         rewriteRun(
           typescript(
@@ -744,5 +1862,347 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void rawReceiverUsesErasureNotSameNamedTypeVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package lib;
+
+              public class Lib<T> {
+                  public interface Tri<A, B, C> {
+                      void accept(A a, B b, C c);
+                  }
+
+                  public void each(Tri<T, T, T> c) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import lib.Lib;
+
+              class Test<T> {
+                  void m(Lib raw) {
+                      raw.each((a, b, c) -> System.out.println(a));
+                  }
+              }
+              """,
+            """
+              import lib.Lib;
+
+              class Test<T> {
+                  void m(Lib raw) {
+                      raw.each((Object a, Object b, Object c) -> System.out.println(a));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Nested
+    class NoChange {
+        @Test
+        void doNotChangeWhenAnyParameterTypeCannotBeNamed() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package lib;
+
+                  class Hidden {
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  package lib;
+
+                  public class Api {
+                      public interface TriConsumer<A, B, C> {
+                          void accept(A a, B b, C c);
+                      }
+
+                      public static void run(TriConsumer<String, Hidden, String> c) {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import lib.Api;
+
+                  class Test {
+                      void method() {
+                          Api.run((a, h, b) -> System.out.println(a + b));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeInnerClassOfGenericClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package lib;
+
+                  public class Outer<T> {
+                      public class Inner {
+                      }
+
+                      public interface Tri<A, B, C> {
+                          void accept(A a, B b, C c);
+                      }
+
+                      public void run(Tri<Inner, String, String> c) {
+                      }
+
+                      void other(Outer<String> o) {
+                          o.run((i, a, b) -> System.out.println(i));
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import lib.Outer;
+
+                  class Test {
+                      void method(Outer<String> outer) {
+                          outer.run((i, a, b) -> System.out.println(i));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeLowerBoundedOrUnboundedCapture() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class Test {
+                      void lower(List<? super Integer> l) {
+                          l.forEach(x -> {
+                              System.out.println(x);
+                          });
+                      }
+
+                      void unbounded(List<?> l) {
+                          l.forEach(x -> {
+                              System.out.println(x);
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeTypeVariableHiddenByInnerDeclaration() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class Test<T> {
+                      List<T> items;
+
+                      <T> void m() {
+                          items.forEach(a -> {
+                              System.out.println(a);
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeGroovyClosures() {
+            rewriteRun(
+              groovy(
+                """
+                  def run(Closure c) {}
+                  run { a, b, c ->
+                      println a
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeTypeVariableHiddenByInheritedMemberClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package lib;
+
+                  public class Base {
+                      public static class T {
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import lib.Base;
+
+                  class A<T> {
+                      interface Tri<X, Y, Z> {
+                          void accept(X x, Y y, Z z);
+                      }
+
+                      void each(Tri<T, T, T> t) {
+                      }
+
+                      class B extends Base {
+                          void m() {
+                              each((x, y, z) -> System.out.println(x));
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeCaptureAsArrayElementOrWildcardBound() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class Test {
+                      interface Tri<A, B, C> {
+                          void accept(A a, B b, C c);
+                      }
+
+                      static <T> void array(List<T> l, Tri<T[], String, String> f) {
+                      }
+
+                      static <T> void bound(List<T> l, Tri<List<? extends T>, String, String> f) {
+                      }
+
+                      void m(List<? extends Number> nums) {
+                          array(nums, (a, b, c) -> {
+                          });
+                          bound(nums, (a, b, c) -> {
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeFBoundedCapture() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.EnumSet;
+
+                  class Test {
+                      void m(EnumSet<?> s) {
+                          s.forEach(x -> {
+                              x.compareTo(x);
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void intersectionType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.stream.Stream;
+
+                  class Test {
+                      void m() {
+                          Stream.of(1, "a").forEach(x -> {
+                              System.out.println(x);
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void anonymousClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.stream.Stream;
+
+                  class Test {
+                      void m() {
+                          Stream.of(new Object() {
+                          }).forEach(x -> {
+                              System.out.println(x);
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void localClass() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class Test {
+                      void m() {
+                          class Local {
+                          }
+                          List<Local> l = null;
+                          l.forEach(x -> {
+                              System.out.println(x);
+                          });
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
