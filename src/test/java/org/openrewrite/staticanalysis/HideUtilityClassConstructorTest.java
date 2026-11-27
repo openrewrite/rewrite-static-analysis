@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 class HideUtilityClassConstructorTest implements RewriteTest {
 
@@ -697,6 +698,21 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               }
               """
           ), 17)
+        );
+    }
+
+    @Test
+    void doNotChangeTypeScriptUtilityClass() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              class Utils {
+                  static foo(): void {
+                  }
+              }
+              """
+          )
         );
     }
 }

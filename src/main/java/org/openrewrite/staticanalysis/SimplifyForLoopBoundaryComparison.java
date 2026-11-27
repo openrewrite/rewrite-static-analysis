@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -26,6 +27,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 public class SimplifyForLoopBoundaryComparison extends Recipe {
 
@@ -38,7 +40,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
                 binary = super.visitBinary(binary, ctx);
@@ -184,6 +186,6 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                        p == JavaType.Primitive.Short || p == JavaType.Primitive.Byte ||
                        p == JavaType.Primitive.Char;
             }
-        };
+        });
     }
 }

@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 @SuppressWarnings({"ConstantConditions", "ConditionCoveredByFurtherCondition"})
 class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
@@ -368,6 +369,22 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
                 void test(int n) {
                     for (int i = 0; i < n - 1; i++) {
                     }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeTypeScriptBigintBoundary() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+            function f(n: bigint) {
+                for (let i = 0n; i <= n; i++) {
+                    console.log(i);
                 }
             }
             """

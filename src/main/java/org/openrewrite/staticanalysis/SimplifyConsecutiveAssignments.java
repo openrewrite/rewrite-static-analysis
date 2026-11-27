@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -109,7 +110,10 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                     return null;
                 }
                 if (s instanceof J.Unary) {
-                    if (name.equals(singleVariableName(((J.Unary) s).getExpression()))) {
+                    Expression operand = ((J.Unary) s).getExpression();
+                    boolean javaScriptBigint = TypeUtils.asPrimitive(operand.getType()) == JavaType.Primitive.Long &&
+                            JavascriptFileChecker.isJavaScript(getCursor().firstEnclosing(SourceFile.class));
+                    if (name.equals(singleVariableName(operand)) && !javaScriptBigint) {
                         return new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, 1, "1", null,
                                 JavaType.Primitive.Int);
                     }
