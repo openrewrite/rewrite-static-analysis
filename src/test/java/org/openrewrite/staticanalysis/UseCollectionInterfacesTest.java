@@ -28,6 +28,7 @@ import java.util.UUID;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings({"rawtypes", "StatementWithEmptyBody"})
 class UseCollectionInterfacesTest implements RewriteTest {
@@ -1662,6 +1663,561 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
                   Iterator<String> getDescending() {
                       return set.descendingIterator();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeTypeRequiredByConstructorArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import javax.naming.Context;
+              import javax.naming.InitialContext;
+              import javax.naming.NamingException;
+              import java.util.Hashtable;
+
+              class Test {
+                  private Hashtable<String, String> env = new Hashtable<>();
+
+                  public Test(Hashtable<String, String> env) {
+                      this.env = env;
+                  }
+
+                  Context connect() throws NamingException {
+                      env.put(Context.SECURITY_PRINCIPAL, "user");
+                      return new InitialContext(env);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepSortedTypeRequiredByMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.List;
+              import java.util.Map;
+              import java.util.SortedMap;
+              import java.util.TreeMap;
+
+              class Test {
+                  public static String header(String query) {
+                      TreeMap<String, List<String>> queryParams = extractQueryParams(query);
+                      HashMap<String, String> oauthParams = new HashMap<>();
+                      oauthParams.put("oauth_version", "1.0");
+                      return toParamString(queryParams, oauthParams);
+                  }
+
+                  static TreeMap<String, List<String>> extractQueryParams(String query) {
+                      return new TreeMap<>();
+                  }
+
+                  static String toParamString(SortedMap<String, List<String>> queryParams, Map<String, String> oauthParams) {
+                      return queryParams.toString() + oauthParams;
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.List;
+              import java.util.Map;
+              import java.util.SortedMap;
+              import java.util.TreeMap;
+
+              class Test {
+                  public static String header(String query) {
+                      TreeMap<String, List<String>> queryParams = extractQueryParams(query);
+                      Map<String, String> oauthParams = new HashMap<>();
+                      oauthParams.put("oauth_version", "1.0");
+                      return toParamString(queryParams, oauthParams);
+                  }
+
+                  static TreeMap<String, List<String>> extractQueryParams(String query) {
+                      return new TreeMap<>();
+                  }
+
+                  static String toParamString(SortedMap<String, List<String>> queryParams, Map<String, String> oauthParams) {
+                      return queryParams.toString() + oauthParams;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeTypeAddedToCollectionOfConcreteType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.List;
+              import java.util.concurrent.ConcurrentHashMap;
+
+              class Test {
+                  void statuses(List<HashMap<String, String>> statuses) {
+                      HashMap<String, String> status = new HashMap<>();
+                      status.put("state", "ok");
+                      statuses.add(status);
+                  }
+
+                  void strategies(java.util.Map<String, ConcurrentHashMap<String, Integer>> bySymbol) {
+                      ConcurrentHashMap<String, Integer> strategies = bySymbol.get("a");
+                      if (strategies == null) {
+                          strategies = new ConcurrentHashMap<>();
+                      }
+                      bySymbol.put("a", strategies);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void widenValueReturnedFromWidenedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+
+              class Test {
+                  private HashMap<String, Integer> build() {
+                      HashMap<String, Integer> counts = new HashMap<>();
+                      counts.put("a", 1);
+                      return counts;
+                  }
+
+                  int size() {
+                      HashMap<String, Integer> built = build();
+                      return built.size();
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  private Map<String, Integer> build() {
+                      Map<String, Integer> counts = new HashMap<>();
+                      counts.put("a", 1);
+                      return counts;
+                  }
+
+                  int size() {
+                      Map<String, Integer> built = build();
+                      return built.size();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeValueReturnedFromMethodThatMustKeepItsType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+
+              class Test {
+                  protected ArrayList<String> names() {
+                      ArrayList<String> names = new ArrayList<>();
+                      names.add("a");
+                      return names;
+                  }
+
+                  Object copy() {
+                      ArrayList<String> names = new ArrayList<>();
+                      return names.clone();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void widenValueInObjectArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+
+              class Test {
+                  Object[] args() {
+                      ArrayList<Object> args = new ArrayList<>();
+                      args.add("a");
+                      return new Object[]{"b", args};
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  Object[] args() {
+                      List<Object> args = new ArrayList<>();
+                      args.add("a");
+                      return new Object[]{"b", args};
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeReturnTypeRequiredInAnotherFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.EnumMap;
+              import java.util.concurrent.TimeUnit;
+
+              public class Risk {
+                  public EnumMap<TimeUnit, String> createStops() {
+                      return new EnumMap<>(TimeUnit.class);
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.EnumMap;
+              import java.util.concurrent.TimeUnit;
+
+              class Position {
+                  private final Object copy;
+
+                  Position(EnumMap<TimeUnit, String> stops) {
+                      copy = stops.clone();
+                  }
+
+                  static Position create(Risk risk) {
+                      return new Position(risk.createStops());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void overridesKeepParameterTypesAndWidenReturnTypeTogether() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.HashSet;
+
+              interface Source {
+                  ArrayList<String> names();
+
+                  void accept(HashSet<String> seen);
+              }
+              """,
+            """
+              import java.util.HashSet;
+              import java.util.List;
+
+              interface Source {
+                  List<String> names();
+
+                  void accept(HashSet<String> seen);
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.HashSet;
+
+              class FileSource implements Source {
+                  @Override
+                  public ArrayList<String> names() {
+                      return new ArrayList<>();
+                  }
+
+                  @Override
+                  public void accept(HashSet<String> seen) {
+                      seen.add("a");
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.HashSet;
+              import java.util.List;
+
+              class FileSource implements Source {
+                  @Override
+                  public List<String> names() {
+                      return new ArrayList<>();
+                  }
+
+                  @Override
+                  public void accept(HashSet<String> seen) {
+                      seen.add("a");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeReturnTypeOfOverrideWhenOverriddenMethodKeepsIt() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+
+              class Base {
+                  protected HashMap<String, String> values() {
+                      return new HashMap<>();
+                  }
+              }
+
+              class Sub extends Base {
+                  @Override
+                  public HashMap<String, String> values() {
+                      return new HashMap<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+    @Test
+    void doNotChangeReturnTypeBoundToTypeVariableOfOverriddenMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.concurrent.Callable;
+
+              class Loader implements Callable<ArrayList<String>> {
+                  @Override
+                  public ArrayList<String> call() {
+                      return new ArrayList<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeTypeReadThroughGeneratedAccessor() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.HashMap;
+              import lombok.Getter;
+
+              class Holder {
+                  @Getter
+                  private HashMap<String, String> values = new HashMap<>();
+
+                  record Items(ArrayList<String> items) {
+                  }
+
+                  static void use(Holder holder, Items items) {
+                      keep(holder.getValues(), items.items());
+                  }
+
+                  static void keep(HashMap<String, String> values, ArrayList<String> items) {
+                      values.clone();
+                      items.clone();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeLinkedListUsedAsQueue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.LinkedList;
+
+              class Test {
+                  String next() {
+                      LinkedList<String> queue = new LinkedList<>();
+                      queue.add("a");
+                      return queue.remove();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeParameterTypesOfAbstractMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+
+              class Test {
+                  interface RowHandler {
+                      void handle(HashMap<String, Object> row);
+                  }
+
+                  static void legacy(HashMap<String, Object> row) {
+                      row.clone();
+                  }
+
+                  RowHandler handler = row -> legacy(row);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeVariablesSharingTypeWhenOneNeedsIt() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+
+              class Test {
+                  void m() {
+                      ArrayList<String> a = new ArrayList<>(), b = new ArrayList<>();
+                      b.trimToSize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void widenVariableUsedAsLockIterableTernaryOperandAndMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  List<String> m(boolean flag, List<String> other) {
+                      ArrayList<String> list = new ArrayList<>();
+                      synchronized (list) {
+                          for (String s : list) {
+                          }
+                      }
+                      other.forEach(list::add);
+                      list.forEach(System.out::println);
+                      return flag ? list : other;
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              class Test {
+                  List<String> m(boolean flag, List<String> other) {
+                      List<String> list = new ArrayList<>();
+                      synchronized (list) {
+                          for (String s : list) {
+                          }
+                      }
+                      other.forEach(list::add);
+                      list.forEach(System.out::println);
+                      return flag ? list : other;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeReceiverOfMethodReferenceTheInterfaceLacks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.LinkedList;
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> next() {
+                      LinkedList<String> queue = new LinkedList<>();
+                      return queue::remove;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeScalaSource() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              import java.util
+
+              class A {
+                private var logs: util.ArrayList[String] = _
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeValuePassedToGenericMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Optional;
+
+              class Test {
+                  Optional<?> m() {
+                      HashMap<String, String> values = new HashMap<>();
+                      return Optional.of(values);
                   }
               }
               """
