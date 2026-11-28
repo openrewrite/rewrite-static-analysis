@@ -195,16 +195,13 @@ maven,org.openrewrite.recipe:rewrite-static-analysis,org.openrewrite.staticanaly
 maven,org.openrewrite.recipe:rewrite-static-analysis,org.openrewrite.staticanalysis.UnnecessaryParentheses,Remove unnecessary parentheses,"Removes unnecessary parentheses from code where extra parentheses pairs are redundant. Redundant parentheses add visual noise and can obscure the actual structure of an expression, making code harder to read at a glance.",1,,Static analysis and remediation,,Remediations for issues identified by SAST tools.,,
 maven,org.openrewrite.recipe:rewrite-static-analysis,org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations,Remove `@Nullable` and `@CheckForNull` annotations from primitives,"Primitives can't be null anyway, so the `javax.annotation.Nullable` and `javax.annotation.CheckForNull` annotations are not useful in this context. Leaving them in place gives the false impression that a null value is possible, which can confuse readers and static analysis tools alike.",1,,Static analysis and remediation,,Remediations for issues identified by SAST tools.,,
 maven,org.openrewrite.recipe:rewrite-static-analysis,org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement,Unnecessary `return` as last statement in void method,Removes `return` from a `void` method if it's the last statement. A trailing `return` in a void method has no effect on control flow and is just noise that distracts from the meaningful logic.,1,,Static analysis and remediation,,Remediations for issues identified by SAST tools.,,
-maven,org.openrewrite.recipe:rewrite-static-analysis,org.openrewrite.staticanalysis.UnnecessaryThrows,Unnecessary throws,"Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:
+maven,org.openrewrite.recipe:rewrite-static-analysis,org.openrewrite.staticanalysis.UnnecessaryThrows,Unnecessary throws,"Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions from a method when no other source file in the repository depends on them: no call inside a `try` that catches a related checked exception, no method reference to the method and no override of it. Callers in the same source file that catch the removed exception are cleaned up along with it. A method that another source file depends on only loses an exception that a supertype in the same `throws` clause already covers, as `FileNotFoundException` in `throws IOException, FileNotFoundException`, unless a JavaDoc `@throws` tag names it. Code outside the repository is not seen, so on a published library a caller that catches the exception or a subclass that overrides the method while declaring it no longer compiles.
 
- - The declaring class or the method declaration is `final`.
- - The method declaration is `static` or `private`.
- - The method overrides a method declaration in a super class and the super class does not throw the exception.
- - The method is `public` and the exception is not documented via a JavaDoc as a `@throws` tag.
+The `throws` declaration is also retained:
 
-The `throws` declaration is retained on overridable methods (package-private and `protected` methods on non-`final` classes), and on `public` methods overridden within the same source file, so that a subclass override which does throw the exception keeps compiling. Overrides in other source files cannot be detected without a scanning recipe and are therefore not accounted for.
-
-A `throws` declaration is also retained when the method body contains a call whose type does not fully resolve, because such a call may throw the exception.
+ - On methods overridden within the same source file, so that an override which does throw the exception keeps compiling.
+ - When an overridden method declares the same exception, or a non-`private`, non-`static`, non-`final` method documents it via a JavaDoc `@throws` tag.
+ - When the method body contains a call whose type does not fully resolve, because such a call may throw the exception.
 
 When a `throws` declaration is removed, any `@throws` or `@exception` JavaDoc tag documenting that exception is removed along with it, so that the documentation does not describe an exception the method no longer declares.
 

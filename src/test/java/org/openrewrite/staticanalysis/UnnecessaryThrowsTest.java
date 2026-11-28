@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
@@ -525,7 +526,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void interfaceWithGenericTypeThrown() {
         rewriteRun(
-
           //language=java
           java(
             """
@@ -533,7 +533,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
                   T visit(Foo.Event event) throws E;
               }
               """
-
           ),
           //language=java
           java(
@@ -955,6 +954,652 @@ class UnnecessaryThrowsTest implements RewriteTest {
                   }
 
                   private void doSomething() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnStaticMethodCaughtInAnotherFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              public class HttpContent {
+                  public static HttpContent build(String content) throws IOException {
+                      return new HttpContent();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Request {
+                  HttpContent content(String content) {
+                      try {
+                          return HttpContent.build(content);
+                      } catch (IOException e) {
+                          return null;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnPublicMethodOverriddenInAnotherFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public abstract class AbstractStorageTest {
+                  public void testStore() throws Exception {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class BlobStorageTest extends AbstractStorageTest {
+                  @Override
+                  public void testStore() throws Exception {
+                      throw new Exception();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeThrowsFromMethodsOfAnonymousAndPrivateClasses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Runnable r = new Runnable() {
+                      @Override
+                      public void run() {
+                          try {
+                              helper();
+                          } catch (InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                          }
+                      }
+
+                      public void helper() throws InterruptedException {
+                      }
+                  };
+
+                  private static class Inner {
+                      public static void quiet() throws InterruptedException {
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  Runnable r = new Runnable() {
+                      @Override
+                      public void run() {
+                          helper();
+                      }
+
+                      public void helper() {
+                      }
+                  };
+
+                  private static class Inner {
+                      public static void quiet() {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCatchOfPrivateGenericMethodInSameFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Queue<T> {
+                  private void put(T message) throws InterruptedException {
+                  }
+
+                  void offer(T message) {
+                      try {
+                          put(message);
+                      } catch (InterruptedException e) {
+                          e.printStackTrace();
+                      }
+                  }
+
+                  static void test(Queue<String> queue) {
+                      try {
+                          queue.put("hello");
+                      } catch (InterruptedException e) {
+                          e.printStackTrace();
+                      }
+                  }
+              }
+              """,
+            """
+              class Queue<T> {
+                  private void put(T message) {
+                  }
+
+                  void offer(T message) {
+                      put(message);
+                  }
+
+                  static void test(Queue<String> queue) {
+                      queue.put("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeExceptionCoveredBySupertypeFromVisibleMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+
+              public class Client {
+                  public static void send() throws IOException, FileNotFoundException {
+                  }
+
+                  void receive() throws FileNotFoundException, IOException, InterruptedException {
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              public class Client {
+                  public static void send() throws IOException {
+                  }
+
+                  void receive() throws IOException, InterruptedException {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Caller {
+                  void call(Client client) {
+                      try {
+                          Client.send();
+                          client.receive();
+                      } catch (IOException | InterruptedException e) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeThrowsFromMethodsOfLocalClasses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      class InMethod {
+                          public void quiet() throws InterruptedException {
+                          }
+                      }
+                  }
+
+                  Runnable r = () -> {
+                      class InLambda {
+                          public void quiet() throws InterruptedException {
+                          }
+                      }
+                  };
+
+                  {
+                      class InInitializer {
+                          public void quiet() throws InterruptedException {
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      class InMethod {
+                          public void quiet() {
+                          }
+                      }
+                  }
+
+                  Runnable r = () -> {
+                      class InLambda {
+                          public void quiet() {
+                          }
+                      }
+                  };
+
+                  {
+                      class InInitializer {
+                          public void quiet() {
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainCatchOfRemovedSubtypeWhenSupertypeIsStillThrown() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+
+              public class Client {
+                  public static void send() throws IOException, FileNotFoundException {
+                  }
+
+                  static void call() {
+                      try {
+                          send();
+                      } catch (FileNotFoundException e) {
+                          System.out.println("missing");
+                      } catch (IOException e) {
+                          System.out.println("failed");
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+
+              public class Client {
+                  public static void send() throws IOException {
+                  }
+
+                  static void call() {
+                      try {
+                          send();
+                      } catch (FileNotFoundException e) {
+                          System.out.println("missing");
+                      } catch (IOException e) {
+                          System.out.println("failed");
+                      }
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Caller {
+                  void call() {
+                      try {
+                          Client.send();
+                      } catch (IOException e) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainDocumentedSubtypeOnVisibleMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+
+              public class Client {
+                  /**
+                   * @throws FileNotFoundException when the file is missing
+                   */
+                  public static void send() throws IOException, FileNotFoundException {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Caller {
+                  void call() {
+                      try {
+                          Client.send();
+                      } catch (IOException e) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeThrowsFromPublicMethodWhenNoOtherFileCatchesIt() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              public class Service {
+                  public static String load() throws IOException {
+                      return "";
+                  }
+
+                  String loadOrDefault() {
+                      try {
+                          return load();
+                      } catch (IOException e) {
+                          return "default";
+                      }
+                  }
+              }
+              """,
+            """
+              public class Service {
+                  public static String load() {
+                      return "";
+                  }
+
+                  String loadOrDefault() {
+                      return load();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Caller {
+                  String call() throws IOException {
+                      return Service.load();
+                  }
+
+                  String callAll() {
+                      try {
+                          return Service.load();
+                      } catch (Exception e) {
+                          return null;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnMethodCaughtThroughSubclassInAnotherFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Base {
+                  public void load() throws InterruptedException {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Sub extends Base {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Caller {
+                  void call(Sub sub) {
+                      try {
+                          sub.load();
+                      } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnMethodReferencedInAnotherFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Service {
+                  public static String load() throws InterruptedException {
+                      return "";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Callable;
+
+              class Caller {
+                  Callable<String> loader = Service::load;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenCallInAnotherFileDoesNotResolve() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              public class Service {
+                  public static String load() throws InterruptedException {
+                      return "";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Caller {
+                  void call(Unknown unknown) {
+                      try {
+                          unknown.load();
+                      } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenLombokCleanupClosesAVariable() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.io.InputStream;
+              import lombok.Cleanup;
+
+              class Test {
+                  void read() throws IOException {
+                      @Cleanup InputStream in = System.in;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnMethodOverriddenByAnonymousClassInAnotherFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Service {
+                  public String load() throws InterruptedException {
+                      return "";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Caller {
+                  Service service = new Service() {
+                      @Override
+                      public String load() throws InterruptedException {
+                          throw new InterruptedException();
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenMethodReferenceInAnotherFileDoesNotResolve() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              public class Service {
+                  public String load() throws InterruptedException {
+                      return "";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Caller {
+                  Object loader = Unknown::load;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsWhenCatchInAnotherFileDoesNotResolve() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              public class Service {
+                  public String load() throws InterruptedException {
+                      return "";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Caller {
+                  void call(Service service) {
+                      try {
+                          service.load();
+                      } catch (UnknownException e) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeThrowsWhenOverrideInAnotherFileDeclaresNone() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Service {
+                  public String load() throws InterruptedException {
+                      return "";
+                  }
+              }
+              """,
+            """
+              public class Service {
+                  public String load() {
+                      return "";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class CachedService extends Service {
+                  @Override
+                  public String load() {
+                      return "cached";
                   }
               }
               """
